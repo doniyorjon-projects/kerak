@@ -118,6 +118,31 @@ export class BotService implements OnModuleInit {
     );
   }
 
+  async notifySellerModerationResult(
+    telegramId: string,
+    listingId: string,
+    listingTitle: string,
+    approved: boolean,
+    reason?: string | null,
+  ) {
+    const keyboard = new InlineKeyboard().webApp(
+      "🔍 Ko'rish",
+      `${this.miniAppUrl}?listing=${encodeURIComponent(listingId)}`,
+    );
+
+    const text = approved
+      ? `✅ "${listingTitle}" eloningiz tasdiqlandi va endi katalogda ko'rinadi.`
+      : [
+          `❌ "${listingTitle}" eloningiz rad etildi.`,
+          reason ? `\nSabab: ${reason}` : "",
+          "\nIltimos ma'lumotlarni tekshirib qayta joylang.",
+        ].join("");
+
+    await this.bot.api
+      .sendMessage(telegramId, text, { reply_markup: keyboard })
+      .catch((err) => this.logger.warn(`Sotuvchiga xabar yuborilmadi: ${err}`));
+  }
+
   async notifyAdminNewListing(listing: Listing) {
     if (!this.adminTelegramId) {
       this.logger.warn("ADMIN_TELEGRAM_ID sozlanmagan, moderatsiya xabari yuborilmadi");

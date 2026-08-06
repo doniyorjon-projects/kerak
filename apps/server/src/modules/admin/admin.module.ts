@@ -4,9 +4,11 @@ import { ReportsModule } from "../reports/reports.module";
 import { BannersModule } from "../banners/banners.module";
 import { CategoriesModule } from "../categories/categories.module";
 import { PricingModule } from "../pricing/pricing.module";
+import { BotModule } from "../bot/bot.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 
 @Module({
-  imports: [ReportsModule, BannersModule, CategoriesModule, PricingModule],
+  imports: [ReportsModule, BannersModule, CategoriesModule, PricingModule, BotModule, NotificationsModule],
   controllers: [AdminController],
 })
 export class AdminModule {}

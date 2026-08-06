@@ -68,10 +68,19 @@ function ModerationTab() {
     queryFn: fetchPendingListings,
   });
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "pending-listings"] });
   const approveMutation = useMutation({ mutationFn: approveListing, onSuccess: invalidate });
-  const rejectMutation = useMutation({ mutationFn: rejectListing, onSuccess: invalidate });
+  const rejectMutation = useMutation({
+    mutationFn: () => rejectListing(rejectingId!, rejectReason.trim() || undefined),
+    onSuccess: () => {
+      setRejectingId(null);
+      setRejectReason("");
+      invalidate();
+    },
+  });
 
   if (isLoading) return <Spinner label={t("loading")} />;
   if (listings?.length === 0) return <EmptyState icon={Inbox} title={t("admin.noPending")} />;
@@ -107,20 +116,49 @@ function ModerationTab() {
           <span className="text-xs text-hint">
             {t("admin.seller")}: {listing.seller.username ? `@${listing.seller.username}` : listing.seller.firstName}
           </span>
-          <div className="flex gap-2 pt-1">
-            <button
-              onClick={() => approveMutation.mutate(listing.id)}
-              className="flex-1 rounded-xl bg-emerald-500/10 py-2.5 text-sm font-semibold text-emerald-500 transition active:scale-[0.98]"
-            >
-              {t("admin.approve")}
-            </button>
-            <button
-              onClick={() => rejectMutation.mutate(listing.id)}
-              className="flex-1 rounded-xl bg-destructive/10 py-2.5 text-sm font-semibold text-destructive transition active:scale-[0.98]"
-            >
-              {t("admin.reject")}
-            </button>
-          </div>
+          {rejectingId === listing.id ? (
+            <div className="flex flex-col gap-2">
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder={t("admin.rejectReasonPlaceholder")}
+                className="input min-h-16"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setRejectingId(null);
+                    setRejectReason("");
+                  }}
+                  className="flex-1 rounded-xl bg-surface-secondary py-2.5 text-sm font-semibold text-hint transition active:scale-[0.98]"
+                >
+                  {t("cancel")}
+                </button>
+                <button
+                  onClick={() => rejectMutation.mutate()}
+                  disabled={rejectMutation.isPending}
+                  className="flex-1 rounded-xl bg-destructive py-2.5 text-sm font-semibold text-white transition active:scale-[0.98] disabled:opacity-50"
+                >
+                  {t("admin.confirmReject")}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => approveMutation.mutate(listing.id)}
+                className="flex-1 rounded-xl bg-emerald-500/10 py-2.5 text-sm font-semibold text-emerald-500 transition active:scale-[0.98]"
+              >
+                {t("admin.approve")}
+              </button>
+              <button
+                onClick={() => setRejectingId(listing.id)}
+                className="flex-1 rounded-xl bg-destructive/10 py-2.5 text-sm font-semibold text-destructive transition active:scale-[0.98]"
+              >
+                {t("admin.reject")}
+              </button>
+            </div>
+          )}
         </div>
       ))}
       {lightbox && (

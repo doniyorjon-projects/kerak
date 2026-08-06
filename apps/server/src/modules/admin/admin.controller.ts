@@ -13,8 +13,12 @@ import { CreateCategoryDto } from "../categories/dto/create-category.dto";
 import { UpdateCategoryDto } from "../categories/dto/update-category.dto";
 import { PricingService } from "../pricing/pricing.service";
 import { UpdatePricingDto } from "../pricing/dto/update-pricing.dto";
+import { BotService } from "../bot/bot.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { AddAdminDto } from "./dto/add-admin.dto";
+import { RejectListingDto } from "./dto/reject-listing.dto";
 import type { User } from "@prisma/client";
+import { NotificationType } from "@prisma/client";
 
 @Controller("admin")
 @UseGuards(TelegramAuthGuard, AdminGuard)
@@ -25,6 +29,8 @@ export class AdminController {
     private readonly bannersService: BannersService,
     private readonly categoriesService: CategoriesService,
     private readonly pricingService: PricingService,
+    private readonly botService: BotService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   @Patch("pricing")
@@ -93,13 +99,51 @@ export class AdminController {
   }
 
   @Patch("listings/:id/approve")
-  approve(@Param("id") id: string) {
-    return this.prisma.listing.update({ where: { id }, data: { status: ListingStatus.ACTIVE } });
+  async approve(@Param("id") id: string) {
+    const listing = await this.prisma.listing.update({
+      where: { id },
+      data: { status: ListingStatus.ACTIVE },
+      include: { seller: true },
+    });
+
+    await this.botService.notifySellerModerationResult(listing.seller.telegramId, listing.id, listing.title, true);
+    await this.notificationsService.create(
+      listing.sellerId,
+      NotificationType.LISTING_APPROVED,
+      "Elon tasdiqlandi ✅",
+      `"${listing.title}" eloningiz tasdiqlandi va endi katalogda ko'rinadi.`,
+      `/listings/${listing.id}`,
+    );
+
+    return listing;
   }
 
   @Patch("listings/:id/reject")
-  reject(@Param("id") id: string) {
-    return this.prisma.listing.update({ where: { id }, data: { status: ListingStatus.REJECTED } });
+  async reject(@Param("id") id: string, @Body() dto: RejectListingDto) {
+    const listing = await this.prisma.listing.update({
+      where: { id },
+      data: { status: ListingStatus.REJECTED, rejectionReason: dto.reason ?? null },
+      include: { seller: true },
+    });
+
+    await this.botService.notifySellerModerationResult(
+      listing.seller.telegramId,
+      listing.id,
+      listing.title,
+      false,
+      dto.reason,
+    );
+    await this.notificationsService.create(
+      listing.sellerId,
+      NotificationType.LISTING_REJECTED,
+      "Elon rad etildi ❌",
+      dto.reason
+        ? `"${listing.title}" eloningiz rad etildi. Sabab: ${dto.reason}`
+        : `"${listing.title}" eloningiz rad etildi.`,
+      `/listings/${listing.id}`,
+    );
+
+    return listing;
   }
 
   @Get("reports")

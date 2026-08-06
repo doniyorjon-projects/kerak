@@ -114,6 +114,7 @@ model Listing {
   lng          Float?
   phone        String
   status       ListingStatus @default(PENDING)
+  rejectionReason String?
   viewsCount   Int           @default(0)
   boostedUntil DateTime?
   createdAt    DateTime      @default(now())

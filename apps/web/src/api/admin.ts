@@ -28,8 +28,8 @@ export function approveListing(id: string) {
   return api.patch<void>(`/admin/listings/${id}/approve`);
 }
 
-export function rejectListing(id: string) {
-  return api.patch<void>(`/admin/listings/${id}/reject`);
+export function rejectListing(id: string, reason?: string) {
+  return api.patch<void>(`/admin/listings/${id}/reject`, { reason });
 }
 
 export function fetchPendingReports() {

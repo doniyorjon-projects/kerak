@@ -91,6 +91,7 @@ export const translations = {
     "listing.rateSeller": "Sotuvchini baholang",
     "listing.manageTitle": "E'lonni boshqarish",
     "listing.moderationTitle": "Moderatsiya",
+    "listing.rejectionReasonLabel": "Sabab",
     "listing.commentPlaceholder": "Sharh (ixtiyoriy)",
     "listing.statViews": "Ko'rishlar",
     "listing.statTelegram": "Telegram",
@@ -123,9 +124,6 @@ export const translations = {
     "create.selectDistrict": "Tumanni tanlang",
     "create.fineTuneLocation": "Xaritada aniqroq joyni belgilang (nuqtani suring)",
     "create.viewPlans": "Tariflarni ko'rish",
-    "create.successTitle": "E'lon joylandi",
-    "create.successMessage": "E'loningiz moderatsiyaga yuborildi ✅",
-    "create.skipAdvertise": "Keyinroq",
 
     // elonni tahrirlash
     "edit.title": "E'lonni tahrirlash",
@@ -219,6 +217,8 @@ export const translations = {
     "admin.noReports": "Shikoyatlar yo'q",
     "admin.approve": "Tasdiqlash",
     "admin.reject": "Rad etish",
+    "admin.rejectReasonPlaceholder": "Rad etish sababi (ixtiyoriy)",
+    "admin.confirmReject": "Rad etishni tasdiqlash",
     "admin.seller": "Sotuvchi",
     "admin.reporter": "Shikoyatchi",
     "admin.resolved": "Chora ko'rildi",
@@ -361,6 +361,7 @@ export const translations = {
     "listing.statMessages": "Сообщения",
     "listing.manageTitle": "Управление объявлением",
     "listing.moderationTitle": "Модерация",
+    "listing.rejectionReasonLabel": "Причина",
 
     "create.title": "Новое объявление",
     "create.subtitle": "Заполните информацию",
@@ -386,9 +387,6 @@ export const translations = {
     "create.selectDistrict": "Выберите район",
     "create.fineTuneLocation": "Уточните местоположение на карте (передвиньте точку)",
     "create.viewPlans": "Посмотреть тарифы",
-    "create.successTitle": "Объявление размещено",
-    "create.successMessage": "Ваше объявление отправлено на модерацию ✅",
-    "create.skipAdvertise": "Позже",
 
     "edit.title": "Редактировать объявление",
     "edit.subtitle": "Обновите информацию",
@@ -476,6 +474,8 @@ export const translations = {
     "admin.noReports": "Жалоб нет",
     "admin.approve": "Одобрить",
     "admin.reject": "Отклонить",
+    "admin.rejectReasonPlaceholder": "Причина отклонения (необязательно)",
+    "admin.confirmReject": "Подтвердить отклонение",
     "admin.seller": "Продавец",
     "admin.reporter": "Жалобщик",
     "admin.resolved": "Меры приняты",

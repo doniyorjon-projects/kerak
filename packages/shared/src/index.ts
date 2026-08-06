@@ -55,6 +55,7 @@ export interface ListingDto {
   lng: number | null;
   phone: string;
   status: ListingStatus;
+  rejectionReason?: string | null;
   categoryId: string;
   createdAt: string;
   viewsCount: number;

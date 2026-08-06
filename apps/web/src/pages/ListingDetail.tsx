@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
@@ -57,7 +57,11 @@ export function ListingDetail() {
   useBackButton("/");
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
+  const [showAdvertiseSuggestion, setShowAdvertiseSuggestion] = useState(
+    Boolean((location.state as { justCreated?: boolean } | null)?.justCreated),
+  );
 
   const formatPrice = (price: number | null, isNegotiable: boolean): string => {
     if (isNegotiable || price == null) return t("negotiable");
@@ -70,6 +74,8 @@ export function ListingDetail() {
   const [reportReason, setReportReason] = useState("");
   const [reportStatus, setReportStatus] = useState<string | null>(null);
   const [ratingComment, setRatingComment] = useState("");
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
 
   const { data: listing, isLoading, error } = useQuery({
     queryKey: ["listing", listingId],
@@ -154,8 +160,12 @@ export function ListingDetail() {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: () => rejectListing(listingId!),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["listing", listingId] }),
+    mutationFn: () => rejectListing(listingId!, rejectReason.trim() || undefined),
+    onSuccess: () => {
+      setRejectOpen(false);
+      setRejectReason("");
+      queryClient.invalidateQueries({ queryKey: ["listing", listingId] });
+    },
   });
 
   if (isLoading) return <Spinner label={t("loading")} />;
@@ -230,6 +240,42 @@ export function ListingDetail() {
         <ListingsMap listings={[listing]} heightClassName="h-36" zoom={15} interactive={false} />
       )}
 
+      {showAdvertiseSuggestion && isOwner && (
+        <div className="card flex flex-col gap-3 border-amber-500/30 bg-amber-500/5">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-2 text-sm font-semibold text-amber-600">
+              <Megaphone className="h-4 w-4" />
+              {t("advertise.suggestTitle")}
+            </span>
+            <button
+              onClick={() => setShowAdvertiseSuggestion(false)}
+              aria-label={t("cancel")}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-secondary"
+            >
+              <X className="h-3.5 w-3.5 text-hint" />
+            </button>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="flex items-center gap-1.5 text-xs text-ink">
+              <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+              {t("advertise.suggestFeature1")}
+            </span>
+            <span className="flex items-center gap-1.5 text-xs text-ink">
+              <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+              {t("advertise.suggestFeature2")}
+            </span>
+          </div>
+          <Link
+            to={`/listings/${listing.id}/advertise`}
+            onClick={() => setShowAdvertiseSuggestion(false)}
+            className="btn-primary"
+          >
+            <Megaphone className="h-4 w-4" />
+            {t("advertise.button")}
+          </Link>
+        </div>
+      )}
+
       {isAdminModeration ? (
         <div className="card flex flex-col gap-3">
           <span className="text-sm font-semibold text-ink">{t("listing.moderationTitle")}</span>
@@ -241,24 +287,53 @@ export function ListingDetail() {
               {listing.seller.username ? `@${listing.seller.username}` : listing.seller.firstName}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => approveMutation.mutate()}
-              disabled={approveMutation.isPending}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 py-2.5 text-xs font-semibold text-emerald-500 transition active:scale-[0.98] disabled:opacity-50"
-            >
-              <Check className="h-3.5 w-3.5" />
-              {t("admin.approve")}
-            </button>
-            <button
-              onClick={() => rejectMutation.mutate()}
-              disabled={rejectMutation.isPending}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive/10 py-2.5 text-xs font-semibold text-destructive transition active:scale-[0.98] disabled:opacity-50"
-            >
-              <X className="h-3.5 w-3.5" />
-              {t("admin.reject")}
-            </button>
-          </div>
+          {rejectOpen ? (
+            <div className="flex flex-col gap-2">
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder={t("admin.rejectReasonPlaceholder")}
+                className="input min-h-16"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    setRejectOpen(false);
+                    setRejectReason("");
+                  }}
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-surface-secondary py-2.5 text-xs font-semibold text-hint transition active:scale-[0.98]"
+                >
+                  {t("cancel")}
+                </button>
+                <button
+                  onClick={() => rejectMutation.mutate()}
+                  disabled={rejectMutation.isPending}
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive py-2.5 text-xs font-semibold text-white transition active:scale-[0.98] disabled:opacity-50"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  {t("admin.confirmReject")}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => approveMutation.mutate()}
+                disabled={approveMutation.isPending}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 py-2.5 text-xs font-semibold text-emerald-500 transition active:scale-[0.98] disabled:opacity-50"
+              >
+                <Check className="h-3.5 w-3.5" />
+                {t("admin.approve")}
+              </button>
+              <button
+                onClick={() => setRejectOpen(true)}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive/10 py-2.5 text-xs font-semibold text-destructive transition active:scale-[0.98]"
+              >
+                <X className="h-3.5 w-3.5" />
+                {t("admin.reject")}
+              </button>
+            </div>
+          )}
         </div>
       ) : isOwner ? (
         <div className="card flex flex-col gap-3">
@@ -269,6 +344,13 @@ export function ListingDetail() {
               {t(statusLabelKey)}
             </span>
           </div>
+
+          {listing.status === "REJECTED" && listing.rejectionReason && (
+            <div className="rounded-xl bg-destructive/10 p-3 text-xs text-destructive">
+              <span className="font-semibold">{t("listing.rejectionReasonLabel")}: </span>
+              {listing.rejectionReason}
+            </div>
+          )}
 
           {listing.status === "ACTIVE" && (
             <Link
@@ -318,15 +400,15 @@ export function ListingDetail() {
                     {t("myListings.markSold")}
                   </button>
                 )}
-                <button
-                  onClick={() => deleteMutation.mutate()}
-                  className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive/10 py-2.5 text-xs font-semibold text-destructive transition active:scale-[0.98]"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  {t("delete")}
-                </button>
               </>
             )}
+            <button
+              onClick={() => deleteMutation.mutate()}
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive/10 py-2.5 text-xs font-semibold text-destructive transition active:scale-[0.98]"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {t("delete")}
+            </button>
           </div>
 
           {stats && (

@@ -115,15 +115,15 @@ function ListingRow({ listing }: { listing: ListingDto }) {
                 {t("myListings.markSold")}
               </button>
             )}
-            <button
-              onClick={() => deleteMutation.mutate()}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive/10 py-2.5 text-xs font-semibold text-destructive transition active:scale-[0.98]"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              {t("delete")}
-            </button>
           </>
         )}
+        <button
+          onClick={() => deleteMutation.mutate()}
+          className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive/10 py-2.5 text-xs font-semibold text-destructive transition active:scale-[0.98]"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          {t("delete")}
+        </button>
       </div>
     </div>
   );
