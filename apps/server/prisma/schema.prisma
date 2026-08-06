@@ -217,6 +217,16 @@ model PlanOrder {
   paidAt       DateTime?
 }
 
+model PricingConfig {
+  id           String   @id @default(cuid())
+  boostDays3   Int      @default(10000)
+  boostDays7   Int      @default(20000)
+  boostDays30  Int      @default(50000)
+  planStandard Int      @default(25000)
+  planBusiness Int      @default(60000)
+  updatedAt    DateTime @updatedAt
+}
+
 model Banner {
   id        String   @id @default(cuid())
   imageUrl  String

@@ -1,14 +1,21 @@
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { BoostDuration } from "@prisma/client";
-import { BOOST_PRICING } from "@kerak/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import { ClickService } from "./click.service";
+import { PricingService } from "../pricing/pricing.service";
+
+const PRICING_FIELD: Record<BoostDuration, "boostDays3" | "boostDays7" | "boostDays30"> = {
+  DAYS_3: "boostDays3",
+  DAYS_7: "boostDays7",
+  DAYS_30: "boostDays30",
+};
 
 @Injectable()
 export class BoostsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clickService: ClickService,
+    private readonly pricingService: PricingService,
   ) {}
 
   async create(userId: string, listingId: string, duration: BoostDuration) {
@@ -16,7 +23,8 @@ export class BoostsService {
     if (!listing) throw new NotFoundException("Elon topilmadi");
     if (listing.sellerId !== userId) throw new ForbiddenException("Bu sizning eloningiz emas");
 
-    const amount = BOOST_PRICING[duration];
+    const pricing = await this.pricingService.get();
+    const amount = pricing[PRICING_FIELD[duration]];
     const order = await this.prisma.boostOrder.create({
       data: { listingId, userId, duration, amount },
     });

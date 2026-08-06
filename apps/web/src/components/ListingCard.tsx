@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Eye, Heart, ImageOff, MapPin, Rocket } from "lucide-react";
 import type { ListingDto } from "@kerak/shared";
 import { addFavorite, removeFavorite } from "../api/favorites";
+import { REGIONS } from "../data/uzbekistanRegions";
 import { useFavoriteIds } from "../hooks/useFavoriteIds";
 import { useTranslation } from "../i18n/LanguageContext";
 
@@ -11,12 +12,19 @@ function formatDistance(distanceKm: number): string {
   return `${distanceKm.toLocaleString("uz-UZ", { maximumFractionDigits: 1 })} km`;
 }
 
+function getDistrictName(regionId: number | null, districtId: number | null): string | null {
+  if (regionId == null || districtId == null) return null;
+  const region = REGIONS.find((r) => r.id === regionId);
+  return region?.districts.find((d) => d.id === districtId)?.nameUz ?? null;
+}
+
 export function ListingCard({ listing }: { listing: ListingDto }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: favoriteIds } = useFavoriteIds();
   const isFavorite = favoriteIds?.has(listing.id) ?? false;
   const isBoosted = Boolean(listing.boostedUntil && new Date(listing.boostedUntil) > new Date());
+  const districtName = getDistrictName(listing.regionId, listing.districtId);
 
   const favoriteMutation = useMutation({
     mutationFn: () => (isFavorite ? removeFavorite(listing.id) : addFavorite(listing.id)),
@@ -67,26 +75,26 @@ export function ListingCard({ listing }: { listing: ListingDto }) {
             ? t("negotiable")
             : `${listing.price.toLocaleString("uz-UZ")} ${t("som")}`}
         </span>
-        {listing.addressText && (
-          <span className="flex items-center gap-1 truncate text-xs text-hint">
-            <MapPin className="h-3 w-3 shrink-0" />
-            <span className="truncate">{listing.addressText}</span>
-          </span>
-        )}
-        <div className="flex items-center justify-between text-xs text-hint">
-          {listing.distanceKm != null ? (
-            <span className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
-              {formatDistance(listing.distanceKm)}
+        <div className="flex items-center justify-between gap-2 text-xs text-hint">
+          {districtName ? (
+            <span className="flex min-w-0 items-center gap-1">
+              <MapPin className="h-3 w-3 shrink-0" />
+              <span className="truncate">{districtName}</span>
             </span>
           ) : (
             <span />
           )}
-          <span className="flex items-center gap-1">
+          <span className="flex shrink-0 items-center gap-1">
             <Eye className="h-3 w-3" />
             {listing.viewsCount}
           </span>
         </div>
+        {listing.distanceKm != null && (
+          <span className="flex items-center gap-1 text-xs text-hint">
+            <MapPin className="h-3 w-3" />
+            {formatDistance(listing.distanceKm)}
+          </span>
+        )}
       </div>
     </Link>
   );

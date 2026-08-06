@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
   Ban,
+  Banknote,
   Check,
   ChevronDown,
   ChevronUp,
@@ -24,6 +25,7 @@ import {
   X,
 } from "lucide-react";
 import { CategoryType } from "@kerak/shared";
+import type { PricingConfigDto } from "@kerak/shared";
 import {
   addAdmin,
   approveListing,
@@ -49,6 +51,7 @@ import {
 import { createCategory, deleteCategory, fetchCategories, updateCategory } from "../api/categories";
 import { CATEGORY_ICONS } from "../data/categoryIcons";
 import { uploadPhoto } from "../api/listings";
+import { fetchPricing, updatePricing } from "../api/pricing";
 import { ImageLightbox } from "../components/ImageLightbox";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
@@ -737,11 +740,66 @@ function UsersTab() {
   );
 }
 
+function PricingTab() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const { data: pricing, isLoading } = useQuery({ queryKey: ["pricing"], queryFn: fetchPricing });
+
+  const [form, setForm] = useState<Partial<PricingConfigDto>>({});
+
+  useEffect(() => {
+    if (pricing) setForm(pricing);
+  }, [pricing]);
+
+  const saveMutation = useMutation({
+    mutationFn: () => updatePricing(form),
+    onSuccess: (updated) => queryClient.setQueryData(["pricing"], updated),
+  });
+
+  const fields: { key: keyof PricingConfigDto; labelKey: TranslationKey }[] = [
+    { key: "boostDays3", labelKey: "admin.priceBoost3" },
+    { key: "boostDays7", labelKey: "admin.priceBoost7" },
+    { key: "boostDays30", labelKey: "admin.priceBoost30" },
+    { key: "planStandard", labelKey: "admin.pricePlanStandard" },
+    { key: "planBusiness", labelKey: "admin.pricePlanBusiness" },
+  ];
+
+  if (isLoading) return <Spinner label={t("loading")} />;
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        saveMutation.mutate();
+      }}
+      className="card flex flex-col gap-3"
+    >
+      <span className="section-title">{t("admin.pricing")}</span>
+      {fields.map((field) => (
+        <label key={field.key} className="label">
+          {t(field.labelKey)}
+          <input
+            type="number"
+            min={0}
+            value={form[field.key] ?? ""}
+            onChange={(e) => setForm((f) => ({ ...f, [field.key]: Number(e.target.value) }))}
+            className="input"
+          />
+        </label>
+      ))}
+      <button type="submit" disabled={saveMutation.isPending} className="btn-primary">
+        {saveMutation.isPending ? t("saving") : t("save")}
+      </button>
+      {saveMutation.isSuccess && <span className="text-xs text-emerald-500">{t("admin.pricingSaved")}</span>}
+    </form>
+  );
+}
+
 export function Admin() {
   useBackButton("/profile");
   const { t } = useTranslation();
   const [tab, setTab] = useState<
-    "moderation" | "reports" | "banners" | "categories" | "stats" | "admins" | "users"
+    "moderation" | "reports" | "banners" | "categories" | "stats" | "admins" | "users" | "pricing"
   >("moderation");
 
   return (
@@ -752,52 +810,59 @@ export function Admin() {
         <div className="flex w-fit gap-1 rounded-full border border-divider bg-surface p-1 shadow-soft">
           <button
             onClick={() => setTab("moderation")}
-            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium transition ${tab === "moderation" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+            className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-medium transition ${tab === "moderation" ? "bg-brand text-brand-contrast" : "text-hint"}`}
           >
             <ShieldCheck className="h-4 w-4" />
             {t("admin.moderation")}
           </button>
           <button
             onClick={() => setTab("reports")}
-            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium transition ${tab === "reports" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+            className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-medium transition ${tab === "reports" ? "bg-brand text-brand-contrast" : "text-hint"}`}
           >
             <Flag className="h-4 w-4" />
             {t("admin.reports")}
           </button>
           <button
             onClick={() => setTab("banners")}
-            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium transition ${tab === "banners" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+            className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-medium transition ${tab === "banners" ? "bg-brand text-brand-contrast" : "text-hint"}`}
           >
             <Images className="h-4 w-4" />
             {t("admin.banners")}
           </button>
           <button
             onClick={() => setTab("categories")}
-            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium transition ${tab === "categories" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+            className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-medium transition ${tab === "categories" ? "bg-brand text-brand-contrast" : "text-hint"}`}
           >
             <Tags className="h-4 w-4" />
             {t("admin.categories")}
           </button>
           <button
             onClick={() => setTab("stats")}
-            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium transition ${tab === "stats" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+            className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-medium transition ${tab === "stats" ? "bg-brand text-brand-contrast" : "text-hint"}`}
           >
             <BarChart3 className="h-4 w-4" />
             {t("admin.stats")}
           </button>
           <button
             onClick={() => setTab("admins")}
-            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium transition ${tab === "admins" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+            className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-medium transition ${tab === "admins" ? "bg-brand text-brand-contrast" : "text-hint"}`}
           >
             <UserCog className="h-4 w-4" />
             {t("admin.admins")}
           </button>
           <button
             onClick={() => setTab("users")}
-            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium transition ${tab === "users" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+            className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-medium transition ${tab === "users" ? "bg-brand text-brand-contrast" : "text-hint"}`}
           >
             <Users className="h-4 w-4" />
             {t("admin.users")}
+          </button>
+          <button
+            onClick={() => setTab("pricing")}
+            className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-medium transition ${tab === "pricing" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+          >
+            <Banknote className="h-4 w-4" />
+            {t("admin.pricing")}
           </button>
         </div>
       </div>
@@ -809,6 +874,7 @@ export function Admin() {
       {tab === "stats" && <StatsTab />}
       {tab === "admins" && <AdminsTab />}
       {tab === "users" && <UsersTab />}
+      {tab === "pricing" && <PricingTab />}
     </div>
   );
 }

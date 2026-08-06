@@ -1,6 +1,7 @@
 import { BadGatewayException, Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { TelegramAuthGuard } from "../../common/telegram-auth.guard";
+import { PricingService } from "../pricing/pricing.service";
 
 interface NominatimAddress {
   city?: string;
@@ -20,11 +21,19 @@ interface NominatimResponse {
 
 @Controller()
 export class MetaController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pricingService: PricingService,
+  ) {}
 
   @Get("health")
   getHealth() {
     return { status: "ok" };
+  }
+
+  @Get("pricing")
+  getPricing() {
+    return this.pricingService.get();
   }
 
   @Get("meta/advertise-contact")

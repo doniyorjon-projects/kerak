@@ -2,10 +2,10 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, Rocket, TrendingUp, Zap } from "lucide-react";
-import { BOOST_PRICING } from "@kerak/shared";
-import type { BoostDuration } from "@kerak/shared";
+import type { BoostDuration, PricingConfigDto } from "@kerak/shared";
 import { fetchListing } from "../api/listings";
 import { createBoostOrder } from "../api/payments";
+import { fetchPricing } from "../api/pricing";
 import { PageHeader } from "../components/PageHeader";
 import { Spinner } from "../components/Spinner";
 import { useBackButton } from "../hooks/useBackButton";
@@ -15,6 +15,7 @@ import type { TranslationKey } from "../i18n/translations";
 
 interface AdvertiseOption {
   duration: BoostDuration;
+  pricingField: keyof PricingConfigDto;
   icon: typeof Zap;
   labelKey: TranslationKey;
   featureKeys: TranslationKey[];
@@ -23,18 +24,21 @@ interface AdvertiseOption {
 const OPTIONS: AdvertiseOption[] = [
   {
     duration: "DAYS_3",
+    pricingField: "boostDays3",
     icon: Zap,
     labelKey: "boost.days3",
     featureKeys: ["advertise.feature3Top", "advertise.feature3Quick"],
   },
   {
     duration: "DAYS_7",
+    pricingField: "boostDays7",
     icon: TrendingUp,
     labelKey: "boost.days7",
     featureKeys: ["advertise.feature7Top", "advertise.feature7Views"],
   },
   {
     duration: "DAYS_30",
+    pricingField: "boostDays30",
     icon: Rocket,
     labelKey: "boost.days30",
     featureKeys: ["advertise.feature30Top", "advertise.feature30Max"],
@@ -52,6 +56,8 @@ export function Advertise() {
     queryFn: () => fetchListing(listingId!),
     enabled: Boolean(listingId),
   });
+
+  const { data: pricing } = useQuery({ queryKey: ["pricing"], queryFn: fetchPricing });
 
   const boostMutation = useMutation({
     mutationFn: (duration: BoostDuration) => createBoostOrder(listingId!, duration),
@@ -84,7 +90,7 @@ export function Advertise() {
                   {t(opt.labelKey)}
                 </span>
                 <span className="text-lg font-bold text-brand">
-                  {BOOST_PRICING[opt.duration].toLocaleString("uz-UZ")} {t("som")}
+                  {(pricing?.[opt.pricingField] ?? 0).toLocaleString("uz-UZ")} {t("som")}
                 </span>
               </div>
               <div className="flex flex-col gap-1.5">

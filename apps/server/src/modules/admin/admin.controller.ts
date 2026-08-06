@@ -11,6 +11,8 @@ import { UpdateBannerDto } from "../banners/dto/update-banner.dto";
 import { CategoriesService } from "../categories/categories.service";
 import { CreateCategoryDto } from "../categories/dto/create-category.dto";
 import { UpdateCategoryDto } from "../categories/dto/update-category.dto";
+import { PricingService } from "../pricing/pricing.service";
+import { UpdatePricingDto } from "../pricing/dto/update-pricing.dto";
 import { AddAdminDto } from "./dto/add-admin.dto";
 import type { User } from "@prisma/client";
 
@@ -22,7 +24,13 @@ export class AdminController {
     private readonly reportsService: ReportsService,
     private readonly bannersService: BannersService,
     private readonly categoriesService: CategoriesService,
+    private readonly pricingService: PricingService,
   ) {}
+
+  @Patch("pricing")
+  updatePricing(@Body() dto: UpdatePricingDto) {
+    return this.pricingService.update(dto);
+  }
 
   @Get("listings/pending")
   findPending() {

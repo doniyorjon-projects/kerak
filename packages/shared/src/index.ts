@@ -65,17 +65,6 @@ export interface ListingDto {
 
 export type BoostDuration = "DAYS_3" | "DAYS_7" | "DAYS_30";
 
-/**
- * Namuna narxlar (so'mda) - ish yuritish qarori, keyinchalik o'zgartirilishi mumkin.
- * Server va frontend ikkalasi ham shu yerdan oladi, shuning uchun ko'rsatilgan narx
- * va haqiqiy hisoblangan narx doim bir xil bo'ladi.
- */
-export const BOOST_PRICING: Record<BoostDuration, number> = {
-  DAYS_3: 10000,
-  DAYS_7: 20000,
-  DAYS_30: 50000,
-};
-
 export const BOOST_DAYS: Record<BoostDuration, number> = {
   DAYS_3: 3,
   DAYS_7: 7,
@@ -100,11 +89,6 @@ export type PlanTier = "STANDARD" | "BUSINESS";
 /** E'lon joylash limitida "cheksiz"ni bildiruvchi son. */
 export const UNLIMITED_LISTINGS = 9999;
 
-export const PLAN_PRICING: Record<PlanTier, number> = {
-  STANDARD: 25000,
-  BUSINESS: 60000,
-};
-
 export const PLAN_LISTINGS_LIMIT: Record<PlanTier, number> = {
   STANDARD: 5,
   BUSINESS: UNLIMITED_LISTINGS,
@@ -121,6 +105,14 @@ export interface CreatePlanOrderResultDto {
 export interface PlanOrderStatusDto {
   status: PaymentStatus;
   listingsLimit: number;
+}
+
+export interface PricingConfigDto {
+  boostDays3: number;
+  boostDays7: number;
+  boostDays30: number;
+  planStandard: number;
+  planBusiness: number;
 }
 
 export type FeedSort = "distance" | "newest" | "price_asc" | "price_desc";

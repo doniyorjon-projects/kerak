@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, Rocket, ShieldCheck, Sparkles } from "lucide-react";
-import type { PlanTier } from "@kerak/shared";
-import { PLAN_LISTINGS_LIMIT, PLAN_PRICING, UNLIMITED_LISTINGS, FREE_LISTINGS_LIMIT } from "@kerak/shared";
+import type { PlanTier, PricingConfigDto } from "@kerak/shared";
+import { PLAN_LISTINGS_LIMIT, UNLIMITED_LISTINGS, FREE_LISTINGS_LIMIT } from "@kerak/shared";
 import { fetchMe } from "../api/users";
 import { createPlanOrder } from "../api/plans";
+import { fetchPricing } from "../api/pricing";
 import { PageHeader } from "../components/PageHeader";
 import { Spinner } from "../components/Spinner";
 import { useBackButton } from "../hooks/useBackButton";
@@ -16,7 +17,7 @@ interface PlanCardInfo {
   tier: PlanTier | "FREE";
   nameKey: TranslationKey;
   icon: typeof ShieldCheck;
-  price: number;
+  pricingField: keyof PricingConfigDto | null;
   listingsLimit: number;
   featureKeys: TranslationKey[];
 }
@@ -26,7 +27,7 @@ const PLAN_CARDS: PlanCardInfo[] = [
     tier: "FREE",
     nameKey: "plans.free",
     icon: ShieldCheck,
-    price: 0,
+    pricingField: null,
     listingsLimit: FREE_LISTINGS_LIMIT,
     featureKeys: ["plans.featureOneListing"],
   },
@@ -34,7 +35,7 @@ const PLAN_CARDS: PlanCardInfo[] = [
     tier: "STANDARD",
     nameKey: "plans.standard",
     icon: Sparkles,
-    price: PLAN_PRICING.STANDARD,
+    pricingField: "planStandard",
     listingsLimit: PLAN_LISTINGS_LIMIT.STANDARD,
     featureKeys: ["plans.featureFiveListings", "plans.featureOneTime", "plans.featureSupport"],
   },
@@ -42,7 +43,7 @@ const PLAN_CARDS: PlanCardInfo[] = [
     tier: "BUSINESS",
     nameKey: "plans.business",
     icon: Rocket,
-    price: PLAN_PRICING.BUSINESS,
+    pricingField: "planBusiness",
     listingsLimit: PLAN_LISTINGS_LIMIT.BUSINESS,
     featureKeys: ["plans.featureUnlimitedListings", "plans.featureOneTime", "plans.featurePrioritySupport"],
   },
@@ -54,6 +55,7 @@ export function Plans() {
   const [pendingTier, setPendingTier] = useState<PlanTier | null>(null);
 
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
+  const { data: pricing } = useQuery({ queryKey: ["pricing"], queryFn: fetchPricing });
 
   const orderMutation = useMutation({
     mutationFn: (tier: PlanTier) => createPlanOrder(tier),
@@ -79,6 +81,7 @@ export function Plans() {
           const isCurrent = me != null && me.listingsLimit === plan.listingsLimit;
           const alreadyIncluded = me != null && me.listingsLimit >= plan.listingsLimit;
           const isPurchasable = plan.tier !== "FREE";
+          const price = plan.pricingField ? (pricing?.[plan.pricingField] ?? 0) : 0;
 
           return (
             <div key={plan.tier} className="card flex flex-col gap-3">
@@ -93,7 +96,7 @@ export function Plans() {
               </div>
 
               <span className="text-xl font-bold text-brand">
-                {plan.price === 0 ? t("plans.priceFree") : `${plan.price.toLocaleString("uz-UZ")} ${t("som")}`}
+                {price === 0 ? t("plans.priceFree") : `${price.toLocaleString("uz-UZ")} ${t("som")}`}
               </span>
 
               <div className="flex flex-col gap-1.5">

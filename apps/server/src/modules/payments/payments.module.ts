@@ -6,9 +6,10 @@ import { BoostsController } from "./boosts.controller";
 import { PlansService } from "./plans.service";
 import { PlansController } from "./plans.controller";
 import { NotificationsModule } from "../notifications/notifications.module";
+import { PricingModule } from "../pricing/pricing.module";
 
 @Module({
-  imports: [NotificationsModule],
+  imports: [NotificationsModule, PricingModule],
   providers: [ClickService, BoostsService, PlansService],
   controllers: [ClickController, BoostsController, PlansController],
 })

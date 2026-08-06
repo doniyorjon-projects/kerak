@@ -159,7 +159,7 @@ export function MyListings() {
             <button
               key={tab.status}
               onClick={() => setStatusFilter(tab.status)}
-              className={`shrink-0 rounded-full px-3 py-2 text-xs font-medium transition ${statusFilter === tab.status ? "bg-brand text-brand-contrast" : "text-hint"}`}
+              className={`shrink-0 whitespace-nowrap rounded-full px-3 py-2 text-xs font-medium transition ${statusFilter === tab.status ? "bg-brand text-brand-contrast" : "text-hint"}`}
             >
               {t(tab.labelKey)}
             </button>

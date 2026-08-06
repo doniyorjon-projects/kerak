@@ -1,18 +1,26 @@
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { PlanTier } from "@prisma/client";
-import { PLAN_LISTINGS_LIMIT, PLAN_PRICING } from "@kerak/shared";
+import { PLAN_LISTINGS_LIMIT } from "@kerak/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import { ClickService } from "./click.service";
+import { PricingService } from "../pricing/pricing.service";
+
+const PRICING_FIELD: Record<PlanTier, "planStandard" | "planBusiness"> = {
+  STANDARD: "planStandard",
+  BUSINESS: "planBusiness",
+};
 
 @Injectable()
 export class PlansService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clickService: ClickService,
+    private readonly pricingService: PricingService,
   ) {}
 
   async create(userId: string, tier: PlanTier) {
-    const amount = PLAN_PRICING[tier];
+    const pricing = await this.pricingService.get();
+    const amount = pricing[PRICING_FIELD[tier]];
     const listingsLimit = PLAN_LISTINGS_LIMIT[tier];
     const order = await this.prisma.planOrder.create({
       data: { userId, tier, amount, listingsLimit },
