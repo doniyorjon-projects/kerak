@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
   Clock,
   ListChecks,
+  Megaphone,
   PauseCircle,
   Pencil,
   PlayCircle,
@@ -14,8 +16,8 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { deleteListing, fetchMyListings, updateListingStatus } from "../api/listings";
-import type { ListingDto, ListingStatus } from "@kerak/shared";
-import { BoostButton } from "../components/BoostButton";
+import { ListingStatus } from "@kerak/shared";
+import type { ListingDto } from "@kerak/shared";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
 import { Spinner } from "../components/Spinner";
@@ -66,7 +68,15 @@ function ListingRow({ listing }: { listing: ListingDto }) {
           </span>
         )}
       </Link>
-      {listing.status === "ACTIVE" && <BoostButton listingId={listing.id} />}
+      {listing.status === "ACTIVE" && (
+        <Link
+          to={`/listings/${listing.id}/advertise`}
+          className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-500/10 py-2.5 text-xs font-semibold text-amber-500 transition active:scale-[0.98]"
+        >
+          <Megaphone className="h-3.5 w-3.5" />
+          {t("advertise.button")}
+        </Link>
+      )}
       <div className="grid grid-cols-2 gap-2">
         <Link
           to={`/listings/${listing.id}/edit`}
@@ -119,23 +129,50 @@ function ListingRow({ listing }: { listing: ListingDto }) {
   );
 }
 
+const STATUS_TABS: { status: ListingStatus | "ALL"; labelKey: TranslationKey }[] = [
+  { status: "ALL", labelKey: "myListings.filterAll" },
+  { status: ListingStatus.ACTIVE, labelKey: "status.active" },
+  { status: ListingStatus.PENDING, labelKey: "status.pending" },
+  { status: ListingStatus.REJECTED, labelKey: "status.rejected" },
+  { status: ListingStatus.PAUSED, labelKey: "status.paused" },
+  { status: ListingStatus.SOLD, labelKey: "status.sold" },
+];
+
 export function MyListings() {
   useBackButton("/profile");
   const { t } = useTranslation();
+  const [statusFilter, setStatusFilter] = useState<ListingStatus | "ALL">("ALL");
   const { data: listings, isLoading } = useQuery({
     queryKey: ["listings", "mine"],
     queryFn: fetchMyListings,
   });
 
+  const filtered = (listings ?? []).filter((l) => statusFilter === "ALL" || l.status === statusFilter);
+
   return (
     <div className="page">
       <PageHeader title={t("myListings.title")} backTo="/profile" />
+
+      <div className="no-scrollbar -mx-4 overflow-x-auto px-4">
+        <div className="flex w-fit gap-1 rounded-full border border-divider bg-surface p-1 shadow-soft">
+          {STATUS_TABS.map((tab) => (
+            <button
+              key={tab.status}
+              onClick={() => setStatusFilter(tab.status)}
+              className={`shrink-0 rounded-full px-3 py-2 text-xs font-medium transition ${statusFilter === tab.status ? "bg-brand text-brand-contrast" : "text-hint"}`}
+            >
+              {t(tab.labelKey)}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {isLoading && <Spinner label={t("loading")} />}
-      {listings?.length === 0 && (
+      {filtered.length === 0 && (
         <EmptyState icon={ListChecks} title={t("myListings.empty")} />
       )}
       <div className="flex flex-col gap-3">
-        {listings?.map((listing) => (
+        {filtered.map((listing) => (
           <ListingRow key={listing.id} listing={listing} />
         ))}
       </div>

@@ -95,6 +95,34 @@ export interface BoostStatusDto {
   boostedUntil: string | null;
 }
 
+export type PlanTier = "STANDARD" | "BUSINESS";
+
+/** E'lon joylash limitida "cheksiz"ni bildiruvchi son. */
+export const UNLIMITED_LISTINGS = 9999;
+
+export const PLAN_PRICING: Record<PlanTier, number> = {
+  STANDARD: 25000,
+  BUSINESS: 60000,
+};
+
+export const PLAN_LISTINGS_LIMIT: Record<PlanTier, number> = {
+  STANDARD: 5,
+  BUSINESS: UNLIMITED_LISTINGS,
+};
+
+export const FREE_LISTINGS_LIMIT = 1;
+
+export interface CreatePlanOrderResultDto {
+  orderId: string;
+  amount: number;
+  paymentUrl: string;
+}
+
+export interface PlanOrderStatusDto {
+  status: PaymentStatus;
+  listingsLimit: number;
+}
+
 export type FeedSort = "distance" | "newest" | "price_asc" | "price_desc";
 
 export interface FeedQuery {
@@ -124,6 +152,7 @@ export type NotificationType =
   | "LISTING_APPROVED"
   | "LISTING_REJECTED"
   | "BOOST_PAID"
+  | "PLAN_PAID"
   | "NEW_MESSAGE"
   | "REPORT_RESOLVED";
 

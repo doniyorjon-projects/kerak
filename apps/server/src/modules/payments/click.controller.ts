@@ -1,5 +1,5 @@
 import { Body, Controller, Post } from "@nestjs/common";
-import { NotificationType, PaymentStatus } from "@prisma/client";
+import { NotificationType, PaymentStatus, Prisma, PlanOrder } from "@prisma/client";
 import { BOOST_DAYS } from "@kerak/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import { ClickService, ClickCallbackParams } from "./click.service";
@@ -35,8 +35,20 @@ export class ClickController {
   }
 
   private async prepare(body: ClickCallbackParams) {
-    const order = await this.prisma.boostOrder.findUnique({ where: { id: body.merchant_trans_id } });
-    if (!order) return this.reply(body, CLICK_ERROR.ORDER_NOT_FOUND, "Order not found");
+    const boostOrder = await this.prisma.boostOrder.findUnique({ where: { id: body.merchant_trans_id } });
+    if (boostOrder) return this.prepareOrder("boostOrder", boostOrder, body);
+
+    const planOrder = await this.prisma.planOrder.findUnique({ where: { id: body.merchant_trans_id } });
+    if (planOrder) return this.prepareOrder("planOrder", planOrder, body);
+
+    return this.reply(body, CLICK_ERROR.ORDER_NOT_FOUND, "Order not found");
+  }
+
+  private async prepareOrder(
+    table: "boostOrder" | "planOrder",
+    order: { id: string; amount: number; status: PaymentStatus },
+    body: ClickCallbackParams,
+  ) {
     if (Number(body.amount) !== order.amount) {
       return this.reply(body, CLICK_ERROR.WRONG_AMOUNT, "Incorrect parameter amount");
     }
@@ -44,29 +56,41 @@ export class ClickController {
       return this.reply(body, CLICK_ERROR.ALREADY_PAID, "Already paid");
     }
 
-    await this.prisma.boostOrder.update({
-      where: { id: order.id },
-      data: { status: PaymentStatus.WAITING, clickTransId: body.click_trans_id },
-    });
+    if (table === "boostOrder") {
+      await this.prisma.boostOrder.update({
+        where: { id: order.id },
+        data: { status: PaymentStatus.WAITING, clickTransId: body.click_trans_id },
+      });
+    } else {
+      await this.prisma.planOrder.update({
+        where: { id: order.id },
+        data: { status: PaymentStatus.WAITING, clickTransId: body.click_trans_id },
+      });
+    }
 
     return this.reply(body, CLICK_ERROR.SUCCESS, "Success", { merchant_prepare_id: order.id });
   }
 
   private async complete(body: ClickCallbackParams) {
-    const order = await this.prisma.boostOrder.findUnique({
-      where: { id: body.merchant_prepare_id ?? body.merchant_trans_id },
-      include: { listing: true },
-    });
-    if (!order) return this.reply(body, CLICK_ERROR.TRANSACTION_NOT_FOUND, "Transaction not found");
+    const orderId = body.merchant_prepare_id ?? body.merchant_trans_id;
 
+    const boostOrder = await this.prisma.boostOrder.findUnique({ where: { id: orderId }, include: { listing: true } });
+    if (boostOrder) return this.completeBoostOrder(boostOrder, body);
+
+    const planOrder = await this.prisma.planOrder.findUnique({ where: { id: orderId } });
+    if (planOrder) return this.completePlanOrder(planOrder, body);
+
+    return this.reply(body, CLICK_ERROR.TRANSACTION_NOT_FOUND, "Transaction not found");
+  }
+
+  private async completeBoostOrder(
+    order: Prisma.BoostOrderGetPayload<{ include: { listing: true } }>,
+    body: ClickCallbackParams,
+  ) {
     if (Number(body.error) < 0) {
-      await this.prisma.boostOrder.update({
-        where: { id: order.id },
-        data: { status: PaymentStatus.CANCELLED },
-      });
+      await this.prisma.boostOrder.update({ where: { id: order.id }, data: { status: PaymentStatus.CANCELLED } });
       return this.reply(body, CLICK_ERROR.SUCCESS, "Success", { merchant_confirm_id: order.id });
     }
-
     if (order.status === PaymentStatus.PAID) {
       return this.reply(body, CLICK_ERROR.ALREADY_PAID, "Already paid");
     }
@@ -93,6 +117,40 @@ export class ClickController {
       "To'lov muvaffaqiyatli o'tdi ✅",
       `"${order.listing.title}" eloningiz ${boostedUntil.toLocaleDateString("uz-UZ")} gacha ko'tarildi.`,
       `/listings/${order.listingId}`,
+    );
+
+    return this.reply(body, CLICK_ERROR.SUCCESS, "Success", { merchant_confirm_id: order.id });
+  }
+
+  private async completePlanOrder(order: PlanOrder, body: ClickCallbackParams) {
+    if (Number(body.error) < 0) {
+      await this.prisma.planOrder.update({ where: { id: order.id }, data: { status: PaymentStatus.CANCELLED } });
+      return this.reply(body, CLICK_ERROR.SUCCESS, "Success", { merchant_confirm_id: order.id });
+    }
+    if (order.status === PaymentStatus.PAID) {
+      return this.reply(body, CLICK_ERROR.ALREADY_PAID, "Already paid");
+    }
+
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: order.userId } });
+    const newLimit = Math.max(user.listingsLimit, order.listingsLimit);
+
+    await this.prisma.$transaction([
+      this.prisma.planOrder.update({
+        where: { id: order.id },
+        data: { status: PaymentStatus.PAID, paidAt: new Date() },
+      }),
+      this.prisma.user.update({
+        where: { id: order.userId },
+        data: { listingsLimit: newLimit },
+      }),
+    ]);
+
+    await this.notificationsService.create(
+      order.userId,
+      NotificationType.PLAN_PAID,
+      "To'lov muvaffaqiyatli o'tdi ✅",
+      `Tarifingiz faollashtirildi. Endi ${order.listingsLimit >= 9999 ? "cheksiz" : order.listingsLimit} tagacha faol e'lon joylashingiz mumkin.`,
+      "/profile",
     );
 
     return this.reply(body, CLICK_ERROR.SUCCESS, "Success", { merchant_confirm_id: order.id });

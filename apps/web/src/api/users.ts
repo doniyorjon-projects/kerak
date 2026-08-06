@@ -9,6 +9,7 @@ export interface MeDto {
   lat: number | null;
   lng: number | null;
   isAdmin: boolean;
+  listingsLimit: number;
 }
 
 export function fetchMe() {

@@ -3,11 +3,13 @@ import { ClickService } from "./click.service";
 import { ClickController } from "./click.controller";
 import { BoostsService } from "./boosts.service";
 import { BoostsController } from "./boosts.controller";
+import { PlansService } from "./plans.service";
+import { PlansController } from "./plans.controller";
 import { NotificationsModule } from "../notifications/notifications.module";
 
 @Module({
   imports: [NotificationsModule],
-  providers: [ClickService, BoostsService],
-  controllers: [ClickController, BoostsController],
+  providers: [ClickService, BoostsService, PlansService],
+  controllers: [ClickController, BoostsController, PlansController],
 })
 export class PaymentsModule {}

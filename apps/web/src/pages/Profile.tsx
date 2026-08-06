@@ -1,15 +1,33 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, ListChecks, LocateFixed, Map, MapPin, MapPinned, Phone, ShieldCheck } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  ListChecks,
+  LocateFixed,
+  Map,
+  MapPin,
+  MapPinned,
+  Phone,
+  Rocket,
+  ShieldCheck,
+} from "lucide-react";
+import { UNLIMITED_LISTINGS } from "@kerak/shared";
 import { fetchMe, updateLocation, updatePhone } from "../api/users";
-import { findNearestRegion } from "../data/uzbekistanRegions";
+import { reverseGeocode } from "../api/geo";
 import { LocationMapPicker } from "../components/map/LocationMapPicker";
 import { PageHeader } from "../components/PageHeader";
 import { Spinner } from "../components/Spinner";
 import { useTranslation } from "../i18n/LanguageContext";
 
 const TASHKENT_CENTER = { lat: 41.311081, lng: 69.240562 };
+
+function formatPlace(result: { place: string | null; district: string | null; region: string | null; displayName: string | null }): string | null {
+  const parts = [result.place, result.district, result.region].filter(Boolean);
+  if (parts.length > 0) return parts.join(", ");
+  return result.displayName;
+}
 
 export function Profile() {
   const { t } = useTranslation();
@@ -19,6 +37,7 @@ export function Profile() {
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [showMapPicker, setShowMapPicker] = useState(false);
+  const [pendingPosition, setPendingPosition] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     if (me?.phone) setPhone(me.phone);
@@ -31,7 +50,23 @@ export function Profile() {
 
   const locationMutation = useMutation({
     mutationFn: ({ lat, lng }: { lat: number; lng: number }) => updateLocation(lat, lng),
-    onSuccess: (updated) => queryClient.setQueryData(["me"], updated),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["me"], updated);
+      setPendingPosition(null);
+      setShowMapPicker(false);
+    },
+  });
+
+  const { data: savedPlace } = useQuery({
+    queryKey: ["reverse-geocode", "saved", me?.lat, me?.lng],
+    queryFn: () => reverseGeocode(me!.lat!, me!.lng!),
+    enabled: me?.lat != null && me?.lng != null,
+  });
+
+  const { data: pendingPlace, isFetching: isFetchingPendingPlace } = useQuery({
+    queryKey: ["reverse-geocode", "pending", pendingPosition?.lat, pendingPosition?.lng],
+    queryFn: () => reverseGeocode(pendingPosition!.lat, pendingPosition!.lng),
+    enabled: pendingPosition != null,
   });
 
   const detectLocation = () => {
@@ -102,10 +137,10 @@ export function Profile() {
         <span className="text-xs leading-relaxed text-hint">
           {me.lat != null && me.lng != null ? t("profile.locationSaved") : t("profile.locationNotSaved")}
         </span>
-        {me.lat != null && me.lng != null && (
+        {me.lat != null && me.lng != null && savedPlace && (
           <span className="flex items-center gap-1.5 text-xs font-medium text-brand">
             <MapPinned className="h-3.5 w-3.5" />
-            {t("profile.detectedNear")} {findNearestRegion(me.lat, me.lng).nameUz}
+            {t("profile.detectedNear")} {formatPlace(savedPlace)}
           </span>
         )}
         <div className="flex gap-2">
@@ -113,7 +148,14 @@ export function Profile() {
             <LocateFixed className="h-4 w-4" />
             {locating ? t("profile.detecting") : t("profile.updateLocation")}
           </button>
-          <button type="button" onClick={() => setShowMapPicker((v) => !v)} className="btn-secondary flex-1">
+          <button
+            type="button"
+            onClick={() => {
+              setShowMapPicker((v) => !v);
+              setPendingPosition(null);
+            }}
+            className="btn-secondary flex-1"
+          >
             <Map className="h-4 w-4" />
             {t("profile.chooseOnMap")}
           </button>
@@ -123,10 +165,30 @@ export function Profile() {
           <div className="flex flex-col gap-1.5">
             <span className="text-xs text-hint">{t("profile.chooseOnMapHint")}</span>
             <LocationMapPicker
-              lat={me.lat ?? TASHKENT_CENTER.lat}
-              lng={me.lng ?? TASHKENT_CENTER.lng}
-              onChange={(pos) => locationMutation.mutate(pos)}
+              lat={pendingPosition?.lat ?? me.lat ?? TASHKENT_CENTER.lat}
+              lng={pendingPosition?.lng ?? me.lng ?? TASHKENT_CENTER.lng}
+              onChange={setPendingPosition}
             />
+            {pendingPosition && (
+              <div className="flex flex-col gap-2 rounded-xl bg-surface-secondary p-3">
+                <span className="text-xs text-ink">
+                  {isFetchingPendingPlace
+                    ? t("loading")
+                    : pendingPlace
+                      ? formatPlace(pendingPlace)
+                      : null}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => locationMutation.mutate(pendingPosition)}
+                  disabled={locationMutation.isPending}
+                  className="btn-primary"
+                >
+                  <Check className="h-4 w-4" />
+                  {locationMutation.isPending ? t("saving") : t("profile.confirmLocation")}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -138,6 +200,17 @@ export function Profile() {
             {t("profile.myListings")}
           </span>
           <ChevronRight className="h-4 w-4 text-hint" />
+        </Link>
+
+        <Link to="/plans" className="card flex items-center justify-between transition active:scale-[0.98]">
+          <span className="flex items-center gap-2 text-sm font-medium text-ink">
+            <Rocket className="h-5 w-5 text-hint" />
+            {t("profile.plan")}
+          </span>
+          <span className="flex items-center gap-1 text-xs text-hint">
+            {me.listingsLimit >= UNLIMITED_LISTINGS ? t("plans.featureUnlimitedListings") : me.listingsLimit}
+            <ChevronRight className="h-4 w-4" />
+          </span>
         </Link>
 
         {me.isAdmin && (

@@ -37,6 +37,11 @@ enum BoostDuration {
   DAYS_30
 }
 
+enum PlanTier {
+  STANDARD
+  BUSINESS
+}
+
 enum PaymentStatus {
   CREATED
   WAITING
@@ -48,6 +53,7 @@ enum NotificationType {
   LISTING_APPROVED
   LISTING_REJECTED
   BOOST_PAID
+  PLAN_PAID
   NEW_MESSAGE
   REPORT_RESOLVED
 }
@@ -60,9 +66,10 @@ model User {
   phone      String?
   lat        Float?
   lng        Float?
-  isAdmin    Boolean  @default(false)
-  isBlocked  Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  isAdmin       Boolean  @default(false)
+  isBlocked     Boolean  @default(false)
+  listingsLimit Int      @default(1)
+  createdAt     DateTime @default(now())
 
   listings         Listing[]
   favorites        Favorite[]
@@ -72,6 +79,7 @@ model User {
   ratingsGiven     Rating[]     @relation("RatingsGiven")
   ratingsReceived  Rating[]     @relation("RatingsReceived")
   boostOrders      BoostOrder[]
+  planOrders       PlanOrder[]
   notifications    Notification[]
 }
 
@@ -190,6 +198,19 @@ model BoostOrder {
   user         User          @relation(fields: [userId], references: [id])
   duration     BoostDuration
   amount       Int
+  status       PaymentStatus @default(CREATED)
+  clickTransId String?
+  createdAt    DateTime      @default(now())
+  paidAt       DateTime?
+}
+
+model PlanOrder {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  tier         PlanTier
+  amount       Int
+  listingsLimit Int
   status       PaymentStatus @default(CREATED)
   clickTransId String?
   createdAt    DateTime      @default(now())

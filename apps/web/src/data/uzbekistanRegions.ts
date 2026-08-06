@@ -970,24 +970,3 @@ export const REGIONS: Region[] = [
     ]
   }
 ];
-
-/**
- * Berilgan koordinataga eng yaqin viloyat markazini topadi (haversine masofa).
- * Tuman darajasida aniq koordinata yo'qligi sabab, bu faqat taxminiy natija beradi.
- */
-export function findNearestRegion(lat: number, lng: number): Region {
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const distance = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
-    const dLat = toRad(b.lat - a.lat);
-    const dLng = toRad(b.lng - a.lng);
-    const sinLat = Math.sin(dLat / 2);
-    const sinLng = Math.sin(dLng / 2);
-    const h =
-      sinLat * sinLat + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * sinLng * sinLng;
-    return 2 * Math.asin(Math.sqrt(h));
-  };
-
-  return REGIONS.reduce((nearest, region) =>
-    distance({ lat, lng }, region) < distance({ lat, lng }, nearest) ? region : nearest,
-  );
-}

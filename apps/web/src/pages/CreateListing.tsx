@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createListing } from "../api/listings";
 import { ListingForm } from "../components/ListingForm";
@@ -20,6 +20,8 @@ export function CreateListing() {
     },
   });
 
+  const isLimitError = createMutation.error?.message.includes("tarifni oshiring");
+
   return (
     <div className="page">
       <PageHeader title={t("create.title")} subtitle={t("create.subtitle")} backTo="/" />
@@ -29,6 +31,11 @@ export function CreateListing() {
         submitLabel={t("create.submit")}
         submitError={createMutation.error?.message}
       />
+      {isLimitError && (
+        <Link to="/plans" className="btn-secondary">
+          {t("create.viewPlans")}
+        </Link>
+      )}
     </div>
   );
 }

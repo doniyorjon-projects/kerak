@@ -12,6 +12,8 @@ import { MyListings } from "./pages/MyListings";
 import { Admin } from "./pages/Admin";
 import { Notifications } from "./pages/Notifications";
 import { EditListing } from "./pages/EditListing";
+import { Plans } from "./pages/Plans";
+import { Advertise } from "./pages/Advertise";
 
 function useSharedListingRedirect() {
   const location = useLocation();
@@ -41,6 +43,8 @@ export default function App() {
         <Route path="/my-listings" element={<MyListings />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/plans" element={<Plans />} />
+        <Route path="/listings/:listingId/advertise" element={<Advertise />} />
       </Routes>
       <BottomNav />
     </div>

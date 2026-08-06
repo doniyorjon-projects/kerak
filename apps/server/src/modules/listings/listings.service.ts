@@ -58,6 +58,16 @@ export class ListingsService {
   ) {}
 
   async create(sellerId: string, dto: CreateListingDto) {
+    const seller = await this.prisma.user.findUniqueOrThrow({ where: { id: sellerId } });
+    const activeCount = await this.prisma.listing.count({
+      where: { sellerId, status: { in: [ListingStatus.PENDING, ListingStatus.ACTIVE, ListingStatus.PAUSED] } },
+    });
+    if (activeCount >= seller.listingsLimit) {
+      throw new ForbiddenException(
+        `Sizda ${seller.listingsLimit} tagacha faol e'lon joylash imkoni bor. Ko'proq joylash uchun tarifni oshiring.`,
+      );
+    }
+
     const listing = await this.prisma.listing.create({
       data: { ...dto, sellerId, status: ListingStatus.PENDING },
       include: FEED_INCLUDE,

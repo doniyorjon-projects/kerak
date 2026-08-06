@@ -13,6 +13,7 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   LISTING_APPROVED: ThumbsUp,
   LISTING_REJECTED: ThumbsDown,
   BOOST_PAID: Rocket,
+  PLAN_PAID: Rocket,
   NEW_MESSAGE: MessageCircle,
   REPORT_RESOLVED: BoxSelect,
 };

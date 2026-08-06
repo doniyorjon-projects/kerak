@@ -5,6 +5,8 @@ import {
   BarChart3,
   Ban,
   Check,
+  ChevronDown,
+  ChevronUp,
   Flag,
   ImageIcon,
   Inbox,
@@ -31,6 +33,7 @@ import {
   fetchAdmins,
   fetchPendingListings,
   fetchPendingReports,
+  fetchUserListings,
   fetchUsers,
   rejectListing,
   removeAdmin,
@@ -44,6 +47,7 @@ import {
   updateBanner,
 } from "../api/banners";
 import { createCategory, deleteCategory, fetchCategories, updateCategory } from "../api/categories";
+import { CATEGORY_ICONS } from "../data/categoryIcons";
 import { uploadPhoto } from "../api/listings";
 import { ImageLightbox } from "../components/ImageLightbox";
 import { PageHeader } from "../components/PageHeader";
@@ -51,6 +55,7 @@ import { EmptyState } from "../components/EmptyState";
 import { Spinner } from "../components/Spinner";
 import { useBackButton } from "../hooks/useBackButton";
 import { useTranslation } from "../i18n/LanguageContext";
+import type { TranslationKey } from "../i18n/translations";
 
 function ModerationTab() {
   const { t } = useTranslation();
@@ -373,12 +378,27 @@ function CategoriesTab() {
           placeholder={t("admin.categoryName")}
           className="input"
         />
-        <input
-          value={icon}
-          onChange={(e) => setIcon(e.target.value)}
-          placeholder={t("admin.categoryIcon")}
-          className="input"
-        />
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs text-hint">{t("admin.categoryIcon")}</span>
+          <div className="grid grid-cols-8 gap-1.5 rounded-xl bg-app p-2">
+            {CATEGORY_ICONS.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => setIcon(emoji)}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg text-lg transition active:scale-90 ${icon === emoji ? "bg-brand/20 ring-2 ring-brand" : "bg-surface"}`}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+          <input
+            value={icon}
+            onChange={(e) => setIcon(e.target.value)}
+            placeholder={t("admin.categoryIconCustom")}
+            className="input"
+          />
+        </div>
         {formError && <span className="text-xs text-destructive">{formError}</span>}
         <button
           type="submit"
@@ -571,11 +591,56 @@ function AdminsTab() {
   );
 }
 
+const USER_LISTING_STATUS_CLASS: Record<string, string> = {
+  PENDING: "text-amber-500",
+  ACTIVE: "text-emerald-500",
+  PAUSED: "text-hint",
+  SOLD: "text-link",
+  REJECTED: "text-destructive",
+};
+
+function UserListingsPanel({ userId }: { userId: string }) {
+  const { t } = useTranslation();
+  const { data: listings, isLoading } = useQuery({
+    queryKey: ["admin", "user-listings", userId],
+    queryFn: () => fetchUserListings(userId),
+  });
+
+  if (isLoading) return <Spinner label={t("loading")} />;
+  if (listings?.length === 0) {
+    return <span className="text-xs text-hint">{t("admin.userNoListings")}</span>;
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {listings?.map((l) => (
+        <Link
+          key={l.id}
+          to={`/listings/${l.id}`}
+          className="flex items-center justify-between gap-2 rounded-xl bg-surface-secondary px-3 py-2 transition active:scale-[0.98]"
+        >
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-xs font-medium text-ink">{l.title}</span>
+            <span className="text-[11px] text-hint">
+              {l.category.icon} {l.category.nameUz} ·{" "}
+              {l.isNegotiable || l.price == null ? t("negotiable") : `${l.price.toLocaleString("uz-UZ")} ${t("som")}`}
+            </span>
+          </div>
+          <span className={`shrink-0 text-[11px] font-semibold ${USER_LISTING_STATUS_CLASS[l.status] ?? "text-hint"}`}>
+            {t(`status.${l.status.toLowerCase()}` as TranslationKey)}
+          </span>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 function UsersTab() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: users, isLoading } = useQuery({ queryKey: ["admin", "users"], queryFn: fetchUsers });
   const [search, setSearch] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
   const blockMutation = useMutation({ mutationFn: blockUser, onSuccess: invalidate });
@@ -637,23 +702,34 @@ function UsersTab() {
               <span>{new Date(u.createdAt).toLocaleDateString("uz-UZ")}</span>
             </div>
 
-            {u.isBlocked ? (
+            <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => unblockMutation.mutate(u.id)}
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 py-2.5 text-xs font-semibold text-emerald-500 transition active:scale-[0.98]"
+                onClick={() => setExpandedId((id) => (id === u.id ? null : u.id))}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-surface-secondary py-2.5 text-xs font-semibold text-ink transition active:scale-[0.98]"
               >
-                <UserRoundCheck className="h-3.5 w-3.5" />
-                {t("admin.unblockUser")}
+                {expandedId === u.id ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                {t("admin.viewListings")}
               </button>
-            ) : (
-              <button
-                onClick={() => blockMutation.mutate(u.id)}
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive/10 py-2.5 text-xs font-semibold text-destructive transition active:scale-[0.98]"
-              >
-                <Ban className="h-3.5 w-3.5" />
-                {t("admin.blockUser")}
-              </button>
-            )}
+              {u.isBlocked ? (
+                <button
+                  onClick={() => unblockMutation.mutate(u.id)}
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 py-2.5 text-xs font-semibold text-emerald-500 transition active:scale-[0.98]"
+                >
+                  <UserRoundCheck className="h-3.5 w-3.5" />
+                  {t("admin.unblockUser")}
+                </button>
+              ) : (
+                <button
+                  onClick={() => blockMutation.mutate(u.id)}
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive/10 py-2.5 text-xs font-semibold text-destructive transition active:scale-[0.98]"
+                >
+                  <Ban className="h-3.5 w-3.5" />
+                  {t("admin.blockUser")}
+                </button>
+              )}
+            </div>
+
+            {expandedId === u.id && <UserListingsPanel userId={u.id} />}
           </div>
         ))}
       </div>

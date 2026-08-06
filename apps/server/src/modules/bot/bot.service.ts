@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Bot, InlineKeyboard } from "grammy";
-import { Listing, ListingStatus, NotificationType } from "@prisma/client";
+import { Listing, NotificationType } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 
@@ -48,48 +48,6 @@ export class BotService implements OnModuleInit {
           ? "Ulashilgan elonni ko'rish uchun tugmani bosing 👇"
           : "Kerak'ga xush kelibsiz!\n\nBu yerda xizmat va mahsulotlarni topishingiz yoki o'zingiznikini joylashingiz mumkin.",
         { reply_markup: keyboard },
-      );
-    });
-
-    this.bot.on("callback_query:data", async (ctx) => {
-      const data = ctx.callbackQuery.data;
-      const [action, listingId] = data.split(":");
-      if (action !== "approve" && action !== "reject") return;
-
-      if (String(ctx.from.id) !== this.adminTelegramId) {
-        await ctx.answerCallbackQuery({ text: "Faqat admin uchun", show_alert: true });
-        return;
-      }
-
-      const status = action === "approve" ? ListingStatus.ACTIVE : ListingStatus.REJECTED;
-      const listing = await this.prisma.listing.update({
-        where: { id: listingId },
-        data: { status },
-        include: { seller: true },
-      });
-
-      await ctx.answerCallbackQuery({ text: action === "approve" ? "Tasdiqlandi ✅" : "Rad etildi ❌" });
-      await ctx.editMessageText(
-        `${ctx.callbackQuery.message?.text ?? ""}\n\n${action === "approve" ? "✅ Tasdiqlandi" : "❌ Rad etildi"}`,
-      );
-
-      await this.bot.api
-        .sendMessage(
-          listing.seller.telegramId,
-          action === "approve"
-            ? `"${listing.title}" eloningiz tasdiqlandi va endi katalogda ko'rinadi.`
-            : `"${listing.title}" eloningiz rad etildi. Iltimos ma'lumotlarni tekshirib qayta joylang.`,
-        )
-        .catch((err) => this.logger.warn(`Sotuvchiga xabar yuborilmadi: ${err}`));
-
-      await this.notificationsService.create(
-        listing.sellerId,
-        action === "approve" ? NotificationType.LISTING_APPROVED : NotificationType.LISTING_REJECTED,
-        action === "approve" ? "Elon tasdiqlandi ✅" : "Elon rad etildi ❌",
-        action === "approve"
-          ? `"${listing.title}" eloningiz tasdiqlandi va endi katalogda ko'rinadi.`
-          : `"${listing.title}" eloningiz rad etildi. Iltimos ma'lumotlarni tekshirib qayta joylang.`,
-        `/listings/${listing.id}`,
       );
     });
 
@@ -166,15 +124,18 @@ export class BotService implements OnModuleInit {
       return;
     }
 
-    const keyboard = new InlineKeyboard()
-      .text("✅ Tasdiqlash", `approve:${listing.id}`)
-      .text("❌ Rad etish", `reject:${listing.id}`);
+    const keyboard = new InlineKeyboard().webApp(
+      "🔍 Ko'rib chiqish",
+      `${this.miniAppUrl}?listing=${encodeURIComponent(listing.id)}`,
+    );
 
     const text = [
       "🆕 Yangi elon moderatsiya kutmoqda",
       `Sarlavha: ${listing.title}`,
       `Narx: ${listing.price ? `${listing.price} so'm` : "Kelishilgan holda"}`,
       `Tavsif: ${listing.description}`,
+      "",
+      "Tasdiqlash yoki rad etish uchun tugmani bosing.",
     ].join("\n");
 
     await this.bot.api.sendMessage(this.adminTelegramId, text, { reply_markup: keyboard });

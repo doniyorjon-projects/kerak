@@ -54,11 +54,21 @@ export class AdminController {
       phone: u.phone,
       isAdmin: u.isAdmin,
       isBlocked: u.isBlocked,
+      listingsLimit: u.listingsLimit,
       createdAt: u.createdAt,
       listingsCount: u._count.listings,
       reportsFiledCount: u._count.reports,
       rating: ratingMap.get(u.id) ?? { avg: null, count: 0 },
     }));
+  }
+
+  @Get("users/:id/listings")
+  findUserListings(@Param("id") id: string) {
+    return this.prisma.listing.findMany({
+      where: { sellerId: id },
+      include: { category: true },
+      orderBy: { createdAt: "desc" },
+    });
   }
 
   @Patch("users/:id/block")

@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  Check,
   CheckCircle2,
   Clock,
   Eye,
   Flag,
   Heart,
   MapPin,
+  Megaphone,
   MessageCircle,
   PauseCircle,
   Pencil,
@@ -19,18 +21,19 @@ import {
   Tag,
   Trash2,
   User,
+  X,
   XCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ContactEventType } from "@kerak/shared";
 import type { ListingStatus } from "@kerak/shared";
 import { deleteListing, fetchListing, logContactEvent, updateListingStatus } from "../api/listings";
+import { approveListing, rejectListing } from "../api/admin";
 import { fetchMe } from "../api/users";
 import { addFavorite, fetchFavoriteStatus, removeFavorite } from "../api/favorites";
 import { sendListingMessage } from "../api/messages";
 import { reportListing } from "../api/reports";
 import { fetchMyRating, fetchSellerRatingSummary, rateListing } from "../api/ratings";
-import { BoostButton } from "../components/BoostButton";
 import { ListingsMap } from "../components/map/ListingsMap";
 import { PhotoCarousel } from "../components/PhotoCarousel";
 import { BackButton } from "../components/BackButton";
@@ -140,11 +143,22 @@ export function ListingDetail() {
     onSuccess: () => navigate("/my-listings", { replace: true }),
   });
 
+  const approveMutation = useMutation({
+    mutationFn: () => approveListing(listingId!),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["listing", listingId] }),
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: () => rejectListing(listingId!),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["listing", listingId] }),
+  });
+
   if (isLoading) return <Spinner label={t("loading")} />;
   if (error || !listing) return <div className="p-4 text-center text-destructive">{t("listing.notFound")}</div>;
 
   const isBoosted = Boolean(listing.boostedUntil && new Date(listing.boostedUntil) > new Date());
   const isOwner = Boolean(me && me.id === listing.seller.id);
+  const isAdminModeration = Boolean(me?.isAdmin && !isOwner && listing.status === "PENDING");
   const { labelKey: statusLabelKey, icon: StatusIcon, className: statusClassName } = STATUS_INFO[listing.status];
 
   const handleContact = (type: ContactEventType) => {
@@ -211,7 +225,37 @@ export function ListingDetail() {
         <ListingsMap listings={[listing]} heightClassName="h-36" zoom={15} interactive={false} />
       )}
 
-      {isOwner ? (
+      {isAdminModeration ? (
+        <div className="card flex flex-col gap-3">
+          <span className="text-sm font-semibold text-ink">{t("listing.moderationTitle")}</span>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-secondary">
+              <User className="h-4 w-4 text-hint" />
+            </div>
+            <span className="text-sm text-ink">
+              {listing.seller.username ? `@${listing.seller.username}` : listing.seller.firstName}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => approveMutation.mutate()}
+              disabled={approveMutation.isPending}
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 py-2.5 text-xs font-semibold text-emerald-500 transition active:scale-[0.98] disabled:opacity-50"
+            >
+              <Check className="h-3.5 w-3.5" />
+              {t("admin.approve")}
+            </button>
+            <button
+              onClick={() => rejectMutation.mutate()}
+              disabled={rejectMutation.isPending}
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive/10 py-2.5 text-xs font-semibold text-destructive transition active:scale-[0.98] disabled:opacity-50"
+            >
+              <X className="h-3.5 w-3.5" />
+              {t("admin.reject")}
+            </button>
+          </div>
+        </div>
+      ) : isOwner ? (
         <div className="card flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-ink">{t("listing.manageTitle")}</span>
@@ -221,7 +265,15 @@ export function ListingDetail() {
             </span>
           </div>
 
-          {listing.status === "ACTIVE" && <BoostButton listingId={listing.id} />}
+          {listing.status === "ACTIVE" && (
+            <Link
+              to={`/listings/${listing.id}/advertise`}
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-500/10 py-2.5 text-xs font-semibold text-amber-500 transition active:scale-[0.98]"
+            >
+              <Megaphone className="h-3.5 w-3.5" />
+              {t("advertise.button")}
+            </Link>
+          )}
 
           <div className="grid grid-cols-2 gap-2">
             <Link

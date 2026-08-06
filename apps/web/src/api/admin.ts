@@ -95,6 +95,7 @@ export interface AdminUserDetail {
   phone: string | null;
   isAdmin: boolean;
   isBlocked: boolean;
+  listingsLimit: number;
   createdAt: string;
   listingsCount: number;
   reportsFiledCount: number;
@@ -111,4 +112,18 @@ export function blockUser(id: string) {
 
 export function unblockUser(id: string) {
   return api.patch<AdminUserDetail>(`/admin/users/${id}/unblock`);
+}
+
+export interface AdminUserListing {
+  id: string;
+  title: string;
+  price: number | null;
+  isNegotiable: boolean;
+  status: string;
+  createdAt: string;
+  category: { nameUz: string; icon: string | null };
+}
+
+export function fetchUserListings(id: string) {
+  return api.get<AdminUserListing[]>(`/admin/users/${id}/listings`);
 }
