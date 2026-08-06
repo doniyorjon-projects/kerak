@@ -16,8 +16,8 @@ export function fetchMe() {
   return api.get<MeDto>("/users/me");
 }
 
-export function updatePhone(phone: string) {
-  return api.patch<MeDto>("/users/me", { phone });
+export function updateProfile(data: { firstName?: string; phone?: string }) {
+  return api.patch<MeDto>("/users/me", data);
 }
 
 export function updateLocation(lat: number, lng: number) {

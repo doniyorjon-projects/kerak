@@ -10,8 +10,9 @@ export class UsersService {
     return this.prisma.user.upsert({
       where: { telegramId: String(tgUser.id) },
       update: {
+        // firstName qasddan yangilanmaydi - foydalanuvchi profilda o'z nomini
+        // o'zgartirgan bo'lishi mumkin, Telegram'dan qayta yozib yuborilmasligi kerak.
         username: tgUser.username ?? null,
-        firstName: tgUser.first_name,
       },
       create: {
         telegramId: String(tgUser.id),
@@ -27,6 +28,10 @@ export class UsersService {
 
   async updatePhone(userId: string, phone: string) {
     return this.prisma.user.update({ where: { id: userId }, data: { phone } });
+  }
+
+  async updateFirstName(userId: string, firstName: string) {
+    return this.prisma.user.update({ where: { id: userId }, data: { firstName } });
   }
 
   async findById(userId: string) {

@@ -143,7 +143,9 @@ export const translations = {
     // profil
     "profile.title": "Profil",
     "profile.loadError": "Profilni yuklab bo'lmadi",
-    "profile.phone": "Telefon raqami",
+    "profile.namePlaceholder": "Ismingiz",
+    "profile.noPhone": "Telefon raqami kiritilmagan",
+    "profile.editProfile": "Profilni tahrirlash",
     "profile.location": "Joylashuv",
     "profile.locationSaved": "Joylashuvingiz saqlangan — sizga eng yaqin elonlar birinchi ko'rsatiladi",
     "profile.locationNotSaved": "Joylashuvingizni saqlasangiz, sizga eng yaqin xizmat va mahsulotlarni ko'rsatamiz",
@@ -401,7 +403,9 @@ export const translations = {
 
     "profile.title": "Профиль",
     "profile.loadError": "Не удалось загрузить профиль",
-    "profile.phone": "Номер телефона",
+    "profile.namePlaceholder": "Ваше имя",
+    "profile.noPhone": "Номер телефона не указан",
+    "profile.editProfile": "Редактировать профиль",
     "profile.location": "Местоположение",
     "profile.locationSaved": "Ваше местоположение сохранено — ближайшие объявления показываются первыми",
     "profile.locationNotSaved": "Сохраните местоположение, чтобы видеть ближайшие услуги и товары",

@@ -20,6 +20,9 @@ export class UsersController {
     if (dto.phone) {
       await this.usersService.updatePhone(user.id, dto.phone);
     }
+    if (dto.firstName) {
+      await this.usersService.updateFirstName(user.id, dto.firstName);
+    }
     if (dto.lat !== undefined && dto.lng !== undefined) {
       await this.usersService.updateLocation(user.id, dto.lat, dto.lng);
     }
