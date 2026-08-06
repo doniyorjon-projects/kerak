@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: kerak-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kerak
+      POSTGRES_PASSWORD: kerak
+      POSTGRES_DB: kerak
+    ports:
+      - "55432:5432"
+    volumes:
+      - kerak_pg_data:/var/lib/postgresql/data
+
+volumes:
+  kerak_pg_data:

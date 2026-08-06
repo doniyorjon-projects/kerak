@@ -1,0 +1,41 @@
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { PrismaModule } from "./prisma/prisma.module";
+import { AuthModule } from "./common/auth.module";
+import { UsersModule } from "./modules/users/users.module";
+import { CategoriesModule } from "./modules/categories/categories.module";
+import { ListingsModule } from "./modules/listings/listings.module";
+import { AdminModule } from "./modules/admin/admin.module";
+import { UploadsModule } from "./modules/uploads/uploads.module";
+import { BotModule } from "./modules/bot/bot.module";
+import { FavoritesModule } from "./modules/favorites/favorites.module";
+import { MessagesModule } from "./modules/messages/messages.module";
+import { ReportsModule } from "./modules/reports/reports.module";
+import { RatingsModule } from "./modules/ratings/ratings.module";
+import { PaymentsModule } from "./modules/payments/payments.module";
+import { NotificationsModule } from "./modules/notifications/notifications.module";
+import { BannersModule } from "./modules/banners/banners.module";
+import { MetaModule } from "./modules/meta/meta.module";
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    AuthModule,
+    UsersModule,
+    CategoriesModule,
+    BotModule,
+    ListingsModule,
+    AdminModule,
+    UploadsModule,
+    FavoritesModule,
+    MessagesModule,
+    ReportsModule,
+    RatingsModule,
+    PaymentsModule,
+    NotificationsModule,
+    BannersModule,
+    MetaModule,
+  ],
+})
+export class AppModule {}

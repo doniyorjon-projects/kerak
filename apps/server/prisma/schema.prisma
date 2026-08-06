@@ -1,0 +1,221 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CategoryType {
+  PRODUCT
+  SERVICE
+}
+
+enum ListingStatus {
+  PENDING
+  ACTIVE
+  PAUSED
+  SOLD
+  REJECTED
+}
+
+enum ContactEventType {
+  TELEGRAM_CLICK
+  PHONE_CLICK
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+enum BoostDuration {
+  DAYS_3
+  DAYS_7
+  DAYS_30
+}
+
+enum PaymentStatus {
+  CREATED
+  WAITING
+  PAID
+  CANCELLED
+}
+
+enum NotificationType {
+  LISTING_APPROVED
+  LISTING_REJECTED
+  BOOST_PAID
+  NEW_MESSAGE
+  REPORT_RESOLVED
+}
+
+model User {
+  id         String   @id @default(cuid())
+  telegramId String   @unique
+  username   String?
+  firstName  String
+  phone      String?
+  lat        Float?
+  lng        Float?
+  isAdmin    Boolean  @default(false)
+  isBlocked  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  listings         Listing[]
+  favorites        Favorite[]
+  messagesSent     Message[]    @relation("MessagesSent")
+  messagesReceived Message[]    @relation("MessagesReceived")
+  reports          Report[]
+  ratingsGiven     Rating[]     @relation("RatingsGiven")
+  ratingsReceived  Rating[]     @relation("RatingsReceived")
+  boostOrders      BoostOrder[]
+  notifications    Notification[]
+}
+
+model Category {
+  id       String       @id @default(cuid())
+  parentId String?
+  parent   Category?    @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[]   @relation("CategoryTree")
+  nameUz   String
+  type     CategoryType
+  icon     String?
+  sortOrder Int         @default(0)
+
+  listings Listing[]
+}
+
+model Listing {
+  id           String        @id @default(cuid())
+  sellerId     String
+  seller       User          @relation(fields: [sellerId], references: [id])
+  categoryId   String
+  category     Category      @relation(fields: [categoryId], references: [id])
+  title        String
+  description  String
+  price        Float?
+  isNegotiable Boolean       @default(false)
+  photos       String[]
+  addressText  String?
+  regionId     Int?
+  districtId   Int?
+  lat          Float?
+  lng          Float?
+  phone        String
+  status       ListingStatus @default(PENDING)
+  viewsCount   Int           @default(0)
+  boostedUntil DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  contactEvents ContactEvent[]
+  favorites     Favorite[]
+  messages      Message[]
+  reports       Report[]
+  ratings       Rating[]
+  boostOrders   BoostOrder[]
+
+  @@index([categoryId, status])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+}
+
+model ContactEvent {
+  id         String           @id @default(cuid())
+  listingId  String
+  listing    Listing          @relation(fields: [listingId], references: [id])
+  fromUserId String
+  type       ContactEventType
+  createdAt  DateTime         @default(now())
+}
+
+model Message {
+  id                String   @id @default(cuid())
+  listingId         String
+  listing           Listing  @relation(fields: [listingId], references: [id])
+  fromUserId        String
+  fromUser          User     @relation("MessagesSent", fields: [fromUserId], references: [id])
+  toUserId          String
+  toUser            User     @relation("MessagesReceived", fields: [toUserId], references: [id])
+  text              String
+  telegramMessageId Int?
+  createdAt         DateTime @default(now())
+
+  @@index([telegramMessageId])
+}
+
+model Report {
+  id         String       @id @default(cuid())
+  listingId  String
+  listing    Listing      @relation(fields: [listingId], references: [id])
+  reporterId String
+  reporter   User         @relation(fields: [reporterId], references: [id])
+  reason     String
+  status     ReportStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id])
+  raterId   String
+  rater     User     @relation("RatingsGiven", fields: [raterId], references: [id])
+  sellerId  String
+  seller    User     @relation("RatingsReceived", fields: [sellerId], references: [id])
+  stars     Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  @@unique([listingId, raterId])
+}
+
+model BoostOrder {
+  id           String        @id @default(cuid())
+  listingId    String
+  listing      Listing       @relation(fields: [listingId], references: [id])
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  duration     BoostDuration
+  amount       Int
+  status       PaymentStatus @default(CREATED)
+  clickTransId String?
+  createdAt    DateTime      @default(now())
+  paidAt       DateTime?
+}
+
+model Banner {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  linkUrl   String?
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  type      NotificationType
+  title     String
+  body      String
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+}

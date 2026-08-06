@@ -1,0 +1,54 @@
+import { ContactEventType } from "@kerak/shared";
+import type { CreateListingInput, FeedQuery, ListingDto } from "@kerak/shared";
+import { api } from "./client";
+
+export function fetchListingFeed(query: FeedQuery = {}) {
+  const params = new URLSearchParams();
+  if (query.categoryId) params.set("categoryId", query.categoryId);
+  if (query.lat !== undefined) params.set("lat", String(query.lat));
+  if (query.lng !== undefined) params.set("lng", String(query.lng));
+  if (query.radiusKm !== undefined) params.set("radiusKm", String(query.radiusKm));
+  if (query.sort) params.set("sort", query.sort);
+  if (query.q) params.set("q", query.q);
+  if (query.boostedOnly) params.set("boostedOnly", "true");
+  if (query.regionId !== undefined) params.set("regionId", String(query.regionId));
+  if (query.districtId !== undefined) params.set("districtId", String(query.districtId));
+  if (query.minPrice !== undefined) params.set("minPrice", String(query.minPrice));
+  if (query.maxPrice !== undefined) params.set("maxPrice", String(query.maxPrice));
+  const qs = params.toString();
+  return api.get<ListingDto[]>(`/listings${qs ? `?${qs}` : ""}`);
+}
+
+export function fetchMyListings() {
+  return api.get<ListingDto[]>("/listings/mine");
+}
+
+export function fetchListing(id: string) {
+  return api.get<ListingDto>(`/listings/${id}`);
+}
+
+export function createListing(input: CreateListingInput) {
+  return api.post<ListingDto>("/listings", input);
+}
+
+export function updateListingStatus(id: string, status: "ACTIVE" | "PAUSED" | "SOLD") {
+  return api.patch<ListingDto>(`/listings/${id}`, { status });
+}
+
+export function updateListing(id: string, data: Partial<CreateListingInput>) {
+  return api.patch<ListingDto>(`/listings/${id}`, data);
+}
+
+export function deleteListing(id: string) {
+  return api.delete<void>(`/listings/${id}`);
+}
+
+export function logContactEvent(id: string, type: ContactEventType) {
+  return api.post<void>(`/listings/${id}/contact-event`, { type });
+}
+
+export function uploadPhoto(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  return api.post<{ url: string }>("/uploads", formData);
+}

@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --tg-bg: 244 244 245;
+  --tg-secondary-bg: 233 233 235;
+  --tg-section-bg: 255 255 255;
+  --tg-text: 17 24 39;
+  --tg-hint: 107 114 128;
+  --tg-link: 42 171 238;
+  --tg-button: 42 171 238;
+  --tg-button-text: 255 255 255;
+  --tg-destructive: 239 68 68;
+  --tg-border: rgb(17 24 39 / 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tg-bg: 14 22 33;
+    --tg-secondary-bg: 23 33 43;
+    --tg-section-bg: 28 39 51;
+    --tg-text: 245 245 245;
+    --tg-hint: 139 152 165;
+    --tg-link: 106 183 255;
+    --tg-button: 82 136 193;
+    --tg-button-text: 255 255 255;
+    --tg-destructive: 242 114 107;
+    --tg-border: rgb(255 255 255 / 0.08);
+  }
+}
+
+body {
+  background-color: rgb(var(--tg-bg));
+  color: rgb(var(--tg-text));
+}
+
+@layer components {
+  .page {
+    @apply flex flex-col gap-5 p-4;
+  }
+
+  .card {
+    @apply rounded-2xl border border-divider bg-surface p-4 shadow-soft;
+  }
+
+  .section-title {
+    @apply text-xs font-semibold uppercase tracking-wider text-hint;
+  }
+
+  .btn-primary {
+    @apply flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-brand-contrast transition active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100;
+  }
+
+  .btn-secondary {
+    @apply flex items-center justify-center gap-2 rounded-xl border border-divider bg-surface px-4 py-3 text-sm font-semibold text-ink transition active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100;
+  }
+
+  .btn-ghost {
+    @apply flex items-center gap-1 text-sm font-medium text-brand active:opacity-70;
+  }
+
+  .pill {
+    @apply rounded-full px-3 py-1.5 text-xs font-medium transition active:scale-95;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-divider bg-app px-3 py-2.5 text-sm text-ink placeholder:text-hint transition focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25;
+  }
+
+  .label {
+    @apply flex flex-col gap-1.5 text-sm font-medium text-ink;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
