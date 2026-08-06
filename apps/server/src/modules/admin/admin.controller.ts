@@ -33,6 +33,47 @@ export class AdminController {
     });
   }
 
+  @Get("users")
+  async findUsers() {
+    const users = await this.prisma.user.findMany({
+      include: { _count: { select: { listings: true, reports: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+    const ratings = await this.prisma.rating.groupBy({
+      by: ["sellerId"],
+      _avg: { stars: true },
+      _count: true,
+    });
+    const ratingMap = new Map(ratings.map((r) => [r.sellerId, { avg: r._avg.stars, count: r._count }]));
+
+    return users.map((u) => ({
+      id: u.id,
+      telegramId: u.telegramId,
+      username: u.username,
+      firstName: u.firstName,
+      phone: u.phone,
+      isAdmin: u.isAdmin,
+      isBlocked: u.isBlocked,
+      createdAt: u.createdAt,
+      listingsCount: u._count.listings,
+      reportsFiledCount: u._count.reports,
+      rating: ratingMap.get(u.id) ?? { avg: null, count: 0 },
+    }));
+  }
+
+  @Patch("users/:id/block")
+  async blockUser(@Param("id") id: string, @CurrentUser() currentUser: User) {
+    if (id === currentUser.id) {
+      throw new BadRequestException("O'zingizni bloklay olmaysiz");
+    }
+    return this.prisma.user.update({ where: { id }, data: { isBlocked: true } });
+  }
+
+  @Patch("users/:id/unblock")
+  unblockUser(@Param("id") id: string) {
+    return this.prisma.user.update({ where: { id }, data: { isBlocked: false } });
+  }
+
   @Patch("listings/:id/approve")
   approve(@Param("id") id: string) {
     return this.prisma.listing.update({ where: { id }, data: { status: ListingStatus.ACTIVE } });

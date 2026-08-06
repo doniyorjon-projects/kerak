@@ -6,6 +6,7 @@ export interface AdminPendingListing {
   description: string;
   price: number | null;
   isNegotiable: boolean;
+  photos: string[];
   createdAt: string;
   seller: { firstName: string; username: string | null; telegramId: string };
   category: { nameUz: string };
@@ -84,4 +85,30 @@ export interface AdminStats {
 
 export function fetchAdminStats() {
   return api.get<AdminStats>("/admin/stats");
+}
+
+export interface AdminUserDetail {
+  id: string;
+  telegramId: string;
+  username: string | null;
+  firstName: string;
+  phone: string | null;
+  isAdmin: boolean;
+  isBlocked: boolean;
+  createdAt: string;
+  listingsCount: number;
+  reportsFiledCount: number;
+  rating: { avg: number | null; count: number };
+}
+
+export function fetchUsers() {
+  return api.get<AdminUserDetail[]>("/admin/users");
+}
+
+export function blockUser(id: string) {
+  return api.patch<AdminUserDetail>(`/admin/users/${id}/block`);
+}
+
+export function unblockUser(id: string) {
+  return api.patch<AdminUserDetail>(`/admin/users/${id}/unblock`);
 }

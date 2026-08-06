@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
+  Ban,
   Check,
   Flag,
   ImageIcon,
@@ -11,9 +12,12 @@ import {
   Pencil,
   Plus,
   ShieldCheck,
+  Star,
   Tags,
   Trash2,
   UserCog,
+  UserRoundCheck,
+  Users,
   UserX,
   X,
 } from "lucide-react";
@@ -21,14 +25,17 @@ import { CategoryType } from "@kerak/shared";
 import {
   addAdmin,
   approveListing,
+  blockUser,
   dismissReport,
   fetchAdminStats,
   fetchAdmins,
   fetchPendingListings,
   fetchPendingReports,
+  fetchUsers,
   rejectListing,
   removeAdmin,
   resolveReport,
+  unblockUser,
 } from "../api/admin";
 import {
   createBanner,
@@ -38,6 +45,7 @@ import {
 } from "../api/banners";
 import { createCategory, deleteCategory, fetchCategories, updateCategory } from "../api/categories";
 import { uploadPhoto } from "../api/listings";
+import { ImageLightbox } from "../components/ImageLightbox";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
 import { Spinner } from "../components/Spinner";
@@ -51,6 +59,7 @@ function ModerationTab() {
     queryKey: ["admin", "pending-listings"],
     queryFn: fetchPendingListings,
   });
+  const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "pending-listings"] });
   const approveMutation = useMutation({ mutationFn: approveListing, onSuccess: invalidate });
@@ -63,6 +72,20 @@ function ModerationTab() {
     <div className="flex flex-col gap-3">
       {listings?.map((listing) => (
         <div key={listing.id} className="card flex flex-col gap-2">
+          {listing.photos.length > 0 && (
+            <div className="no-scrollbar -mx-4 -mt-4 flex gap-1.5 overflow-x-auto px-4 pb-1 pt-0">
+              {listing.photos.map((url, i) => (
+                <button
+                  key={url}
+                  type="button"
+                  onClick={() => setLightbox({ photos: listing.photos, index: i })}
+                  className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-surface-secondary"
+                >
+                  <img src={url} className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
           <div className="flex items-center justify-between gap-2">
             <span className="font-medium text-ink">{listing.title}</span>
             <span className="pill shrink-0 bg-surface-secondary text-hint">{listing.category.nameUz}</span>
@@ -92,6 +115,13 @@ function ModerationTab() {
           </div>
         </div>
       ))}
+      {lightbox && (
+        <ImageLightbox
+          photos={lightbox.photos}
+          initialIndex={lightbox.index}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     </div>
   );
 }
@@ -541,11 +571,101 @@ function AdminsTab() {
   );
 }
 
+function UsersTab() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const { data: users, isLoading } = useQuery({ queryKey: ["admin", "users"], queryFn: fetchUsers });
+  const [search, setSearch] = useState("");
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+  const blockMutation = useMutation({ mutationFn: blockUser, onSuccess: invalidate });
+  const unblockMutation = useMutation({ mutationFn: unblockUser, onSuccess: invalidate });
+
+  const filtered = (users ?? []).filter((u) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      u.firstName.toLowerCase().includes(q) ||
+      u.username?.toLowerCase().includes(q) ||
+      u.telegramId.includes(q)
+    );
+  });
+
+  if (isLoading) return <Spinner label={t("loading")} />;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder={t("admin.searchUsers")}
+        className="input"
+      />
+
+      {filtered.length === 0 && <EmptyState icon={Users} title={t("admin.noUsers")} />}
+
+      <div className="flex flex-col gap-2">
+        {filtered.map((u) => (
+          <div key={u.id} className="card flex flex-col gap-2.5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-base font-bold text-brand-contrast">
+                {u.firstName.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex flex-1 flex-col">
+                <span className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+                  {u.firstName}
+                  {u.isAdmin && <ShieldCheck className="h-3.5 w-3.5 text-brand" />}
+                  {u.isBlocked && <Ban className="h-3.5 w-3.5 text-destructive" />}
+                </span>
+                <span className="text-xs text-hint">
+                  {u.username ? `@${u.username}` : u.telegramId} · {u.telegramId}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-hint">
+              <span>
+                {t("admin.userListings")}: <span className="font-medium text-ink">{u.listingsCount}</span>
+              </span>
+              {u.rating.count > 0 && (
+                <span className="flex items-center gap-1">
+                  <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                  <span className="font-medium text-ink">{u.rating.avg?.toFixed(1)}</span> ({u.rating.count})
+                </span>
+              )}
+              {u.phone && <span>{u.phone}</span>}
+              <span>{new Date(u.createdAt).toLocaleDateString("uz-UZ")}</span>
+            </div>
+
+            {u.isBlocked ? (
+              <button
+                onClick={() => unblockMutation.mutate(u.id)}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 py-2.5 text-xs font-semibold text-emerald-500 transition active:scale-[0.98]"
+              >
+                <UserRoundCheck className="h-3.5 w-3.5" />
+                {t("admin.unblockUser")}
+              </button>
+            ) : (
+              <button
+                onClick={() => blockMutation.mutate(u.id)}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive/10 py-2.5 text-xs font-semibold text-destructive transition active:scale-[0.98]"
+              >
+                <Ban className="h-3.5 w-3.5" />
+                {t("admin.blockUser")}
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function Admin() {
   useBackButton("/profile");
   const { t } = useTranslation();
   const [tab, setTab] = useState<
-    "moderation" | "reports" | "banners" | "categories" | "stats" | "admins"
+    "moderation" | "reports" | "banners" | "categories" | "stats" | "admins" | "users"
   >("moderation");
 
   return (
@@ -596,6 +716,13 @@ export function Admin() {
             <UserCog className="h-4 w-4" />
             {t("admin.admins")}
           </button>
+          <button
+            onClick={() => setTab("users")}
+            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium transition ${tab === "users" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+          >
+            <Users className="h-4 w-4" />
+            {t("admin.users")}
+          </button>
         </div>
       </div>
 
@@ -605,6 +732,7 @@ export function Admin() {
       {tab === "categories" && <CategoriesTab />}
       {tab === "stats" && <StatsTab />}
       {tab === "admins" && <AdminsTab />}
+      {tab === "users" && <UsersTab />}
     </div>
   );
 }

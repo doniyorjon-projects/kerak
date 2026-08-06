@@ -205,6 +205,12 @@ export const translations = {
     "admin.statRevenue": "Umumiy daromad",
     "admin.addAdmin": "Admin qo'shish",
     "admin.addAdminPlaceholder": "Telegram username yoki ID",
+    "admin.users": "Foydalanuvchilar",
+    "admin.searchUsers": "Ism, username yoki ID bo'yicha qidirish",
+    "admin.noUsers": "Foydalanuvchilar topilmadi",
+    "admin.userListings": "E'lonlar",
+    "admin.blockUser": "Bloklash",
+    "admin.unblockUser": "Blokdan chiqarish",
 
     // til
     "lang.uz": "O'zbekcha",
@@ -399,6 +405,12 @@ export const translations = {
     "admin.statRevenue": "Общий доход",
     "admin.addAdmin": "Добавить админа",
     "admin.addAdminPlaceholder": "Telegram username или ID",
+    "admin.users": "Пользователи",
+    "admin.searchUsers": "Поиск по имени, username или ID",
+    "admin.noUsers": "Пользователи не найдены",
+    "admin.userListings": "Объявления",
+    "admin.blockUser": "Заблокировать",
+    "admin.unblockUser": "Разблокировать",
 
     "lang.uz": "O'zbekcha",
     "lang.ru": "Русский",
