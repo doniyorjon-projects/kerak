@@ -79,6 +79,10 @@ export function Advertise() {
     <div className="page">
       <PageHeader title={t("advertise.title")} subtitle={listing?.title} backTo={`/listings/${listingId}`} />
 
+      {listing && listing.status !== "ACTIVE" && (
+        <div className="rounded-xl bg-amber-500/10 p-3 text-xs text-amber-600">{t("advertise.pendingNote")}</div>
+      )}
+
       <div className="flex flex-col gap-3">
         {OPTIONS.map((opt) => {
           const Icon = opt.icon;

@@ -265,4 +265,25 @@ export class ListingsService {
     await this.prisma.listing.findUniqueOrThrow({ where: { id: listingId } });
     return this.prisma.contactEvent.create({ data: { listingId, fromUserId, type } });
   }
+
+  async getStats(id: string, sellerId: string) {
+    const listing = await this.prisma.listing.findUnique({ where: { id } });
+    if (!listing) throw new NotFoundException("Elon topilmadi");
+    if (listing.sellerId !== sellerId) throw new ForbiddenException("Bu sizning eloningiz emas");
+
+    const [telegramClicks, phoneClicks, favoritesCount, messagesCount] = await Promise.all([
+      this.prisma.contactEvent.count({ where: { listingId: id, type: ContactEventType.TELEGRAM_CLICK } }),
+      this.prisma.contactEvent.count({ where: { listingId: id, type: ContactEventType.PHONE_CLICK } }),
+      this.prisma.favorite.count({ where: { listingId: id } }),
+      this.prisma.message.count({ where: { listingId: id } }),
+    ]);
+
+    return {
+      viewsCount: listing.viewsCount,
+      telegramClicks,
+      phoneClicks,
+      favoritesCount,
+      messagesCount,
+    };
+  }
 }

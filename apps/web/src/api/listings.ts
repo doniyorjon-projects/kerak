@@ -47,6 +47,18 @@ export function logContactEvent(id: string, type: ContactEventType) {
   return api.post<void>(`/listings/${id}/contact-event`, { type });
 }
 
+export interface ListingStatsDto {
+  viewsCount: number;
+  telegramClicks: number;
+  phoneClicks: number;
+  favoritesCount: number;
+  messagesCount: number;
+}
+
+export function fetchListingStats(id: string) {
+  return api.get<ListingStatsDto>(`/listings/${id}/stats`);
+}
+
 export function uploadPhoto(file: File) {
   const formData = new FormData();
   formData.append("file", file);

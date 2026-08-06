@@ -39,6 +39,12 @@ export class ListingsController {
   }
 
   @UseGuards(TelegramAuthGuard)
+  @Get(":id/stats")
+  getStats(@Param("id") id: string, @CurrentUser() user: User) {
+    return this.listingsService.getStats(id, user.id);
+  }
+
+  @UseGuards(TelegramAuthGuard)
   @Post()
   create(@CurrentUser() user: User, @Body() dto: CreateListingDto) {
     return this.listingsService.create(user.id, dto);

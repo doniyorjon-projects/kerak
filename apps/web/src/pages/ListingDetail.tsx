@@ -27,7 +27,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { ContactEventType } from "@kerak/shared";
 import type { ListingStatus } from "@kerak/shared";
-import { deleteListing, fetchListing, logContactEvent, updateListingStatus } from "../api/listings";
+import { deleteListing, fetchListing, fetchListingStats, logContactEvent, updateListingStatus } from "../api/listings";
 import { approveListing, rejectListing } from "../api/admin";
 import { fetchMe } from "../api/users";
 import { addFavorite, fetchFavoriteStatus, removeFavorite } from "../api/favorites";
@@ -91,6 +91,11 @@ export function ListingDetail() {
     queryKey: ["my-rating", listingId],
     queryFn: () => fetchMyRating(listingId!),
     enabled: Boolean(listingId),
+  });
+  const { data: stats } = useQuery({
+    queryKey: ["listing-stats", listingId],
+    queryFn: () => fetchListingStats(listingId!),
+    enabled: Boolean(listingId) && me != null && listing != null && me.id === listing.seller.id,
   });
 
   useEffect(() => {
@@ -323,6 +328,46 @@ export function ListingDetail() {
               </>
             )}
           </div>
+
+          {stats && (
+            <div className="grid grid-cols-3 gap-2 border-t border-divider pt-3">
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="flex items-center gap-1 text-sm font-semibold text-ink">
+                  <Eye className="h-3.5 w-3.5 text-hint" />
+                  {stats.viewsCount}
+                </span>
+                <span className="text-[10px] text-hint">{t("listing.statViews")}</span>
+              </div>
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="flex items-center gap-1 text-sm font-semibold text-ink">
+                  <MessageCircle className="h-3.5 w-3.5 text-hint" />
+                  {stats.telegramClicks}
+                </span>
+                <span className="text-[10px] text-hint">{t("listing.statTelegram")}</span>
+              </div>
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="flex items-center gap-1 text-sm font-semibold text-ink">
+                  <Phone className="h-3.5 w-3.5 text-hint" />
+                  {stats.phoneClicks}
+                </span>
+                <span className="text-[10px] text-hint">{t("listing.statPhone")}</span>
+              </div>
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="flex items-center gap-1 text-sm font-semibold text-ink">
+                  <Heart className="h-3.5 w-3.5 text-hint" />
+                  {stats.favoritesCount}
+                </span>
+                <span className="text-[10px] text-hint">{t("listing.statFavorites")}</span>
+              </div>
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="flex items-center gap-1 text-sm font-semibold text-ink">
+                  <Send className="h-3.5 w-3.5 text-hint" />
+                  {stats.messagesCount}
+                </span>
+                <span className="text-[10px] text-hint">{t("listing.statMessages")}</span>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <>
