@@ -42,3 +42,46 @@ export function resolveReport(id: string) {
 export function dismissReport(id: string) {
   return api.patch<void>(`/admin/reports/${id}/dismiss`);
 }
+
+export interface AdminUser {
+  id: string;
+  telegramId: string;
+  username: string | null;
+  firstName: string;
+  createdAt: string;
+}
+
+export function fetchAdmins() {
+  return api.get<AdminUser[]>("/admin/admins");
+}
+
+export function addAdmin(identifier: string) {
+  return api.post<AdminUser>("/admin/admins", { identifier });
+}
+
+export function removeAdmin(id: string) {
+  return api.delete<void>(`/admin/admins/${id}`);
+}
+
+export interface AdminStats {
+  users: { total: number; newToday: number; newThisWeek: number };
+  listings: {
+    total: number;
+    pending: number;
+    active: number;
+    paused: number;
+    sold: number;
+    rejected: number;
+    newToday: number;
+    newThisWeek: number;
+  };
+  categories: { total: number };
+  reports: { pending: number; resolved: number; dismissed: number };
+  boosts: { paidCount: number; totalRevenue: number };
+  favorites: number;
+  messages: number;
+}
+
+export function fetchAdminStats() {
+  return api.get<AdminStats>("/admin/stats");
+}

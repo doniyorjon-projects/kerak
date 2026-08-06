@@ -1,13 +1,33 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Flag, ImageIcon, Inbox, Images, ShieldCheck, Trash2 } from "lucide-react";
 import {
+  BarChart3,
+  Check,
+  Flag,
+  ImageIcon,
+  Inbox,
+  Images,
+  Pencil,
+  Plus,
+  ShieldCheck,
+  Tags,
+  Trash2,
+  UserCog,
+  UserX,
+  X,
+} from "lucide-react";
+import { CategoryType } from "@kerak/shared";
+import {
+  addAdmin,
   approveListing,
   dismissReport,
+  fetchAdminStats,
+  fetchAdmins,
   fetchPendingListings,
   fetchPendingReports,
   rejectListing,
+  removeAdmin,
   resolveReport,
 } from "../api/admin";
 import {
@@ -16,6 +36,7 @@ import {
   fetchAllBannersAdmin,
   updateBanner,
 } from "../api/banners";
+import { createCategory, deleteCategory, fetchCategories, updateCategory } from "../api/categories";
 import { uploadPhoto } from "../api/listings";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
@@ -225,42 +246,365 @@ function BannersTab() {
   );
 }
 
+function CategoriesTab() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const { data: categories, isLoading } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
+
+  const [parentId, setParentId] = useState("");
+  const [nameUz, setNameUz] = useState("");
+  const [icon, setIcon] = useState("");
+  const [type, setType] = useState<CategoryType>(CategoryType.SERVICE);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editIcon, setEditIcon] = useState("");
+
+  const roots = (categories ?? []).filter((c) => !c.parentId);
+  const childrenOf = (id: string) => (categories ?? []).filter((c) => c.parentId === id);
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["categories"] });
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      createCategory({
+        nameUz,
+        type: parentId ? (roots.find((r) => r.id === parentId)?.type ?? type) : type,
+        icon: icon || undefined,
+        parentId: parentId || undefined,
+      }),
+    onSuccess: () => {
+      setNameUz("");
+      setIcon("");
+      invalidate();
+    },
+    onError: (err: Error) => setFormError(err.message),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (id: string) => updateCategory(id, { nameUz: editName, icon: editIcon || undefined }),
+    onSuccess: () => {
+      setEditingId(null);
+      invalidate();
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteCategory,
+    onSuccess: invalidate,
+  });
+
+  const startEdit = (id: string, nameUz: string, icon: string | null) => {
+    setEditingId(id);
+    setEditName(nameUz);
+    setEditIcon(icon ?? "");
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          setFormError(null);
+          createMutation.mutate();
+        }}
+        className="card flex flex-col gap-3"
+      >
+        <span className="section-title">{t("admin.addCategory")}</span>
+        <select value={parentId} onChange={(e) => setParentId(e.target.value)} className="input">
+          <option value="">{t("admin.newRootCategory")}</option>
+          {roots.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.icon} {r.nameUz}
+            </option>
+          ))}
+        </select>
+        {!parentId && (
+          <div className="flex overflow-hidden rounded-full border border-divider bg-app p-0.5">
+            <button
+              type="button"
+              onClick={() => setType(CategoryType.SERVICE)}
+              className={`flex-1 rounded-full py-1.5 text-xs font-medium transition ${type === CategoryType.SERVICE ? "bg-brand text-brand-contrast" : "text-hint"}`}
+            >
+              {t("admin.typeService")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setType(CategoryType.PRODUCT)}
+              className={`flex-1 rounded-full py-1.5 text-xs font-medium transition ${type === CategoryType.PRODUCT ? "bg-brand text-brand-contrast" : "text-hint"}`}
+            >
+              {t("admin.typeProduct")}
+            </button>
+          </div>
+        )}
+        <input
+          value={nameUz}
+          onChange={(e) => setNameUz(e.target.value)}
+          placeholder={t("admin.categoryName")}
+          className="input"
+        />
+        <input
+          value={icon}
+          onChange={(e) => setIcon(e.target.value)}
+          placeholder={t("admin.categoryIcon")}
+          className="input"
+        />
+        {formError && <span className="text-xs text-destructive">{formError}</span>}
+        <button
+          type="submit"
+          disabled={nameUz.trim().length < 2 || createMutation.isPending}
+          className="btn-primary"
+        >
+          <Plus className="h-4 w-4" />
+          {t("admin.addCategory")}
+        </button>
+      </form>
+
+      {isLoading && <Spinner label={t("loading")} />}
+
+      <div className="flex flex-col gap-3">
+        {roots.map((root) => (
+          <div key={root.id} className="card flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-semibold text-ink">
+                {root.icon} {root.nameUz}
+              </span>
+              <button
+                onClick={() => deleteMutation.mutate(root.id)}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-1.5 border-l-2 border-divider pl-3">
+              {childrenOf(root.id).map((c) =>
+                editingId === c.id ? (
+                  <div key={c.id} className="flex items-center gap-1.5">
+                    <input
+                      value={editIcon}
+                      onChange={(e) => setEditIcon(e.target.value)}
+                      className="input w-14 px-2 text-center"
+                    />
+                    <input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="input flex-1"
+                    />
+                    <button
+                      onClick={() => updateMutation.mutate(c.id)}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setEditingId(null)}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-hint"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div key={c.id} className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-ink">
+                      {c.icon} {c.nameUz}
+                    </span>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => startEdit(c.id, c.nameUz, c.icon)}
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-hint"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => deleteMutation.mutate(c.id)}
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                ),
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      {deleteMutation.error && (
+        <span className="text-xs text-destructive">{deleteMutation.error.message}</span>
+      )}
+    </div>
+  );
+}
+
+function StatsTab() {
+  const { t } = useTranslation();
+  const { data: stats, isLoading } = useQuery({ queryKey: ["admin", "stats"], queryFn: fetchAdminStats });
+
+  if (isLoading) return <Spinner label={t("loading")} />;
+  if (!stats) return null;
+
+  const cards: { label: string; value: number | string }[] = [
+    { label: t("admin.statUsers"), value: stats.users.total },
+    { label: t("admin.statNewUsersWeek"), value: stats.users.newThisWeek },
+    { label: t("admin.statListings"), value: stats.listings.total },
+    { label: t("admin.statActiveListings"), value: stats.listings.active },
+    { label: t("admin.statPendingListings"), value: stats.listings.pending },
+    { label: t("admin.statNewListingsWeek"), value: stats.listings.newThisWeek },
+    { label: t("admin.statCategories"), value: stats.categories.total },
+    { label: t("admin.statPendingReports"), value: stats.reports.pending },
+    { label: t("admin.statFavorites"), value: stats.favorites },
+    { label: t("admin.statMessages"), value: stats.messages },
+    { label: t("admin.statPaidBoosts"), value: stats.boosts.paidCount },
+    { label: t("admin.statRevenue"), value: `${stats.boosts.totalRevenue.toLocaleString("uz-UZ")} ${t("som")}` },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {cards.map((c) => (
+        <div key={c.label} className="card flex flex-col gap-1">
+          <span className="text-2xl font-bold text-ink">{c.value}</span>
+          <span className="text-xs text-hint">{c.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AdminsTab() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const { data: admins, isLoading } = useQuery({ queryKey: ["admin", "admins"], queryFn: fetchAdmins });
+  const [identifier, setIdentifier] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "admins"] });
+
+  const addMutation = useMutation({
+    mutationFn: () => addAdmin(identifier),
+    onSuccess: () => {
+      setIdentifier("");
+      setFormError(null);
+      invalidate();
+    },
+    onError: (err: Error) => setFormError(err.message),
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: removeAdmin,
+    onSuccess: invalidate,
+    onError: (err: Error) => setFormError(err.message),
+  });
+
+  return (
+    <div className="flex flex-col gap-4">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          setFormError(null);
+          addMutation.mutate();
+        }}
+        className="card flex flex-col gap-3"
+      >
+        <span className="section-title">{t("admin.addAdmin")}</span>
+        <input
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
+          placeholder={t("admin.addAdminPlaceholder")}
+          className="input"
+        />
+        {formError && <span className="text-xs text-destructive">{formError}</span>}
+        <button type="submit" disabled={identifier.trim().length < 2 || addMutation.isPending} className="btn-primary">
+          <UserCog className="h-4 w-4" />
+          {t("admin.addAdmin")}
+        </button>
+      </form>
+
+      {isLoading && <Spinner label={t("loading")} />}
+
+      <div className="flex flex-col gap-2">
+        {admins?.map((a) => (
+          <div key={a.id} className="card flex items-center justify-between gap-2">
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-ink">{a.username ? `@${a.username}` : a.firstName}</span>
+              <span className="text-xs text-hint">{a.telegramId}</span>
+            </div>
+            <button
+              onClick={() => removeMutation.mutate(a.id)}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive"
+            >
+              <UserX className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function Admin() {
   useBackButton("/profile");
   const { t } = useTranslation();
-  const [tab, setTab] = useState<"moderation" | "reports" | "banners">("moderation");
+  const [tab, setTab] = useState<
+    "moderation" | "reports" | "banners" | "categories" | "stats" | "admins"
+  >("moderation");
 
   return (
     <div className="page">
       <PageHeader title={t("admin.title")} backTo="/profile" />
 
-      <div className="flex overflow-hidden rounded-full border border-divider bg-surface p-1 shadow-soft">
-        <button
-          onClick={() => setTab("moderation")}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 text-xs font-medium transition ${tab === "moderation" ? "bg-brand text-brand-contrast" : "text-hint"}`}
-        >
-          <ShieldCheck className="h-4 w-4" />
-          {t("admin.moderation")}
-        </button>
-        <button
-          onClick={() => setTab("reports")}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 text-xs font-medium transition ${tab === "reports" ? "bg-brand text-brand-contrast" : "text-hint"}`}
-        >
-          <Flag className="h-4 w-4" />
-          {t("admin.reports")}
-        </button>
-        <button
-          onClick={() => setTab("banners")}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 text-xs font-medium transition ${tab === "banners" ? "bg-brand text-brand-contrast" : "text-hint"}`}
-        >
-          <Images className="h-4 w-4" />
-          {t("admin.banners")}
-        </button>
+      <div className="no-scrollbar -mx-4 overflow-x-auto px-4">
+        <div className="flex w-fit gap-1 rounded-full border border-divider bg-surface p-1 shadow-soft">
+          <button
+            onClick={() => setTab("moderation")}
+            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium transition ${tab === "moderation" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+          >
+            <ShieldCheck className="h-4 w-4" />
+            {t("admin.moderation")}
+          </button>
+          <button
+            onClick={() => setTab("reports")}
+            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium transition ${tab === "reports" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+          >
+            <Flag className="h-4 w-4" />
+            {t("admin.reports")}
+          </button>
+          <button
+            onClick={() => setTab("banners")}
+            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium transition ${tab === "banners" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+          >
+            <Images className="h-4 w-4" />
+            {t("admin.banners")}
+          </button>
+          <button
+            onClick={() => setTab("categories")}
+            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium transition ${tab === "categories" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+          >
+            <Tags className="h-4 w-4" />
+            {t("admin.categories")}
+          </button>
+          <button
+            onClick={() => setTab("stats")}
+            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium transition ${tab === "stats" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+          >
+            <BarChart3 className="h-4 w-4" />
+            {t("admin.stats")}
+          </button>
+          <button
+            onClick={() => setTab("admins")}
+            className={`flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium transition ${tab === "admins" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+          >
+            <UserCog className="h-4 w-4" />
+            {t("admin.admins")}
+          </button>
+        </div>
       </div>
 
       {tab === "moderation" && <ModerationTab />}
       {tab === "reports" && <ReportsTab />}
       {tab === "banners" && <BannersTab />}
+      {tab === "categories" && <CategoriesTab />}
+      {tab === "stats" && <StatsTab />}
+      {tab === "admins" && <AdminsTab />}
     </div>
   );
 }

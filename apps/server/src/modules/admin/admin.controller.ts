@@ -1,12 +1,18 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { ListingStatus, ReportStatus } from "@prisma/client";
 import { TelegramAuthGuard } from "../../common/telegram-auth.guard";
 import { AdminGuard } from "../../common/admin.guard";
+import { CurrentUser } from "../../common/current-user.decorator";
 import { PrismaService } from "../../prisma/prisma.service";
 import { ReportsService } from "../reports/reports.service";
 import { BannersService } from "../banners/banners.service";
 import { CreateBannerDto } from "../banners/dto/create-banner.dto";
 import { UpdateBannerDto } from "../banners/dto/update-banner.dto";
+import { CategoriesService } from "../categories/categories.service";
+import { CreateCategoryDto } from "../categories/dto/create-category.dto";
+import { UpdateCategoryDto } from "../categories/dto/update-category.dto";
+import { AddAdminDto } from "./dto/add-admin.dto";
+import type { User } from "@prisma/client";
 
 @Controller("admin")
 @UseGuards(TelegramAuthGuard, AdminGuard)
@@ -15,6 +21,7 @@ export class AdminController {
     private readonly prisma: PrismaService,
     private readonly reportsService: ReportsService,
     private readonly bannersService: BannersService,
+    private readonly categoriesService: CategoriesService,
   ) {}
 
   @Get("listings/pending")
@@ -69,5 +76,121 @@ export class AdminController {
   @Delete("banners/:id")
   removeBanner(@Param("id") id: string) {
     return this.bannersService.remove(id);
+  }
+
+  @Post("categories")
+  createCategory(@Body() dto: CreateCategoryDto) {
+    return this.categoriesService.create(dto);
+  }
+
+  @Patch("categories/:id")
+  updateCategory(@Param("id") id: string, @Body() dto: UpdateCategoryDto) {
+    return this.categoriesService.update(id, dto);
+  }
+
+  @Delete("categories/:id")
+  removeCategory(@Param("id") id: string) {
+    return this.categoriesService.remove(id);
+  }
+
+  @Get("admins")
+  findAdmins() {
+    return this.prisma.user.findMany({
+      where: { isAdmin: true },
+      select: { id: true, telegramId: true, username: true, firstName: true, createdAt: true },
+      orderBy: { createdAt: "asc" },
+    });
+  }
+
+  @Post("admins")
+  async addAdmin(@Body() dto: AddAdminDto) {
+    const identifier = dto.identifier.trim().replace(/^@/, "");
+    const user = await this.prisma.user.findFirst({
+      where: { OR: [{ telegramId: identifier }, { username: identifier }] },
+    });
+    if (!user) {
+      throw new NotFoundException("Foydalanuvchi topilmadi. U botni kamida bir marta ishga tushirgan bo'lishi kerak");
+    }
+    return this.prisma.user.update({ where: { id: user.id }, data: { isAdmin: true } });
+  }
+
+  @Delete("admins/:id")
+  async removeAdmin(@Param("id") id: string, @CurrentUser() currentUser: User) {
+    if (id === currentUser.id) {
+      throw new BadRequestException("O'zingizni admindan chiqara olmaysiz");
+    }
+    const adminCount = await this.prisma.user.count({ where: { isAdmin: true } });
+    if (adminCount <= 1) {
+      throw new BadRequestException("Oxirgi adminni o'chirib bo'lmaydi");
+    }
+    await this.prisma.user.update({ where: { id }, data: { isAdmin: false } });
+  }
+
+  @Get("stats")
+  async getStats() {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const [
+      totalUsers,
+      newUsersToday,
+      newUsersThisWeek,
+      totalListings,
+      listingsByStatus,
+      newListingsToday,
+      newListingsThisWeek,
+      totalCategories,
+      reportsByStatus,
+      boostStats,
+      totalFavorites,
+      totalMessages,
+    ] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { createdAt: { gte: startOfToday } } }),
+      this.prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
+      this.prisma.listing.count(),
+      this.prisma.listing.groupBy({ by: ["status"], _count: true }),
+      this.prisma.listing.count({ where: { createdAt: { gte: startOfToday } } }),
+      this.prisma.listing.count({ where: { createdAt: { gte: weekAgo } } }),
+      this.prisma.category.count(),
+      this.prisma.report.groupBy({ by: ["status"], _count: true }),
+      this.prisma.boostOrder.aggregate({
+        where: { status: "PAID" },
+        _count: true,
+        _sum: { amount: true },
+      }),
+      this.prisma.favorite.count(),
+      this.prisma.message.count(),
+    ]);
+
+    const listingStatusMap: Record<string, number> = {};
+    for (const row of listingsByStatus) listingStatusMap[row.status] = row._count;
+
+    const reportStatusMap: Record<string, number> = {};
+    for (const row of reportsByStatus) reportStatusMap[row.status] = row._count;
+
+    return {
+      users: { total: totalUsers, newToday: newUsersToday, newThisWeek: newUsersThisWeek },
+      listings: {
+        total: totalListings,
+        pending: listingStatusMap.PENDING ?? 0,
+        active: listingStatusMap.ACTIVE ?? 0,
+        paused: listingStatusMap.PAUSED ?? 0,
+        sold: listingStatusMap.SOLD ?? 0,
+        rejected: listingStatusMap.REJECTED ?? 0,
+        newToday: newListingsToday,
+        newThisWeek: newListingsThisWeek,
+      },
+      categories: { total: totalCategories },
+      reports: {
+        pending: reportStatusMap.PENDING ?? 0,
+        resolved: reportStatusMap.RESOLVED ?? 0,
+        dismissed: reportStatusMap.DISMISSED ?? 0,
+      },
+      boosts: { paidCount: boostStats._count, totalRevenue: boostStats._sum.amount ?? 0 },
+      favorites: totalFavorites,
+      messages: totalMessages,
+    };
   }
 }
