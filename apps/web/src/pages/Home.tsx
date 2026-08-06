@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { PackageSearch } from "lucide-react";
 import type { FeedSort } from "@kerak/shared";
@@ -20,6 +21,7 @@ import { useTranslation } from "../i18n/LanguageContext";
 
 export function Home() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
@@ -33,6 +35,14 @@ export function Home() {
 
   const effectiveSort = sort === "distance" && !hasLocation ? "newest" : sort;
   const isSearching = search.trim().length > 0;
+
+  const handleSortChange = (newSort: FeedSort) => {
+    if (newSort === "distance" && !hasLocation) {
+      navigate("/profile");
+      return;
+    }
+    setSort(newSort);
+  };
 
   const { data: listings, isLoading, error } = useQuery({
     queryKey: ["listings", "all", effectiveSort, radiusKm, me?.lat, me?.lng, search, filters],
@@ -102,7 +112,7 @@ export function Home() {
             </div>
             <FeedControls
               sort={sort}
-              onSortChange={setSort}
+              onSortChange={handleSortChange}
               radiusKm={radiusKm}
               onRadiusChange={setRadiusKm}
               view={view}

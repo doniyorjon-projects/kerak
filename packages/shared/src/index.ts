@@ -22,6 +22,7 @@ export interface CategoryDto {
   nameUz: string;
   type: CategoryType;
   icon: string | null;
+  listingsCount: number;
 }
 
 export interface UserSummaryDto {

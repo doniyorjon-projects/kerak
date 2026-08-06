@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { ListingStatus } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { UpdateCategoryDto } from "./dto/update-category.dto";
@@ -8,9 +9,14 @@ export class CategoriesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll() {
-    return this.prisma.category.findMany({
+    const categories = await this.prisma.category.findMany({
       orderBy: [{ parentId: "asc" }, { sortOrder: "asc" }],
+      include: { _count: { select: { listings: { where: { status: ListingStatus.ACTIVE } } } } },
     });
+    return categories.map(({ _count, ...category }) => ({
+      ...category,
+      listingsCount: _count.listings,
+    }));
   }
 
   async create(dto: CreateCategoryDto) {

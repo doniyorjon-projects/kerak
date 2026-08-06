@@ -37,8 +37,13 @@ export function CategoryScroller({ categories }: { categories: CategoryDto[] }) 
             <Link
               key={category.id}
               to={`/categories/${category.id}`}
-              className="flex flex-col items-center gap-1.5 rounded-xl border border-divider bg-surface p-2.5 text-center shadow-soft transition active:scale-95"
+              className="relative flex flex-col items-center gap-1.5 rounded-xl border border-divider bg-surface p-2.5 text-center shadow-soft transition active:scale-95"
             >
+              {category.listingsCount > 0 && (
+                <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[9px] font-semibold text-brand-contrast">
+                  {category.listingsCount}
+                </span>
+              )}
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-secondary text-base">
                 {category.icon ?? <Folder className="h-4 w-4 text-hint" strokeWidth={1.5} />}
               </span>

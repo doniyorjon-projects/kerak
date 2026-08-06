@@ -67,6 +67,12 @@ export function ListingCard({ listing }: { listing: ListingDto }) {
             ? t("negotiable")
             : `${listing.price.toLocaleString("uz-UZ")} ${t("som")}`}
         </span>
+        {listing.addressText && (
+          <span className="flex items-center gap-1 truncate text-xs text-hint">
+            <MapPin className="h-3 w-3 shrink-0" />
+            <span className="truncate">{listing.addressText}</span>
+          </span>
+        )}
         <div className="flex items-center justify-between text-xs text-hint">
           {listing.distanceKm != null ? (
             <span className="flex items-center gap-1">

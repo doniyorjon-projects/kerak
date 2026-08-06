@@ -51,7 +51,6 @@ export const translations = {
     "feed.withinKm": "km ichida",
     "feed.map": "Xarita",
     "feed.list": "Ro'yxat",
-    "feed.needLocation": "Profilda joylashuvingizni saqlang",
     "filters.button": "Filtrlar",
     "filters.title": "Filtrlar",
     "filters.category": "Toifa",
@@ -90,6 +89,7 @@ export const translations = {
     "listing.messageNotDelivered": "Sotuvchi botni hali ishga tushirmagan, xabar yetkazilmadi",
     "listing.updateRating": "Bahoyingizni yangilang",
     "listing.rateSeller": "Sotuvchini baholang",
+    "listing.manageTitle": "E'lonni boshqarish",
     "listing.commentPlaceholder": "Sharh (ixtiyoriy)",
 
     // elon berish
@@ -115,6 +115,7 @@ export const translations = {
     "create.errPhoto": "Rasm yuklashda xatolik yuz berdi",
     "create.selectRegion": "Viloyatni tanlang",
     "create.selectDistrict": "Tumanni tanlang",
+    "create.fineTuneLocation": "Xaritada aniqroq joyni belgilang (nuqtani suring)",
 
     // elonni tahrirlash
     "edit.title": "E'lonni tahrirlash",
@@ -140,6 +141,9 @@ export const translations = {
     "profile.updateLocation": "Joylashuvni yangilash",
     "profile.geoUnsupported": "Brauzeringiz joylashuvni aniqlashni qo'llab-quvvatlamaydi",
     "profile.geoFailed": "Joylashuvni aniqlab bo'lmadi",
+    "profile.detectedNear": "Aniqlangan joylashuv:",
+    "profile.chooseOnMap": "Xaritadan tanlash",
+    "profile.chooseOnMapHint": "Aynan turgan joyingiz emas, boshqa joyni belgilamoqchi bo'lsangiz, xaritada nuqtani suring",
     "profile.myListings": "Mening elonlarim",
     "profile.adminPanel": "Admin panel",
 
@@ -260,7 +264,6 @@ export const translations = {
     "feed.withinKm": "км",
     "feed.map": "Карта",
     "feed.list": "Список",
-    "feed.needLocation": "Сохраните своё местоположение в профиле",
     "filters.button": "Фильтры",
     "filters.title": "Фильтры",
     "filters.category": "Категория",
@@ -298,6 +301,7 @@ export const translations = {
     "listing.updateRating": "Обновите вашу оценку",
     "listing.rateSeller": "Оцените продавца",
     "listing.commentPlaceholder": "Комментарий (необязательно)",
+    "listing.manageTitle": "Управление объявлением",
 
     "create.title": "Новое объявление",
     "create.subtitle": "Заполните информацию",
@@ -321,6 +325,7 @@ export const translations = {
     "create.errPhoto": "Ошибка при загрузке фото",
     "create.selectRegion": "Выберите область",
     "create.selectDistrict": "Выберите район",
+    "create.fineTuneLocation": "Уточните местоположение на карте (передвиньте точку)",
 
     "edit.title": "Редактировать объявление",
     "edit.subtitle": "Обновите информацию",
@@ -343,6 +348,9 @@ export const translations = {
     "profile.updateLocation": "Обновить местоположение",
     "profile.geoUnsupported": "Ваш браузер не поддерживает определение местоположения",
     "profile.geoFailed": "Не удалось определить местоположение",
+    "profile.detectedNear": "Определённое местоположение:",
+    "profile.chooseOnMap": "Выбрать на карте",
+    "profile.chooseOnMapHint": "Если это не то место, где вы находитесь, передвиньте точку на карте",
     "profile.myListings": "Мои объявления",
     "profile.adminPanel": "Панель администратора",
 

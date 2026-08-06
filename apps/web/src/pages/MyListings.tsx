@@ -50,20 +50,22 @@ function ListingRow({ listing }: { listing: ListingDto }) {
 
   return (
     <div className="card flex flex-col gap-2.5">
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-medium text-ink">{listing.title}</span>
-        <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${className}`}>
-          <StatusIcon className="h-3.5 w-3.5" />
-          {t(labelKey)}
-        </span>
-      </div>
-      {isBoosted && (
-        <span className="flex items-center gap-1 text-xs font-medium text-amber-500">
-          <Rocket className="h-3.5 w-3.5" />
-          {t("myListings.boostedUntil")} {new Date(listing.boostedUntil!).toLocaleDateString("uz-UZ")}{" "}
-          {t("myListings.until")}
-        </span>
-      )}
+      <Link to={`/listings/${listing.id}`} className="flex flex-col gap-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-medium text-ink">{listing.title}</span>
+          <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${className}`}>
+            <StatusIcon className="h-3.5 w-3.5" />
+            {t(labelKey)}
+          </span>
+        </div>
+        {isBoosted && (
+          <span className="flex items-center gap-1 text-xs font-medium text-amber-500">
+            <Rocket className="h-3.5 w-3.5" />
+            {t("myListings.boostedUntil")} {new Date(listing.boostedUntil!).toLocaleDateString("uz-UZ")}{" "}
+            {t("myListings.until")}
+          </span>
+        )}
+      </Link>
       {listing.status === "ACTIVE" && <BoostButton listingId={listing.id} />}
       <div className="grid grid-cols-2 gap-2">
         <Link

@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, ListChecks, LocateFixed, MapPin, Phone, ShieldCheck } from "lucide-react";
+import { ChevronRight, ListChecks, LocateFixed, Map, MapPin, MapPinned, Phone, ShieldCheck } from "lucide-react";
 import { fetchMe, updateLocation, updatePhone } from "../api/users";
+import { findNearestRegion } from "../data/uzbekistanRegions";
+import { LocationMapPicker } from "../components/map/LocationMapPicker";
 import { PageHeader } from "../components/PageHeader";
 import { Spinner } from "../components/Spinner";
 import { useTranslation } from "../i18n/LanguageContext";
+
+const TASHKENT_CENTER = { lat: 41.311081, lng: 69.240562 };
 
 export function Profile() {
   const { t } = useTranslation();
@@ -14,6 +18,7 @@ export function Profile() {
   const [phone, setPhone] = useState("");
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   useEffect(() => {
     if (me?.phone) setPhone(me.phone);
@@ -97,11 +102,33 @@ export function Profile() {
         <span className="text-xs leading-relaxed text-hint">
           {me.lat != null && me.lng != null ? t("profile.locationSaved") : t("profile.locationNotSaved")}
         </span>
-        <button type="button" onClick={detectLocation} disabled={locating} className="btn-secondary">
-          <LocateFixed className="h-4 w-4" />
-          {locating ? t("profile.detecting") : t("profile.updateLocation")}
-        </button>
+        {me.lat != null && me.lng != null && (
+          <span className="flex items-center gap-1.5 text-xs font-medium text-brand">
+            <MapPinned className="h-3.5 w-3.5" />
+            {t("profile.detectedNear")} {findNearestRegion(me.lat, me.lng).nameUz}
+          </span>
+        )}
+        <div className="flex gap-2">
+          <button type="button" onClick={detectLocation} disabled={locating} className="btn-secondary flex-1">
+            <LocateFixed className="h-4 w-4" />
+            {locating ? t("profile.detecting") : t("profile.updateLocation")}
+          </button>
+          <button type="button" onClick={() => setShowMapPicker((v) => !v)} className="btn-secondary flex-1">
+            <Map className="h-4 w-4" />
+            {t("profile.chooseOnMap")}
+          </button>
+        </div>
         {locationError && <span className="text-xs text-destructive">{locationError}</span>}
+        {showMapPicker && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-hint">{t("profile.chooseOnMapHint")}</span>
+            <LocationMapPicker
+              lat={me.lat ?? TASHKENT_CENTER.lat}
+              lng={me.lng ?? TASHKENT_CENTER.lng}
+              onChange={(pos) => locationMutation.mutate(pos)}
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-2">

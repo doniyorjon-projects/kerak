@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { REGIONS } from "../data/uzbekistanRegions";
+import { LocationMapPicker } from "./map/LocationMapPicker";
 import { useTranslation } from "../i18n/LanguageContext";
 
 export interface PlaceValue {
@@ -28,6 +29,7 @@ export function RegionDistrictPicker({ onChange, initialAddressText }: RegionDis
   const { t } = useTranslation();
   const [regionId, setRegionId] = useState<number | "">("");
   const [districtId, setDistrictId] = useState<number | "">("");
+  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     if (!initialAddressText) return;
@@ -38,6 +40,7 @@ export function RegionDistrictPicker({ onChange, initialAddressText }: RegionDis
 
     const matchedRegion = REGIONS.find((r) => r.id === match.regionId);
     if (matchedRegion) {
+      setPin({ lat: matchedRegion.lat, lng: matchedRegion.lng });
       onChange({
         addressText: initialAddressText,
         regionId: matchedRegion.id,
@@ -56,11 +59,19 @@ export function RegionDistrictPicker({ onChange, initialAddressText }: RegionDis
     setRegionId(id);
     setDistrictId("");
     const newRegion = REGIONS.find((r) => r.id === id);
-    onChange(
-      newRegion
-        ? { addressText: newRegion.nameUz, regionId: newRegion.id, districtId: null, lat: newRegion.lat, lng: newRegion.lng }
-        : null,
-    );
+    if (newRegion) {
+      setPin({ lat: newRegion.lat, lng: newRegion.lng });
+      onChange({
+        addressText: newRegion.nameUz,
+        regionId: newRegion.id,
+        districtId: null,
+        lat: newRegion.lat,
+        lng: newRegion.lng,
+      });
+    } else {
+      setPin(null);
+      onChange(null);
+    }
   };
 
   const handleDistrictChange = (raw: string) => {
@@ -68,12 +79,26 @@ export function RegionDistrictPicker({ onChange, initialAddressText }: RegionDis
     setDistrictId(id);
     if (!region) return;
     const district = region.districts.find((d) => d.id === id);
+    setPin({ lat: region.lat, lng: region.lng });
     onChange({
       addressText: district ? `${district.nameUz}, ${region.nameUz}` : region.nameUz,
       regionId: region.id,
       districtId: district ? district.id : null,
       lat: region.lat,
       lng: region.lng,
+    });
+  };
+
+  const handlePinChange = (position: { lat: number; lng: number }) => {
+    if (!region) return;
+    setPin(position);
+    const district = region.districts.find((d) => d.id === districtId);
+    onChange({
+      addressText: district ? `${district.nameUz}, ${region.nameUz}` : region.nameUz,
+      regionId: region.id,
+      districtId: district ? district.id : null,
+      lat: position.lat,
+      lng: position.lng,
     });
   };
 
@@ -104,6 +129,12 @@ export function RegionDistrictPicker({ onChange, initialAddressText }: RegionDis
           </option>
         ))}
       </select>
+      {pin && (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs text-hint">{t("create.fineTuneLocation")}</span>
+          <LocationMapPicker lat={pin.lat} lng={pin.lng} onChange={handlePinChange} />
+        </div>
+      )}
     </div>
   );
 }

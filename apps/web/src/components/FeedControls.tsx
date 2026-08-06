@@ -30,10 +30,8 @@ export function FeedControls({
       <div className="flex overflow-hidden rounded-full border border-divider bg-surface p-0.5 shadow-soft">
         <button
           type="button"
-          disabled={!hasLocation}
           onClick={() => onSortChange("distance")}
-          title={hasLocation ? undefined : t("feed.needLocation")}
-          className={`pill ${sort === "distance" ? "bg-brand text-brand-contrast" : "text-hint"} disabled:opacity-40`}
+          className={`pill ${sort === "distance" ? "bg-brand text-brand-contrast" : "text-hint"}`}
         >
           {t("feed.nearest")}
         </button>

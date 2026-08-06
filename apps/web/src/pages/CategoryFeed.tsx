@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { PackageSearch } from "lucide-react";
 import type { FeedSort } from "@kerak/shared";
@@ -20,6 +20,7 @@ export function CategoryFeed() {
   const { categoryId } = useParams<{ categoryId: string }>();
   useBackButton("/categories");
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
@@ -32,6 +33,14 @@ export function CategoryFeed() {
   const [filters, setFilters] = useState<FeedFilterValue>({});
 
   const effectiveSort = sort === "distance" && !hasLocation ? "newest" : sort;
+
+  const handleSortChange = (newSort: FeedSort) => {
+    if (newSort === "distance" && !hasLocation) {
+      navigate("/profile");
+      return;
+    }
+    setSort(newSort);
+  };
 
   const { data: listings, isLoading, error } = useQuery({
     queryKey: ["listings", categoryId, effectiveSort, radiusKm, me?.lat, me?.lng, filters],
@@ -56,7 +65,7 @@ export function CategoryFeed() {
       </div>
       <FeedControls
         sort={sort}
-        onSortChange={setSort}
+        onSortChange={handleSortChange}
         radiusKm={radiusKm}
         onRadiusChange={setRadiusKm}
         view={view}
