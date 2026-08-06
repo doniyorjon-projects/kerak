@@ -1,6 +1,17 @@
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Clock, ListChecks, PauseCircle, Pencil, Rocket, Tag, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  ListChecks,
+  PauseCircle,
+  Pencil,
+  PlayCircle,
+  Rocket,
+  Tag,
+  Trash2,
+  XCircle,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { deleteListing, fetchMyListings, updateListingStatus } from "../api/listings";
 import type { ListingDto, ListingStatus } from "@kerak/shared";
@@ -54,47 +65,54 @@ function ListingRow({ listing }: { listing: ListingDto }) {
         </span>
       )}
       {listing.status === "ACTIVE" && <BoostButton listingId={listing.id} />}
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <Link
           to={`/listings/${listing.id}/edit`}
           state={{ listing }}
-          className="pill flex items-center gap-1 bg-brand/10 text-brand"
+          className="flex items-center justify-center gap-1.5 rounded-xl bg-brand/10 py-2.5 text-xs font-semibold text-brand transition active:scale-[0.98]"
         >
           <Pencil className="h-3.5 w-3.5" />
           {t("myListings.edit")}
         </Link>
+        {listing.status !== "REJECTED" && listing.status !== "PENDING" && (
+          <>
+            {listing.status !== "ACTIVE" && (
+              <button
+                onClick={() => statusMutation.mutate("ACTIVE")}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 py-2.5 text-xs font-semibold text-emerald-500 transition active:scale-[0.98]"
+              >
+                <PlayCircle className="h-3.5 w-3.5" />
+                {t("myListings.activate")}
+              </button>
+            )}
+            {listing.status === "ACTIVE" && (
+              <button
+                onClick={() => statusMutation.mutate("PAUSED")}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-surface-secondary py-2.5 text-xs font-semibold text-hint transition active:scale-[0.98]"
+              >
+                <PauseCircle className="h-3.5 w-3.5" />
+                {t("myListings.pause")}
+              </button>
+            )}
+            {listing.status !== "SOLD" && (
+              <button
+                onClick={() => statusMutation.mutate("SOLD")}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-surface-secondary py-2.5 text-xs font-semibold text-hint transition active:scale-[0.98]"
+              >
+                <Tag className="h-3.5 w-3.5" />
+                {t("myListings.markSold")}
+              </button>
+            )}
+            <button
+              onClick={() => deleteMutation.mutate()}
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive/10 py-2.5 text-xs font-semibold text-destructive transition active:scale-[0.98]"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {t("delete")}
+            </button>
+          </>
+        )}
       </div>
-      {listing.status !== "REJECTED" && listing.status !== "PENDING" && (
-        <div className="flex flex-wrap gap-2">
-          {listing.status !== "ACTIVE" && (
-            <button onClick={() => statusMutation.mutate("ACTIVE")} className="pill bg-brand/10 text-brand">
-              {t("myListings.activate")}
-            </button>
-          )}
-          {listing.status === "ACTIVE" && (
-            <button
-              onClick={() => statusMutation.mutate("PAUSED")}
-              className="pill bg-surface-secondary text-hint"
-            >
-              {t("myListings.pause")}
-            </button>
-          )}
-          {listing.status !== "SOLD" && (
-            <button
-              onClick={() => statusMutation.mutate("SOLD")}
-              className="pill bg-surface-secondary text-hint"
-            >
-              {t("myListings.markSold")}
-            </button>
-          )}
-          <button
-            onClick={() => deleteMutation.mutate()}
-            className="pill bg-destructive/10 text-destructive"
-          >
-            {t("delete")}
-          </button>
-        </div>
-      )}
     </div>
   );
 }
