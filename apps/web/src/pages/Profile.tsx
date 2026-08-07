@@ -9,6 +9,7 @@ import {
   Map,
   MapPin,
   MapPinned,
+  MessageSquareText,
   Pencil,
   Rocket,
   ShieldCheck,
@@ -250,6 +251,14 @@ export function Profile() {
           <span className="flex items-center gap-2 text-sm font-medium text-ink">
             <ListChecks className="h-5 w-5 text-hint" />
             {t("profile.myListings")}
+          </span>
+          <ChevronRight className="h-4 w-4 text-hint" />
+        </Link>
+
+        <Link to="/my-requests" className="card flex items-center justify-between transition active:scale-[0.98]">
+          <span className="flex items-center gap-2 text-sm font-medium text-ink">
+            <MessageSquareText className="h-5 w-5 text-hint" />
+            {t("profile.myRequests")}
           </span>
           <ChevronRight className="h-4 w-4 text-hint" />
         </Link>

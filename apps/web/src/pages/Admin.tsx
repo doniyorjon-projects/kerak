@@ -14,8 +14,11 @@ import {
   Inbox,
   Images,
   Infinity as InfinityIcon,
+  MessageSquareText,
   Pencil,
   Plus,
+  Send,
+  Settings,
   ShieldCheck,
   Star,
   Tags,
@@ -24,6 +27,7 @@ import {
   UserRoundCheck,
   Users,
   UserX,
+  Wallet,
   X,
 } from "lucide-react";
 import { CategoryType, UNLIMITED_LISTINGS } from "@kerak/shared";
@@ -32,10 +36,13 @@ import {
   addAdmin,
   approveListing,
   blockUser,
+  deleteRequestAdmin,
   deleteUser,
   dismissReport,
   fetchAdminStats,
   fetchAdmins,
+  fetchAllRequestsAdmin,
+  fetchBotSettings,
   fetchPendingListings,
   fetchPendingReports,
   fetchUserListings,
@@ -43,6 +50,7 @@ import {
   rejectListing,
   removeAdmin,
   resolveReport,
+  setChannel,
   setListingsLimit,
   setUserPlan,
   unblockUser,
@@ -980,11 +988,143 @@ function PricingTab() {
   );
 }
 
+function AdminRequestsTab() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const { data: requests, isLoading } = useQuery({ queryKey: ["admin", "requests"], queryFn: fetchAllRequestsAdmin });
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteRequestAdmin,
+    onSuccess: () => {
+      setDeletingId(null);
+      queryClient.invalidateQueries({ queryKey: ["admin", "requests"] });
+    },
+  });
+
+  if (isLoading) return <Spinner label={t("loading")} />;
+  if (!requests || requests.length === 0) {
+    return <EmptyState icon={MessageSquareText} title={t("admin.noRequests")} />;
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {requests.map((r) => (
+        <div key={r.id} className="card flex flex-col gap-2">
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-sm font-semibold text-ink">{r.title}</span>
+            <span
+              className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                r.status === "ACTIVE" ? "bg-emerald-500/10 text-emerald-500" : "bg-surface-secondary text-hint"
+              }`}
+            >
+              {r.status === "ACTIVE" ? t("request.statusActive") : t("request.statusClosed")}
+            </span>
+          </div>
+          <p className="line-clamp-2 text-xs text-hint">{r.description}</p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-hint">
+            <span className="flex items-center gap-1">
+              <Wallet className="h-3 w-3" />
+              {r.budgetMin != null || r.budgetMax != null
+                ? `${r.budgetMin?.toLocaleString("uz-UZ") ?? "0"} – ${r.budgetMax?.toLocaleString("uz-UZ") ?? "?"}`
+                : t("request.anyBudget")}
+            </span>
+            <span>{r.category.nameUz}</span>
+            <span>{r.author.username ? `@${r.author.username}` : r.author.firstName}</span>
+            <span>{new Date(r.createdAt).toLocaleDateString("uz-UZ")}</span>
+          </div>
+
+          {deletingId === r.id ? (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setDeletingId(null)}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-surface-secondary py-2.5 text-xs font-semibold text-hint transition active:scale-[0.98]"
+              >
+                {t("cancel")}
+              </button>
+              <button
+                onClick={() => deleteMutation.mutate(r.id)}
+                disabled={deleteMutation.isPending}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive py-2.5 text-xs font-semibold text-white transition active:scale-[0.98] disabled:opacity-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {t("delete")}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setDeletingId(r.id)}
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive/10 py-2.5 text-xs font-semibold text-destructive transition active:scale-[0.98]"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {t("delete")}
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SettingsTab() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const { data: settings, isLoading } = useQuery({ queryKey: ["admin", "settings"], queryFn: fetchBotSettings });
+  const [channelId, setChannelId] = useState("");
+
+  useEffect(() => {
+    if (settings) setChannelId(settings.channelId ?? "");
+  }, [settings]);
+
+  const saveMutation = useMutation({
+    mutationFn: () => setChannel(channelId.trim() || null),
+    onSuccess: (updated) => queryClient.setQueryData(["admin", "settings"], updated),
+  });
+
+  if (isLoading) return <Spinner label={t("loading")} />;
+
+  return (
+    <div className="card flex flex-col gap-3">
+      <div className="flex items-center gap-2.5">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
+          <Send className="h-4 w-4" />
+        </div>
+        <span className="text-sm font-semibold text-ink">{t("admin.channelTitle")}</span>
+      </div>
+      <p className="text-xs text-hint">{t("admin.channelHint")}</p>
+      <input
+        value={channelId}
+        onChange={(e) => setChannelId(e.target.value)}
+        placeholder={t("admin.channelPlaceholder")}
+        className="input"
+      />
+      <button
+        onClick={() => saveMutation.mutate()}
+        disabled={saveMutation.isPending}
+        className="btn-primary disabled:opacity-50"
+      >
+        {saveMutation.isPending ? t("saving") : t("save")}
+      </button>
+      {saveMutation.isSuccess && <span className="text-xs text-emerald-500">{t("admin.channelSaved")}</span>}
+      {saveMutation.isError && <span className="text-xs text-destructive">{saveMutation.error.message}</span>}
+    </div>
+  );
+}
+
 export function Admin() {
   useBackButton("/profile");
   const { t } = useTranslation();
   const [tab, setTab] = useState<
-    "moderation" | "reports" | "banners" | "categories" | "stats" | "admins" | "users" | "pricing"
+    | "moderation"
+    | "reports"
+    | "banners"
+    | "categories"
+    | "stats"
+    | "admins"
+    | "users"
+    | "pricing"
+    | "requests"
+    | "settings"
   >("moderation");
 
   return (
@@ -1049,6 +1189,20 @@ export function Admin() {
             <Banknote className="h-4 w-4" />
             {t("admin.pricing")}
           </button>
+          <button
+            onClick={() => setTab("requests")}
+            className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-medium transition ${tab === "requests" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+          >
+            <MessageSquareText className="h-4 w-4" />
+            {t("admin.requests")}
+          </button>
+          <button
+            onClick={() => setTab("settings")}
+            className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-medium transition ${tab === "settings" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+          >
+            <Settings className="h-4 w-4" />
+            {t("admin.settings")}
+          </button>
         </div>
       </div>
 
@@ -1060,6 +1214,8 @@ export function Admin() {
       {tab === "admins" && <AdminsTab />}
       {tab === "users" && <UsersTab />}
       {tab === "pricing" && <PricingTab />}
+      {tab === "requests" && <AdminRequestsTab />}
+      {tab === "settings" && <SettingsTab />}
     </div>
   );
 }

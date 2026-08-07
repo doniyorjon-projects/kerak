@@ -4,6 +4,7 @@ import { Bot, InlineKeyboard } from "grammy";
 import { Listing, NotificationType } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { SettingsService } from "../settings/settings.service";
 
 @Injectable()
 export class BotService implements OnModuleInit {
@@ -11,11 +12,13 @@ export class BotService implements OnModuleInit {
   private readonly bot: Bot;
   private readonly adminTelegramId?: string;
   private readonly miniAppUrl: string;
+  private readonly botUsername: string;
 
   constructor(
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly settingsService: SettingsService,
   ) {
     const token = this.config.get<string>("BOT_TOKEN");
     if (!token) {
@@ -24,6 +27,7 @@ export class BotService implements OnModuleInit {
     this.bot = new Bot(token);
     this.adminTelegramId = this.config.get<string>("ADMIN_TELEGRAM_ID");
     this.miniAppUrl = this.config.get<string>("MINI_APP_URL") ?? "https://example.com";
+    this.botUsername = this.config.get<string>("BOT_USERNAME") ?? "";
     this.registerHandlers();
   }
 
@@ -141,6 +145,55 @@ export class BotService implements OnModuleInit {
     await this.bot.api
       .sendMessage(telegramId, text, { reply_markup: keyboard })
       .catch((err) => this.logger.warn(`Sotuvchiga xabar yuborilmadi: ${err}`));
+  }
+
+  async notifyListingExpired(telegramId: string, listingId: string, listingTitle: string) {
+    const keyboard = new InlineKeyboard().webApp(
+      "🔄 Faollashtirish",
+      `${this.miniAppUrl}?listing=${encodeURIComponent(listingId)}`,
+    );
+    const text = `⏸ "${listingTitle}" eloningiz 30 kun davomida faolsiz turgani uchun avtomatik pauza qilindi.\n\nQayta faollashtirish uchun tugmani bosing.`;
+
+    await this.bot.api
+      .sendMessage(telegramId, text, { reply_markup: keyboard })
+      .catch((err) => this.logger.warn(`Muddati o'tgan elon xabari yuborilmadi: ${err}`));
+  }
+
+  async postToChannel(listing: Listing) {
+    const settings = await this.settingsService.get();
+    if (!settings.channelId) return;
+    if (!this.botUsername) {
+      this.logger.warn("BOT_USERNAME sozlanmagan, kanalga post qilinmadi");
+      return;
+    }
+
+    const shareUrl = `https://t.me/${this.botUsername}?start=listing_${listing.id}`;
+    const keyboard = new InlineKeyboard().url("🚀 Ko'rish", shareUrl);
+    const priceText = listing.price != null ? `${listing.price.toLocaleString("uz-UZ")} so'm` : "Kelishilgan holda";
+    const description =
+      listing.description.length > 200 ? `${listing.description.slice(0, 200)}...` : listing.description;
+    const caption = [
+      `🆕 ${listing.title}`,
+      `💰 ${priceText}`,
+      listing.addressText ? `📍 ${listing.addressText}` : "",
+      "",
+      description,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    try {
+      if (listing.photos[0]) {
+        await this.bot.api.sendPhoto(settings.channelId, listing.photos[0], {
+          caption: caption.slice(0, 1024),
+          reply_markup: keyboard,
+        });
+      } else {
+        await this.bot.api.sendMessage(settings.channelId, caption, { reply_markup: keyboard });
+      }
+    } catch (err) {
+      this.logger.warn(`Kanalga post qilinmadi: ${err}`);
+    }
   }
 
   async notifyAdminNewListing(listing: Listing) {

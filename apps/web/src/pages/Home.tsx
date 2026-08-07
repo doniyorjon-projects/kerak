@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { PackageSearch } from "lucide-react";
+import { ChevronRight, MessageSquareText, PackageSearch } from "lucide-react";
 import type { FeedSort } from "@kerak/shared";
 import { fetchListingFeed } from "../api/listings";
 import { fetchCategories } from "../api/categories";
@@ -89,6 +89,20 @@ export function Home() {
               <CategoryScroller categories={leafCategories} />
             </section>
           )}
+
+          <Link
+            to="/requests"
+            className="card flex items-center gap-3 border-amber-500/30 bg-amber-500/5 transition active:scale-[0.98]"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-600">
+              <MessageSquareText className="h-5 w-5" />
+            </div>
+            <div className="flex flex-1 flex-col">
+              <span className="text-sm font-semibold text-ink">{t("home.requestsPromoTitle")}</span>
+              <span className="text-xs text-hint">{t("home.requestsPromoSubtitle")}</span>
+            </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-hint" />
+          </Link>
 
           {featured && featured.length > 0 && (
             <section className="flex flex-col gap-2">

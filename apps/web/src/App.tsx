@@ -14,14 +14,22 @@ import { Notifications } from "./pages/Notifications";
 import { EditListing } from "./pages/EditListing";
 import { Plans } from "./pages/Plans";
 import { Advertise } from "./pages/Advertise";
+import { Requests } from "./pages/Requests";
+import { CreateRequest } from "./pages/CreateRequest";
+import { RequestDetail } from "./pages/RequestDetail";
+import { EditRequest } from "./pages/EditRequest";
+import { MyRequests } from "./pages/MyRequests";
 
 function useSharedListingRedirect() {
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const listingId = new URLSearchParams(location.search).get("listing");
+    const params = new URLSearchParams(location.search);
+    const listingId = params.get("listing");
+    const requestId = params.get("request");
     if (listingId) navigate(`/listings/${listingId}`, { replace: true });
+    else if (requestId) navigate(`/requests/${requestId}`, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 }
@@ -45,6 +53,11 @@ export default function App() {
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/plans" element={<Plans />} />
         <Route path="/listings/:listingId/advertise" element={<Advertise />} />
+        <Route path="/requests" element={<Requests />} />
+        <Route path="/requests/new" element={<CreateRequest />} />
+        <Route path="/requests/:requestId" element={<RequestDetail />} />
+        <Route path="/requests/:requestId/edit" element={<EditRequest />} />
+        <Route path="/my-requests" element={<MyRequests />} />
       </Routes>
       <BottomNav />
     </div>

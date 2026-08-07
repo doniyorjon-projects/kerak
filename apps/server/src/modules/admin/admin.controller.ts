@@ -20,6 +20,9 @@ import { RejectListingDto } from "./dto/reject-listing.dto";
 import { GrantBoostDto } from "./dto/grant-boost.dto";
 import { SetPlanDto } from "./dto/set-plan.dto";
 import { SetListingsLimitDto } from "./dto/set-listings-limit.dto";
+import { SetChannelDto } from "./dto/set-channel.dto";
+import { SettingsService } from "../settings/settings.service";
+import { RequestsService } from "../requests/requests.service";
 import type { User } from "@prisma/client";
 import { NotificationType } from "@prisma/client";
 import { BOOST_DAYS, PLAN_LISTINGS_LIMIT, UNLIMITED_LISTINGS } from "@kerak/shared";
@@ -35,7 +38,32 @@ export class AdminController {
     private readonly pricingService: PricingService,
     private readonly botService: BotService,
     private readonly notificationsService: NotificationsService,
+    private readonly settingsService: SettingsService,
+    private readonly requestsService: RequestsService,
   ) {}
+
+  @Get("settings")
+  getSettings() {
+    return this.settingsService.get();
+  }
+
+  @Patch("settings/channel")
+  setChannel(@Body() dto: SetChannelDto) {
+    return this.settingsService.updateChannel(dto.channelId ?? null);
+  }
+
+  @Get("requests")
+  findAllRequests() {
+    return this.prisma.request.findMany({
+      include: { author: true, category: true },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  @Delete("requests/:id")
+  async removeRequest(@Param("id") id: string, @CurrentUser() currentUser: User) {
+    await this.requestsService.remove(id, currentUser.id, true);
+  }
 
   @Patch("pricing")
   updatePricing(@Body() dto: UpdatePricingDto) {
@@ -170,6 +198,7 @@ export class AdminController {
       `"${listing.title}" eloningiz tasdiqlandi va endi katalogda ko'rinadi.`,
       `/listings/${listing.id}`,
     );
+    await this.botService.postToChannel(listing);
 
     return listing;
   }

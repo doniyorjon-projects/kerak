@@ -147,7 +147,8 @@ export type NotificationType =
   | "BOOST_PAID"
   | "PLAN_PAID"
   | "NEW_MESSAGE"
-  | "REPORT_RESOLVED";
+  | "REPORT_RESOLVED"
+  | "LISTING_EXPIRED";
 
 export interface NotificationDto {
   id: string;
@@ -172,4 +173,45 @@ export interface CreateListingInput {
   lat: number | null;
   lng: number | null;
   phone: string;
+}
+
+export type RequestStatus = "ACTIVE" | "CLOSED";
+
+export interface RequestDto {
+  id: string;
+  categoryId: string;
+  title: string;
+  description: string;
+  budgetMin: number | null;
+  budgetMax: number | null;
+  addressText: string | null;
+  regionId: number | null;
+  districtId: number | null;
+  phone: string;
+  status: RequestStatus;
+  createdAt: string;
+  author: UserSummaryDto;
+}
+
+export interface CreateRequestInput {
+  categoryId: string;
+  title: string;
+  description: string;
+  budgetMin: number | null;
+  budgetMax: number | null;
+  addressText: string | null;
+  regionId: number | null;
+  districtId: number | null;
+  phone: string;
+}
+
+export interface RequestFeedQuery {
+  categoryId?: string;
+  regionId?: number;
+  districtId?: number;
+  q?: string;
+}
+
+export interface BotSettingsDto {
+  channelId: string | null;
 }

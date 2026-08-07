@@ -6,9 +6,20 @@ import { CategoriesModule } from "../categories/categories.module";
 import { PricingModule } from "../pricing/pricing.module";
 import { BotModule } from "../bot/bot.module";
 import { NotificationsModule } from "../notifications/notifications.module";
+import { SettingsModule } from "../settings/settings.module";
+import { RequestsModule } from "../requests/requests.module";
 
 @Module({
-  imports: [ReportsModule, BannersModule, CategoriesModule, PricingModule, BotModule, NotificationsModule],
+  imports: [
+    ReportsModule,
+    BannersModule,
+    CategoriesModule,
+    PricingModule,
+    BotModule,
+    NotificationsModule,
+    SettingsModule,
+    RequestsModule,
+  ],
   controllers: [AdminController],
 })
 export class AdminModule {}

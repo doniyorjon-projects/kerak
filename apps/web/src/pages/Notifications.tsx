@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, BoxSelect, CheckCheck, MessageCircle, Rocket, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Bell, BoxSelect, CheckCheck, Clock, MessageCircle, Rocket, ThumbsDown, ThumbsUp } from "lucide-react";
 import type { NotificationType } from "@kerak/shared";
 import { fetchNotifications, markAllNotificationsRead, markNotificationRead } from "../api/notifications";
 import { PageHeader } from "../components/PageHeader";
@@ -16,6 +16,7 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   PLAN_PAID: Rocket,
   NEW_MESSAGE: MessageCircle,
   REPORT_RESOLVED: BoxSelect,
+  LISTING_EXPIRED: Clock,
 };
 
 export function Notifications() {

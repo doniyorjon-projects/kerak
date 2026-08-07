@@ -1,4 +1,4 @@
-import type { BoostDuration, PlanTier } from "@kerak/shared";
+import type { BoostDuration, BotSettingsDto, PlanTier } from "@kerak/shared";
 import { api } from "./client";
 
 export interface AdminPendingListing {
@@ -143,4 +143,32 @@ export interface AdminUserListing {
 
 export function fetchUserListings(id: string) {
   return api.get<AdminUserListing[]>(`/admin/users/${id}/listings`);
+}
+
+export function fetchBotSettings() {
+  return api.get<BotSettingsDto>("/admin/settings");
+}
+
+export function setChannel(channelId: string | null) {
+  return api.patch<BotSettingsDto>("/admin/settings/channel", { channelId });
+}
+
+export interface AdminRequest {
+  id: string;
+  title: string;
+  description: string;
+  budgetMin: number | null;
+  budgetMax: number | null;
+  status: string;
+  createdAt: string;
+  author: { firstName: string; username: string | null; telegramId: string };
+  category: { nameUz: string };
+}
+
+export function fetchAllRequestsAdmin() {
+  return api.get<AdminRequest[]>("/admin/requests");
+}
+
+export function deleteRequestAdmin(id: string) {
+  return api.delete<void>(`/admin/requests/${id}`);
 }
