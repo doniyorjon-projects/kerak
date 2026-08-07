@@ -305,6 +305,32 @@ export class BotService implements OnModuleInit {
     );
   }
 
+  async broadcastMessage(text: string, listingId?: string): Promise<{ sent: number; failed: number }> {
+    const users = await this.prisma.user.findMany({
+      where: { isBlocked: false },
+      select: { telegramId: true },
+    });
+
+    const keyboard = listingId
+      ? new InlineKeyboard().webApp("🔍 Ko'rish", `${this.miniAppUrl}?listing=${encodeURIComponent(listingId)}`)
+      : new InlineKeyboard().webApp("🚀 Kerak'ni ochish", this.miniAppUrl);
+
+    let sent = 0;
+    let failed = 0;
+    for (const user of users) {
+      try {
+        await this.bot.api.sendMessage(user.telegramId, text, { reply_markup: keyboard });
+        sent += 1;
+      } catch (err) {
+        failed += 1;
+        this.logger.warn(`Ommaviy xabar yuborilmadi (${user.telegramId}): ${err}`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    }
+
+    return { sent, failed };
+  }
+
   async notifyAdminNewListing(listing: Listing) {
     if (!this.adminTelegramId) {
       this.logger.warn("ADMIN_TELEGRAM_ID sozlanmagan, moderatsiya xabari yuborilmadi");

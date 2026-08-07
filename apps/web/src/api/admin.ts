@@ -176,3 +176,12 @@ export function fetchAllRequestsAdmin() {
 export function deleteRequestAdmin(id: string) {
   return api.delete<void>(`/admin/requests/${id}`);
 }
+
+export interface BroadcastResult {
+  sent: number;
+  failed: number;
+}
+
+export function broadcastMessage(message: string, listingId?: string) {
+  return api.post<BroadcastResult>("/admin/broadcast", { message, listingId: listingId || undefined });
+}

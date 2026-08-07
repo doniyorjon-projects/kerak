@@ -1,7 +1,9 @@
 interface TelegramWebApp {
   initData: string;
+  version: string;
   ready(): void;
   expand(): void;
+  requestFullscreen?(): void;
   colorScheme: "light" | "dark";
   themeParams: Record<string, string>;
   BackButton: {
@@ -12,11 +14,15 @@ interface TelegramWebApp {
   };
   HapticFeedback?: {
     impactOccurred(style: "light" | "medium" | "heavy"): void;
+    notificationOccurred(type: "error" | "success" | "warning"): void;
   };
   onEvent(eventType: "themeChanged", cb: () => void): void;
   offEvent(eventType: "themeChanged", cb: () => void): void;
   openLink(url: string, options?: { try_instant_view?: boolean }): void;
+  openTelegramLink(url: string): void;
   openInvoice(url: string, callback: (status: "paid" | "cancelled" | "failed" | "pending") => void): void;
+  showAlert(message: string, callback?: () => void): void;
+  isVersionAtLeast(version: string): boolean;
 }
 
 declare global {
@@ -64,6 +70,13 @@ export function initTelegramApp(): void {
   if (!webApp) return;
   webApp.ready();
   webApp.expand();
+  if (webApp.requestFullscreen && webApp.isVersionAtLeast("8.0")) {
+    try {
+      webApp.requestFullscreen();
+    } catch {
+      // eski klient versiyalarida ushlab qolinadi, oddiy expand() bilan davom etadi
+    }
+  }
   applyThemeVars();
   webApp.onEvent("themeChanged", applyThemeVars);
 }
@@ -84,27 +97,38 @@ export function openExternalLink(url: string): void {
   }
 }
 
+export function openTelegramLink(url: string): void {
+  if (webApp) {
+    webApp.openTelegramLink(url);
+  } else {
+    window.open(url, "_blank");
+  }
+}
+
 const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME ?? "";
 
 export function buildListingShareLink(listingId: string): string {
   return BOT_USERNAME ? `https://t.me/${BOT_USERNAME}?start=listing_${listingId}` : window.location.href;
 }
 
-export function shareListing(title: string, listingId: string): void {
-  const link = buildListingShareLink(listingId);
+export function shareViaTelegram(url: string, text: string): void {
+  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
 
   if (webApp) {
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(title)}`;
-    webApp.openLink(shareUrl);
+    webApp.openTelegramLink(shareUrl);
     return;
   }
 
   if (navigator.share) {
-    navigator.share({ title, url: link }).catch(() => {});
+    navigator.share({ title: text, url }).catch(() => {});
     return;
   }
 
-  void navigator.clipboard?.writeText(link);
+  void navigator.clipboard?.writeText(url);
+}
+
+export function shareListing(title: string, listingId: string): void {
+  shareViaTelegram(buildListingShareLink(listingId), title);
 }
 
 export function buildReferralLink(userId: string): string {
@@ -116,6 +140,14 @@ export function openStarsInvoice(url: string, onDone: (status: "paid" | "cancell
     webApp.openInvoice(url, onDone);
   } else {
     window.open(url, "_blank");
+  }
+}
+
+export function showAlert(message: string): void {
+  if (webApp) {
+    webApp.showAlert(message);
+  } else {
+    window.alert(message);
   }
 }
 

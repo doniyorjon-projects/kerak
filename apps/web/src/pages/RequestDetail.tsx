@@ -21,6 +21,7 @@ import { REGIONS } from "../data/uzbekistanRegions";
 import { PageHeader } from "../components/PageHeader";
 import { Spinner } from "../components/Spinner";
 import { useBackButton } from "../hooks/useBackButton";
+import { openTelegramLink } from "../telegram";
 import { useTranslation } from "../i18n/LanguageContext";
 
 function getDistrictName(regionId: number | null, districtId: number | null): string | null {
@@ -141,28 +142,24 @@ export function RequestDetail() {
         )}
       </div>
 
-      {isOwner || isAdminViewing ? (
+      {isOwner && (
         <div className="card flex flex-col gap-3">
           <span className="text-sm font-semibold text-ink">{t("request.manageTitle")}</span>
           <div className="grid grid-cols-2 gap-2">
-            {isOwner && (
-              <Link
-                to={`/requests/${request.id}/edit`}
-                state={{ request }}
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-brand/10 py-2.5 text-xs font-semibold text-brand transition active:scale-[0.98]"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-                {t("myListings.edit")}
-              </Link>
-            )}
-            {isOwner && (
-              <button
-                onClick={() => statusMutation.mutate(isClosed ? "ACTIVE" : "CLOSED")}
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-surface-secondary py-2.5 text-xs font-semibold text-hint transition active:scale-[0.98]"
-              >
-                {isClosed ? t("request.reopen") : t("request.close")}
-              </button>
-            )}
+            <Link
+              to={`/requests/${request.id}/edit`}
+              state={{ request }}
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-brand/10 py-2.5 text-xs font-semibold text-brand transition active:scale-[0.98]"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              {t("myListings.edit")}
+            </Link>
+            <button
+              onClick={() => statusMutation.mutate(isClosed ? "ACTIVE" : "CLOSED")}
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-surface-secondary py-2.5 text-xs font-semibold text-hint transition active:scale-[0.98]"
+            >
+              {isClosed ? t("request.reopen") : t("request.close")}
+            </button>
             {deleteConfirm ? (
               <button
                 onClick={() => deleteMutation.mutate()}
@@ -183,23 +180,52 @@ export function RequestDetail() {
             )}
           </div>
         </div>
-      ) : (
+      )}
+
+      {!isOwner && (
         <div className="flex flex-col gap-2">
           {request.author.username && (
-            <a
-              href={`https://t.me/${request.author.username}`}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={() => openTelegramLink(`https://t.me/${request.author.username}`)}
               className="btn-primary"
             >
               <MessageCircle className="h-4 w-4" />
               {t("listing.contactTelegram")}
-            </a>
+            </button>
           )}
-          <a href={`tel:${request.phone}`} className="btn-secondary">
+          <a
+            href={`tel:${request.phone}`}
+            onClick={() => void navigator.clipboard?.writeText(request.phone)}
+            className="btn-secondary"
+          >
             <Phone className="h-4 w-4" />
-            {t("listing.contactPhone")}
+            {t("listing.contactPhone")}: {request.phone}
           </a>
+
+          {isAdminViewing && (
+            <div className="card mt-1 flex flex-col gap-2">
+              <span className="section-title">{t("listing.moderationTitle")}</span>
+              {deleteConfirm ? (
+                <button
+                  onClick={() => deleteMutation.mutate()}
+                  disabled={deleteMutation.isPending}
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive py-2.5 text-xs font-semibold text-white transition active:scale-[0.98] disabled:opacity-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {t("request.confirmDelete")}
+                </button>
+              ) : (
+                <button
+                  onClick={() => setDeleteConfirm(true)}
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive/10 py-2.5 text-xs font-semibold text-destructive transition active:scale-[0.98]"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {t("delete")}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

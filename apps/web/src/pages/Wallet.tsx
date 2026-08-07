@@ -9,7 +9,7 @@ import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
 import { Spinner } from "../components/Spinner";
 import { useBackButton } from "../hooks/useBackButton";
-import { buildReferralLink, openExternalLink, openStarsInvoice } from "../telegram";
+import { buildReferralLink, openExternalLink, openStarsInvoice, shareViaTelegram } from "../telegram";
 import { useTranslation } from "../i18n/LanguageContext";
 import type { TranslationKey } from "../i18n/translations";
 
@@ -59,8 +59,7 @@ export function Wallet() {
   };
 
   const handleShareLink = () => {
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(t("wallet.shareText"))}`;
-    openExternalLink(shareUrl);
+    shareViaTelegram(referralLink, t("wallet.shareText"));
   };
 
   const amountValid = Number(amount) >= 1000;

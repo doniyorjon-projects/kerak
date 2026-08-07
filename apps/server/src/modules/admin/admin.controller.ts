@@ -25,6 +25,7 @@ import { SettingsService } from "../settings/settings.service";
 import { RequestsService } from "../requests/requests.service";
 import { SavedSearchesService } from "../saved-searches/saved-searches.service";
 import { SetStarsRateDto } from "./dto/set-stars-rate.dto";
+import { BroadcastDto } from "./dto/broadcast.dto";
 import type { User } from "@prisma/client";
 import { NotificationType } from "@prisma/client";
 import { BOOST_DAYS, PLAN_LISTINGS_LIMIT, UNLIMITED_LISTINGS } from "@kerak/shared";
@@ -264,6 +265,11 @@ export class AdminController {
     );
 
     return updated;
+  }
+
+  @Post("broadcast")
+  broadcast(@Body() dto: BroadcastDto) {
+    return this.botService.broadcastMessage(dto.message, dto.listingId);
   }
 
   @Get("reports")

@@ -43,7 +43,7 @@ import { BackButton } from "../components/BackButton";
 import { StarRating } from "../components/StarRating";
 import { Spinner } from "../components/Spinner";
 import { useBackButton } from "../hooks/useBackButton";
-import { shareListing } from "../telegram";
+import { openTelegramLink, shareListing, showAlert } from "../telegram";
 import { useTranslation } from "../i18n/LanguageContext";
 import type { TranslationKey } from "../i18n/translations";
 
@@ -192,7 +192,10 @@ export function ListingDetail() {
 
   const bumpMutation = useMutation({
     mutationFn: () => bumpListing(listingId!),
-    onSuccess: (updated) => queryClient.setQueryData(["listing", listingId], updated),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["listing", listingId], updated);
+      showAlert(t("listing.bumped"));
+    },
   });
 
   const blockMutation = useMutation({
@@ -378,7 +381,7 @@ export function ListingDetail() {
         </div>
       )}
 
-      {isOwner || isAdminViewing ? (
+      {(isOwner || isAdminViewing) && (
         <div className="card flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-ink">{t("listing.manageTitle")}</span>
@@ -427,7 +430,6 @@ export function ListingDetail() {
           {bumpMutation.isError && (
             <span className="text-xs text-destructive">{bumpMutation.error.message}</span>
           )}
-          {bumpMutation.isSuccess && <span className="text-xs text-emerald-500">{t("listing.bumped")}</span>}
 
           <div className="grid grid-cols-2 gap-2">
             <Link
@@ -548,7 +550,9 @@ export function ListingDetail() {
             </div>
           )}
         </div>
-      ) : (
+      )}
+
+      {!isOwner && (
         <>
           <div className="card flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -609,24 +613,28 @@ export function ListingDetail() {
 
           <div className="flex flex-col gap-2">
             {listing.seller.username && (
-              <a
-                href={`https://t.me/${listing.seller.username}`}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => handleContact(ContactEventType.TELEGRAM_CLICK)}
+              <button
+                type="button"
+                onClick={() => {
+                  handleContact(ContactEventType.TELEGRAM_CLICK);
+                  openTelegramLink(`https://t.me/${listing.seller.username}`);
+                }}
                 className="btn-primary"
               >
                 <MessageCircle className="h-4 w-4" />
                 {t("listing.contactTelegram")}
-              </a>
+              </button>
             )}
             <a
               href={`tel:${listing.phone}`}
-              onClick={() => handleContact(ContactEventType.PHONE_CLICK)}
+              onClick={() => {
+                handleContact(ContactEventType.PHONE_CLICK);
+                void navigator.clipboard?.writeText(listing.phone);
+              }}
               className="btn-secondary"
             >
               <Phone className="h-4 w-4" />
-              {t("listing.contactPhone")}
+              {t("listing.contactPhone")}: {listing.phone}
             </a>
           </div>
 

@@ -14,6 +14,7 @@ import {
   Inbox,
   Images,
   Infinity as InfinityIcon,
+  Megaphone,
   MessageSquareText,
   Pencil,
   Plus,
@@ -36,6 +37,7 @@ import {
   addAdmin,
   approveListing,
   blockUser,
+  broadcastMessage,
   deleteRequestAdmin,
   deleteUser,
   dismissReport,
@@ -1067,6 +1069,62 @@ function AdminRequestsTab() {
   );
 }
 
+function BroadcastTab() {
+  const { t } = useTranslation();
+  const [message, setMessage] = useState("");
+  const [listingId, setListingId] = useState("");
+
+  const sendMutation = useMutation({
+    mutationFn: () => broadcastMessage(message.trim(), listingId.trim() || undefined),
+    onSuccess: () => {
+      setMessage("");
+      setListingId("");
+    },
+  });
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="card flex flex-col gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
+            <Megaphone className="h-4 w-4" />
+          </div>
+          <span className="text-sm font-semibold text-ink">{t("admin.broadcastTitle")}</span>
+        </div>
+        <p className="text-xs text-hint">{t("admin.broadcastHint")}</p>
+        <textarea
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder={t("admin.broadcastPlaceholder")}
+          rows={5}
+          className="input resize-none"
+        />
+        <input
+          value={listingId}
+          onChange={(e) => setListingId(e.target.value)}
+          placeholder={t("admin.broadcastListingIdPlaceholder")}
+          className="input"
+        />
+        <button
+          onClick={() => sendMutation.mutate()}
+          disabled={sendMutation.isPending || !message.trim()}
+          className="btn-primary disabled:opacity-50"
+        >
+          {sendMutation.isPending ? t("admin.broadcastSending") : t("admin.broadcastSend")}
+        </button>
+        {sendMutation.isSuccess && sendMutation.data && (
+          <span className="text-xs text-emerald-500">
+            {t("admin.broadcastResult")
+              .replace("{sent}", String(sendMutation.data.sent))
+              .replace("{failed}", String(sendMutation.data.failed))}
+          </span>
+        )}
+        {sendMutation.isError && <span className="text-xs text-destructive">{sendMutation.error.message}</span>}
+      </div>
+    </div>
+  );
+}
+
 function SettingsTab() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -1163,6 +1221,7 @@ export function Admin() {
     | "users"
     | "pricing"
     | "requests"
+    | "broadcast"
     | "settings"
   >("moderation");
 
@@ -1236,6 +1295,13 @@ export function Admin() {
             {t("admin.requests")}
           </button>
           <button
+            onClick={() => setTab("broadcast")}
+            className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-medium transition ${tab === "broadcast" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+          >
+            <Megaphone className="h-4 w-4" />
+            {t("admin.broadcast")}
+          </button>
+          <button
             onClick={() => setTab("settings")}
             className={`flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-medium transition ${tab === "settings" ? "bg-brand text-brand-contrast" : "text-hint"}`}
           >
@@ -1254,6 +1320,7 @@ export function Admin() {
       {tab === "users" && <UsersTab />}
       {tab === "pricing" && <PricingTab />}
       {tab === "requests" && <AdminRequestsTab />}
+      {tab === "broadcast" && <BroadcastTab />}
       {tab === "settings" && <SettingsTab />}
     </div>
   );

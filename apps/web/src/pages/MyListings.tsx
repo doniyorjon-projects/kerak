@@ -26,6 +26,7 @@ import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
 import { Spinner } from "../components/Spinner";
 import { useBackButton } from "../hooks/useBackButton";
+import { showAlert } from "../telegram";
 import { useTranslation } from "../i18n/LanguageContext";
 import type { TranslationKey } from "../i18n/translations";
 
@@ -59,7 +60,10 @@ function ListingRow({ listing, selectMode, selected, onToggleSelect }: ListingRo
   });
   const bumpMutation = useMutation({
     mutationFn: () => bumpListing(listing.id),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      showAlert(t("listing.bumped"));
+    },
   });
 
   const { labelKey, icon: StatusIcon, className } = STATUS_INFO[listing.status];
