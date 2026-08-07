@@ -72,6 +72,8 @@ export class UsersService {
         `${newUser.firstName} sizning havolangiz orqali qo'shildi. Hamyoningizga ${REFERRAL_BONUS_AMOUNT.toLocaleString("uz-UZ")} so'm qo'shildi.`,
         "/wallet",
       );
+
+      return this.prisma.user.findUniqueOrThrow({ where: { id: newUser.id } });
     }
 
     return newUser;
