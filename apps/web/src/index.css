@@ -13,7 +13,17 @@
   --tg-button-text: 255 255 255;
   --tg-destructive: 239 68 68;
   --tg-border: rgb(17 24 39 / 0.08);
+  --tg-reported-top: 0px;
   --tg-safe-top: 0px;
+}
+
+/* Telegram fullscreen rejimida uning close/orqaga/menyu qatori WebView
+   ustiga chiqadi. safeAreaInset/contentSafeAreaInset ba'zi klientlarda
+   ishonchsiz (doim 0) bo'lgani uchun, qurilmaning haqiqiy xavfsiz zonasi
+   (env(safe-area-inset-top)) + Telegram qatori uchun taxminiy balandlik
+   bilan pastki chegara sifatida ishlatiladi. */
+html[data-tg-fullscreen="true"] {
+  --tg-safe-top: max(calc(env(safe-area-inset-top, 0px) + 56px), var(--tg-reported-top));
 }
 
 @media (prefers-color-scheme: dark) {

@@ -14,6 +14,7 @@ interface TelegramWebApp {
   expand(): void;
   requestFullscreen?(): void;
   disableVerticalSwipes?(): void;
+  isFullscreen?: boolean;
   colorScheme: "light" | "dark";
   themeParams: Record<string, string>;
   safeAreaInset: SafeAreaInset;
@@ -81,8 +82,14 @@ function applyThemeVars(): void {
 function applySafeAreaVars(): void {
   if (!webApp) return;
   const root = document.documentElement;
-  const top = (webApp.safeAreaInset?.top ?? 0) + (webApp.contentSafeAreaInset?.top ?? 0);
-  root.style.setProperty("--tg-safe-top", `${top}px`);
+  // Ba'zi klient versiyalarida safeAreaInset/contentSafeAreaInset doim 0
+  // qaytarishi mumkin - shu sababli qiymat CSS'da qurilma xavfsiz zonasi
+  // (env(safe-area-inset-top)) + Telegram'ning close/menu qatori uchun
+  // zaxira balandlik bilan birga hisoblanadi (index.css'dagi
+  // [data-tg-fullscreen="true"] qoidasiga qarang).
+  const reportedTop = (webApp.safeAreaInset?.top ?? 0) + (webApp.contentSafeAreaInset?.top ?? 0);
+  root.style.setProperty("--tg-reported-top", `${reportedTop}px`);
+  root.dataset.tgFullscreen = webApp.isFullscreen ? "true" : "false";
 }
 
 export function initTelegramApp(): void {
