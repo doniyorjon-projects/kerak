@@ -38,6 +38,7 @@ export function RequestDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [phoneRevealed, setPhoneRevealed] = useState(false);
 
   const { data: request, isLoading, error } = useQuery({
     queryKey: ["request", requestId],
@@ -194,17 +195,28 @@ export function RequestDetail() {
               {t("listing.contactTelegram")}
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => {
-              void navigator.clipboard?.writeText(request.phone);
-              callPhone(request.phone);
-            }}
-            className="btn-secondary"
-          >
-            <Phone className="h-4 w-4" />
-            {t("listing.contactPhone")}: {request.phone}
-          </button>
+          {phoneRevealed ? (
+            <a
+              href={`tel:${request.phone}`}
+              onClick={() => callPhone(request.phone)}
+              className="btn-secondary"
+            >
+              <Phone className="h-4 w-4" />
+              {request.phone}
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                void navigator.clipboard?.writeText(request.phone);
+                setPhoneRevealed(true);
+              }}
+              className="btn-secondary"
+            >
+              <Phone className="h-4 w-4" />
+              {t("listing.showPhone")}
+            </button>
+          )}
 
           {isAdminViewing && (
             <div className="card mt-1 flex flex-col gap-2">

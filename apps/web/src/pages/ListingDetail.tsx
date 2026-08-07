@@ -71,6 +71,7 @@ export function ListingDetail() {
     return `${price.toLocaleString("uz-UZ")} ${t("som")}`;
   };
 
+  const [phoneRevealed, setPhoneRevealed] = useState(false);
   const [messageText, setMessageText] = useState("");
   const [messageStatus, setMessageStatus] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
@@ -625,18 +626,29 @@ export function ListingDetail() {
                 {t("listing.contactTelegram")}
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => {
-                handleContact(ContactEventType.PHONE_CLICK);
-                void navigator.clipboard?.writeText(listing.phone);
-                callPhone(listing.phone);
-              }}
-              className="btn-secondary"
-            >
-              <Phone className="h-4 w-4" />
-              {t("listing.contactPhone")}: {listing.phone}
-            </button>
+            {phoneRevealed ? (
+              <a
+                href={`tel:${listing.phone}`}
+                onClick={() => callPhone(listing.phone)}
+                className="btn-secondary"
+              >
+                <Phone className="h-4 w-4" />
+                {listing.phone}
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  handleContact(ContactEventType.PHONE_CLICK);
+                  void navigator.clipboard?.writeText(listing.phone);
+                  setPhoneRevealed(true);
+                }}
+                className="btn-secondary"
+              >
+                <Phone className="h-4 w-4" />
+                {t("listing.showPhone")}
+              </button>
+            )}
           </div>
 
           <div className="card flex flex-col gap-2">
