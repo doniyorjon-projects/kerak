@@ -701,13 +701,27 @@ function UsersTab() {
       invalidate();
     },
   });
+  const clearDraft = (id: string) =>
+    setLimitDrafts((prev) => {
+      if (!(id in prev)) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+
   const planMutation = useMutation({
     mutationFn: ({ id, tier }: { id: string; tier: "STANDARD" | "BUSINESS" }) => setUserPlan(id, tier),
-    onSuccess: invalidate,
+    onSuccess: (_data, variables) => {
+      clearDraft(variables.id);
+      invalidate();
+    },
   });
   const limitMutation = useMutation({
     mutationFn: ({ id, limit }: { id: string; limit: number }) => setListingsLimit(id, limit),
-    onSuccess: invalidate,
+    onSuccess: (_data, variables) => {
+      clearDraft(variables.id);
+      invalidate();
+    },
   });
 
   const filtered = (users ?? []).filter((u) => {
@@ -860,6 +874,11 @@ function UsersTab() {
                     {t("save")}
                   </button>
                 </div>
+                {(planMutation.isError || limitMutation.isError) && (
+                  <span className="text-xs text-destructive">
+                    {(planMutation.error ?? limitMutation.error)?.message}
+                  </span>
+                )}
               </div>
             )}
 

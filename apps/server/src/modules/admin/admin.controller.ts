@@ -122,7 +122,7 @@ export class AdminController {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException("Foydalanuvchi topilmadi");
 
-    const newLimit = Math.max(user.listingsLimit, PLAN_LISTINGS_LIMIT[dto.tier]);
+    const newLimit = PLAN_LISTINGS_LIMIT[dto.tier];
     const updated = await this.prisma.user.update({ where: { id }, data: { listingsLimit: newLimit } });
 
     await this.notificationsService.create(
