@@ -294,12 +294,13 @@ export class ListingsService {
       throw new BadRequestException("Faqat faol e'lonlarni yuqoriga ko'tarish mumkin");
     }
 
-    const lastBump = listing.bumpedAt ?? listing.createdAt;
-    const cooldownEnds = new Date(lastBump.getTime() + BUMP_COOLDOWN_HOURS * 60 * 60 * 1000);
-    if (cooldownEnds > new Date()) {
-      throw new BadRequestException(
-        `Bu e'lonni faqat ${BUMP_COOLDOWN_HOURS} soatda bir marta bepul ko'tarish mumkin`,
-      );
+    if (listing.bumpedAt) {
+      const cooldownEnds = new Date(listing.bumpedAt.getTime() + BUMP_COOLDOWN_HOURS * 60 * 60 * 1000);
+      if (cooldownEnds > new Date()) {
+        throw new BadRequestException(
+          `Bu e'lonni faqat ${BUMP_COOLDOWN_HOURS} soatda bir marta bepul ko'tarish mumkin`,
+        );
+      }
     }
 
     return this.prisma.listing.update({
