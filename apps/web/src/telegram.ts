@@ -5,7 +5,7 @@ interface SafeAreaInset {
   right: number;
 }
 
-type TelegramEventType = "themeChanged" | "safeAreaChanged" | "contentSafeAreaChanged";
+type TelegramEventType = "themeChanged" | "safeAreaChanged" | "contentSafeAreaChanged" | "fullscreenChanged";
 
 interface TelegramWebApp {
   initData: string;
@@ -112,6 +112,11 @@ export function initTelegramApp(): void {
   // qolmasligi uchun - bu qiymatlar fullscreen'ga kirish/chiqishda o'zgaradi.
   webApp.onEvent("safeAreaChanged", applySafeAreaVars);
   webApp.onEvent("contentSafeAreaChanged", applySafeAreaVars);
+  webApp.onEvent("fullscreenChanged", applySafeAreaVars);
+  // requestFullscreen() natijasi va contentSafeAreaInset yangilanishi ba'zi
+  // klient versiyalarida event orqali emas, kechikib keladi - shu uchun
+  // bir necha marta qayta o'qib turamiz.
+  [200, 600, 1500].forEach((delay) => setTimeout(applySafeAreaVars, delay));
 }
 
 export function getInitData(): string {
@@ -174,6 +179,17 @@ export function openStarsInvoice(url: string, onDone: (status: "paid" | "cancell
   } else {
     window.open(url, "_blank");
   }
+}
+
+export function callPhone(phone: string): void {
+  const url = `tel:${phone}`;
+  if (webApp) {
+    // WebView'ning o'z navigatsiyasi (window.location.href) ba'zi klientlarda
+    // tel: sxemasini o'tkazmaydi - openLink orqali tashqariga chiqarib ko'ramiz.
+    webApp.openLink(url);
+    return;
+  }
+  window.location.href = url;
 }
 
 export function showAlert(message: string): void {

@@ -43,7 +43,7 @@ import { BackButton } from "../components/BackButton";
 import { StarRating } from "../components/StarRating";
 import { Spinner } from "../components/Spinner";
 import { useBackButton } from "../hooks/useBackButton";
-import { openTelegramLink, shareListing, showAlert } from "../telegram";
+import { callPhone, openTelegramLink, shareListing, showAlert } from "../telegram";
 import { useTranslation } from "../i18n/LanguageContext";
 import type { TranslationKey } from "../i18n/translations";
 
@@ -630,7 +630,7 @@ export function ListingDetail() {
               onClick={() => {
                 handleContact(ContactEventType.PHONE_CLICK);
                 void navigator.clipboard?.writeText(listing.phone);
-                window.location.href = `tel:${listing.phone}`;
+                callPhone(listing.phone);
               }}
               className="btn-secondary"
             >

@@ -21,7 +21,7 @@ import { REGIONS } from "../data/uzbekistanRegions";
 import { PageHeader } from "../components/PageHeader";
 import { Spinner } from "../components/Spinner";
 import { useBackButton } from "../hooks/useBackButton";
-import { openTelegramLink } from "../telegram";
+import { callPhone, openTelegramLink } from "../telegram";
 import { useTranslation } from "../i18n/LanguageContext";
 
 function getDistrictName(regionId: number | null, districtId: number | null): string | null {
@@ -198,7 +198,7 @@ export function RequestDetail() {
             type="button"
             onClick={() => {
               void navigator.clipboard?.writeText(request.phone);
-              window.location.href = `tel:${request.phone}`;
+              callPhone(request.phone);
             }}
             className="btn-secondary"
           >
