@@ -16,6 +16,8 @@ export enum ContactEventType {
   PHONE_CLICK = "PHONE_CLICK",
 }
 
+export type ListingCondition = "NEW" | "USED";
+
 export interface CategoryDto {
   id: string;
   parentId: string | null;
@@ -54,6 +56,7 @@ export interface ListingDto {
   lat: number | null;
   lng: number | null;
   phone: string;
+  condition?: ListingCondition | null;
   status: ListingStatus;
   rejectionReason?: string | null;
   categoryId: string;
@@ -61,7 +64,14 @@ export interface ListingDto {
   viewsCount: number;
   distanceKm?: number | null;
   boostedUntil?: string | null;
+  bumpedAt?: string | null;
   seller: UserSummaryDto;
+}
+
+export interface UserBlockDto {
+  id: string;
+  blocked: UserSummaryDto;
+  createdAt: string;
 }
 
 export type BoostDuration = "DAYS_3" | "DAYS_7" | "DAYS_30";
@@ -130,6 +140,7 @@ export interface FeedQuery {
   districtId?: number;
   minPrice?: number;
   maxPrice?: number;
+  condition?: ListingCondition;
 }
 
 export interface BannerDto {
@@ -173,6 +184,7 @@ export interface CreateListingInput {
   lat: number | null;
   lng: number | null;
   phone: string;
+  condition?: ListingCondition | null;
 }
 
 export type RequestStatus = "ACTIVE" | "CLOSED";

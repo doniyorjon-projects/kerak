@@ -12,10 +12,11 @@ import {
   Rocket,
   Tag,
   Trash2,
+  TrendingUp,
   XCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { deleteListing, fetchMyListings, updateListingStatus } from "../api/listings";
+import { bumpListing, deleteListing, fetchMyListings, updateListingStatus } from "../api/listings";
 import { ListingStatus } from "@kerak/shared";
 import type { ListingDto } from "@kerak/shared";
 import { PageHeader } from "../components/PageHeader";
@@ -46,6 +47,10 @@ function ListingRow({ listing }: { listing: ListingDto }) {
     mutationFn: () => deleteListing(listing.id),
     onSuccess: invalidate,
   });
+  const bumpMutation = useMutation({
+    mutationFn: () => bumpListing(listing.id),
+    onSuccess: invalidate,
+  });
 
   const { labelKey, icon: StatusIcon, className } = STATUS_INFO[listing.status];
   const isBoosted = Boolean(listing.boostedUntil && new Date(listing.boostedUntil) > new Date());
@@ -69,13 +74,26 @@ function ListingRow({ listing }: { listing: ListingDto }) {
         )}
       </Link>
       {listing.status === "ACTIVE" && (
-        <Link
-          to={`/listings/${listing.id}/advertise`}
-          className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-500/10 py-2.5 text-xs font-semibold text-amber-500 transition active:scale-[0.98]"
-        >
-          <Megaphone className="h-3.5 w-3.5" />
-          {t("advertise.button")}
-        </Link>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => bumpMutation.mutate()}
+            disabled={bumpMutation.isPending}
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-brand/10 py-2.5 text-xs font-semibold text-brand transition active:scale-[0.98] disabled:opacity-50"
+          >
+            <TrendingUp className="h-3.5 w-3.5" />
+            {t("listing.bump")}
+          </button>
+          <Link
+            to={`/listings/${listing.id}/advertise`}
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-500/10 py-2.5 text-xs font-semibold text-amber-500 transition active:scale-[0.98]"
+          >
+            <Megaphone className="h-3.5 w-3.5" />
+            {t("advertise.button")}
+          </Link>
+        </div>
+      )}
+      {bumpMutation.isError && (
+        <span className="text-xs text-destructive">{bumpMutation.error.message}</span>
       )}
       <div className="grid grid-cols-2 gap-2">
         <Link

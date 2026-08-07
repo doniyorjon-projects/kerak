@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Ban,
   CheckCircle2,
   MapPin,
   MessageCircle,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { deleteRequest, fetchRequest, updateRequest } from "../api/requests";
 import { fetchMe } from "../api/users";
+import { blockUser, checkBlockStatus, unblockUser } from "../api/blocks";
 import { fetchCategories } from "../api/categories";
 import { REGIONS } from "../data/uzbekistanRegions";
 import { PageHeader } from "../components/PageHeader";
@@ -43,10 +45,21 @@ export function RequestDetail() {
   });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
+  const { data: blockStatus } = useQuery({
+    queryKey: ["block-status", request?.author.id],
+    queryFn: () => checkBlockStatus(request!.author.id),
+    enabled: Boolean(request?.author.id && me && me.id !== request.author.id),
+  });
 
   const statusMutation = useMutation({
     mutationFn: (status: "ACTIVE" | "CLOSED") => updateRequest(requestId!, { status }),
     onSuccess: (updated) => queryClient.setQueryData(["request", requestId], updated),
+  });
+
+  const blockMutation = useMutation({
+    mutationFn: () =>
+      blockStatus?.isBlocked ? unblockUser(request!.author.id) : blockUser(request!.author.id),
+    onSuccess: (result) => queryClient.setQueryData(["block-status", request?.author.id], result),
   });
 
   const deleteMutation = useMutation({
@@ -107,13 +120,25 @@ export function RequestDetail() {
         </div>
       </div>
 
-      <div className="card flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-secondary">
-          <User className="h-4 w-4 text-hint" />
+      <div className="card flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-secondary">
+            <User className="h-4 w-4 text-hint" />
+          </div>
+          <span className="text-sm font-medium text-ink">
+            {request.author.username ? `@${request.author.username}` : request.author.firstName}
+          </span>
         </div>
-        <span className="text-sm font-medium text-ink">
-          {request.author.username ? `@${request.author.username}` : request.author.firstName}
-        </span>
+        {!isOwner && !isAdminViewing && (
+          <button
+            onClick={() => blockMutation.mutate()}
+            disabled={blockMutation.isPending}
+            className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs active:bg-surface-secondary disabled:opacity-50 ${blockStatus?.isBlocked ? "text-destructive" : "text-hint"}`}
+          >
+            <Ban className="h-3.5 w-3.5" />
+            {blockStatus?.isBlocked ? t("listing.unblockUser") : t("listing.blockUser")}
+          </button>
+        )}
       </div>
 
       {isOwner || isAdminViewing ? (

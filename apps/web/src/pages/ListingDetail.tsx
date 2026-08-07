@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  Ban,
   Check,
   CheckCircle2,
   Clock,
@@ -20,6 +21,7 @@ import {
   Share2,
   Tag,
   Trash2,
+  TrendingUp,
   User,
   X,
   XCircle,
@@ -27,9 +29,10 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { ContactEventType } from "@kerak/shared";
 import type { BoostDuration, ListingStatus } from "@kerak/shared";
-import { deleteListing, fetchListing, fetchListingStats, logContactEvent, updateListingStatus } from "../api/listings";
+import { bumpListing, deleteListing, fetchListing, fetchListingStats, logContactEvent, updateListingStatus } from "../api/listings";
 import { approveListing, grantBoost, rejectListing } from "../api/admin";
 import { fetchMe } from "../api/users";
+import { blockUser, checkBlockStatus, unblockUser } from "../api/blocks";
 import { addFavorite, fetchFavoriteStatus, removeFavorite } from "../api/favorites";
 import { sendListingMessage } from "../api/messages";
 import { reportListing } from "../api/reports";
@@ -89,6 +92,11 @@ export function ListingDetail() {
     queryKey: ["favorite-status", listingId],
     queryFn: () => fetchFavoriteStatus(listingId!),
     enabled: Boolean(listingId),
+  });
+  const { data: blockStatus } = useQuery({
+    queryKey: ["block-status", listing?.seller.id],
+    queryFn: () => checkBlockStatus(listing!.seller.id),
+    enabled: Boolean(listing?.seller.id && me && me.id !== listing.seller.id),
   });
   const { data: ratingSummary } = useQuery({
     queryKey: ["rating-summary", listing?.seller.id],
@@ -182,6 +190,17 @@ export function ListingDetail() {
     },
   });
 
+  const bumpMutation = useMutation({
+    mutationFn: () => bumpListing(listingId!),
+    onSuccess: (updated) => queryClient.setQueryData(["listing", listingId], updated),
+  });
+
+  const blockMutation = useMutation({
+    mutationFn: () =>
+      blockStatus?.isBlocked ? unblockUser(listing!.seller.id) : blockUser(listing!.seller.id),
+    onSuccess: (result) => queryClient.setQueryData(["block-status", listing?.seller.id], result),
+  });
+
   if (isLoading) return <Spinner label={t("loading")} />;
   if (error || !listing) return <div className="p-4 text-center text-destructive">{t("listing.notFound")}</div>;
 
@@ -230,7 +249,14 @@ export function ListingDetail() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <h1 className="text-xl font-bold leading-snug text-ink">{listing.title}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold leading-snug text-ink">{listing.title}</h1>
+          {listing.condition && (
+            <span className="shrink-0 rounded-full bg-surface-secondary px-2 py-0.5 text-[11px] font-semibold text-hint">
+              {listing.condition === "NEW" ? t("create.conditionNew") : t("create.conditionUsed")}
+            </span>
+          )}
+        </div>
         <div className="flex items-center justify-between">
           <span className="text-xl font-bold text-brand">
             {formatPrice(listing.price, listing.isNegotiable)}
@@ -380,14 +406,28 @@ export function ListingDetail() {
           )}
 
           {isOwner && listing.status === "ACTIVE" && (
-            <Link
-              to={`/listings/${listing.id}/advertise`}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-500/10 py-2.5 text-xs font-semibold text-amber-500 transition active:scale-[0.98]"
-            >
-              <Megaphone className="h-3.5 w-3.5" />
-              {t("advertise.button")}
-            </Link>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => bumpMutation.mutate()}
+                disabled={bumpMutation.isPending}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-brand/10 py-2.5 text-xs font-semibold text-brand transition active:scale-[0.98] disabled:opacity-50"
+              >
+                <TrendingUp className="h-3.5 w-3.5" />
+                {t("listing.bump")}
+              </button>
+              <Link
+                to={`/listings/${listing.id}/advertise`}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-500/10 py-2.5 text-xs font-semibold text-amber-500 transition active:scale-[0.98]"
+              >
+                <Megaphone className="h-3.5 w-3.5" />
+                {t("advertise.button")}
+              </Link>
+            </div>
           )}
+          {bumpMutation.isError && (
+            <span className="text-xs text-destructive">{bumpMutation.error.message}</span>
+          )}
+          {bumpMutation.isSuccess && <span className="text-xs text-emerald-500">{t("listing.bumped")}</span>}
 
           <div className="grid grid-cols-2 gap-2">
             <Link
@@ -529,13 +569,23 @@ export function ListingDetail() {
                 )}
               </div>
             </div>
-            <button
-              onClick={() => setReportOpen((v) => !v)}
-              className="flex items-center gap-1 rounded-full px-2 py-1 text-xs text-hint active:bg-surface-secondary"
-            >
-              <Flag className="h-3.5 w-3.5" />
-              {t("listing.report")}
-            </button>
+            <div className="flex flex-col items-end gap-1">
+              <button
+                onClick={() => setReportOpen((v) => !v)}
+                className="flex items-center gap-1 rounded-full px-2 py-1 text-xs text-hint active:bg-surface-secondary"
+              >
+                <Flag className="h-3.5 w-3.5" />
+                {t("listing.report")}
+              </button>
+              <button
+                onClick={() => blockMutation.mutate()}
+                disabled={blockMutation.isPending}
+                className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs active:bg-surface-secondary disabled:opacity-50 ${blockStatus?.isBlocked ? "text-destructive" : "text-hint"}`}
+              >
+                <Ban className="h-3.5 w-3.5" />
+                {blockStatus?.isBlocked ? t("listing.unblockUser") : t("listing.blockUser")}
+              </button>
+            </div>
           </div>
 
           {reportOpen && (

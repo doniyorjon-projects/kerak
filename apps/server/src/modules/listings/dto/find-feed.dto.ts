@@ -1,5 +1,6 @@
 import { Transform, Type } from "class-transformer";
-import { IsBoolean, IsIn, IsNumber, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsEnum, IsIn, IsNumber, IsOptional, IsString } from "class-validator";
+import { ListingCondition } from "@prisma/client";
 import { FeedSort } from "../listings.service";
 
 const SORT_VALUES: FeedSort[] = ["distance", "newest", "price_asc", "price_desc"];
@@ -56,4 +57,8 @@ export class FindFeedDto {
   @Type(() => Number)
   @IsNumber()
   maxPrice?: number;
+
+  @IsOptional()
+  @IsEnum(ListingCondition)
+  condition?: ListingCondition;
 }

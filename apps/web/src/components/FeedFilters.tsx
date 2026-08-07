@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { SlidersHorizontal, X } from "lucide-react";
-import type { CategoryDto } from "@kerak/shared";
+import type { CategoryDto, ListingCondition } from "@kerak/shared";
 import { REGIONS } from "../data/uzbekistanRegions";
 import { useTranslation } from "../i18n/LanguageContext";
 
@@ -11,6 +11,7 @@ export interface FeedFilterValue {
   districtId?: number;
   minPrice?: number;
   maxPrice?: number;
+  condition?: ListingCondition;
 }
 
 interface FeedFiltersProps {
@@ -39,9 +40,14 @@ export function FeedFilters({ value, onChange, categories }: FeedFiltersProps) {
 
   const region = REGIONS.find((r) => r.id === draft.regionId);
 
-  const activeCount = [value.categoryId, value.regionId, value.districtId, value.minPrice, value.maxPrice].filter(
-    (v) => v !== undefined,
-  ).length;
+  const activeCount = [
+    value.categoryId,
+    value.regionId,
+    value.districtId,
+    value.minPrice,
+    value.maxPrice,
+    value.condition,
+  ].filter((v) => v !== undefined).length;
 
   const handleApply = () => {
     onChange(draft);
@@ -169,6 +175,33 @@ export function FeedFilters({ value, onChange, categories }: FeedFiltersProps) {
                     }
                     className="input"
                   />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium text-ink">{t("filters.condition")}</span>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDraft((d) => ({ ...d, condition: undefined }))}
+                    className={`rounded-xl py-2 text-xs font-semibold transition ${!draft.condition ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"}`}
+                  >
+                    {t("filters.allConditions")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDraft((d) => ({ ...d, condition: "NEW" }))}
+                    className={`rounded-xl py-2 text-xs font-semibold transition ${draft.condition === "NEW" ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"}`}
+                  >
+                    {t("create.conditionNew")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDraft((d) => ({ ...d, condition: "USED" }))}
+                    className={`rounded-xl py-2 text-xs font-semibold transition ${draft.condition === "USED" ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"}`}
+                  >
+                    {t("create.conditionUsed")}
+                  </button>
                 </div>
               </div>
 

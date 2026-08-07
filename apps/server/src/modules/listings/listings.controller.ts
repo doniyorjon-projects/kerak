@@ -65,6 +65,12 @@ export class ListingsController {
   }
 
   @UseGuards(TelegramAuthGuard)
+  @Post(":id/bump")
+  bump(@Param("id") id: string, @CurrentUser() user: User) {
+    return this.listingsService.bump(id, user.id);
+  }
+
+  @UseGuards(TelegramAuthGuard)
   @Post(":id/contact-event")
   logContactEvent(@Param("id") id: string, @CurrentUser() user: User, @Body() dto: ContactEventDto) {
     return this.listingsService.logContactEvent(id, user.id, dto.type);

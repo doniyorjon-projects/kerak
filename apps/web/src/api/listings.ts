@@ -15,6 +15,7 @@ export function fetchListingFeed(query: FeedQuery = {}) {
   if (query.districtId !== undefined) params.set("districtId", String(query.districtId));
   if (query.minPrice !== undefined) params.set("minPrice", String(query.minPrice));
   if (query.maxPrice !== undefined) params.set("maxPrice", String(query.maxPrice));
+  if (query.condition) params.set("condition", query.condition);
   const qs = params.toString();
   return api.get<ListingDto[]>(`/listings${qs ? `?${qs}` : ""}`);
 }
@@ -41,6 +42,10 @@ export function updateListing(id: string, data: Partial<CreateListingInput>) {
 
 export function deleteListing(id: string) {
   return api.delete<void>(`/listings/${id}`);
+}
+
+export function bumpListing(id: string) {
+  return api.post<ListingDto>(`/listings/${id}/bump`);
 }
 
 export function logContactEvent(id: string, type: ContactEventType) {

@@ -64,6 +64,11 @@ enum RequestStatus {
   CLOSED
 }
 
+enum ListingCondition {
+  NEW
+  USED
+}
+
 model User {
   id         String   @id @default(cuid())
   telegramId String   @unique
@@ -88,6 +93,8 @@ model User {
   planOrders       PlanOrder[]
   notifications    Notification[]
   requests         Request[]
+  blocksMade       UserBlock[] @relation("BlocksMade")
+  blocksReceived   UserBlock[] @relation("BlocksReceived")
 }
 
 model Category {
@@ -121,10 +128,12 @@ model Listing {
   lat          Float?
   lng          Float?
   phone        String
+  condition    ListingCondition?
   status       ListingStatus @default(PENDING)
   rejectionReason String?
   viewsCount   Int           @default(0)
   boostedUntil DateTime?
+  bumpedAt     DateTime?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -296,4 +305,15 @@ model BotSettings {
   id        String   @id @default(cuid())
   channelId String?
   updatedAt DateTime @updatedAt
+}
+
+model UserBlock {
+  id        String   @id @default(cuid())
+  blockerId String
+  blocker   User     @relation("BlocksMade", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
 }

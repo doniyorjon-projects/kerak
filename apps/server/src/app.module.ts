@@ -19,6 +19,7 @@ import { BannersModule } from "./modules/banners/banners.module";
 import { MetaModule } from "./modules/meta/meta.module";
 import { RequestsModule } from "./modules/requests/requests.module";
 import { SettingsModule } from "./modules/settings/settings.module";
+import { BlocksModule } from "./modules/blocks/blocks.module";
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { SettingsModule } from "./modules/settings/settings.module";
     MetaModule,
     RequestsModule,
     SettingsModule,
+    BlocksModule,
   ],
 })
 export class AppModule {}

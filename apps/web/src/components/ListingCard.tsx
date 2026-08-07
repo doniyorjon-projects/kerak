@@ -67,6 +67,11 @@ export function ListingCard({ listing }: { listing: ListingDto }) {
             <ImageOff className="h-8 w-8 text-hint" strokeWidth={1.5} />
           </div>
         )}
+        {listing.condition && (
+          <span className="absolute bottom-2 left-2 z-10 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
+            {listing.condition === "NEW" ? t("create.conditionNew") : t("create.conditionUsed")}
+          </span>
+        )}
       </div>
       <div className="flex flex-col gap-1 p-3">
         <span className="line-clamp-2 text-sm font-medium leading-snug text-ink">{listing.title}</span>

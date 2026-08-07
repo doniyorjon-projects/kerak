@@ -64,6 +64,8 @@ export const translations = {
     "filters.priceRange": "Narx oralig'i",
     "filters.priceFrom": "dan",
     "filters.priceTo": "gacha",
+    "filters.condition": "Holati",
+    "filters.allConditions": "Barchasi",
     "filters.reset": "Tozalash",
     "filters.apply": "Qo'llash",
 
@@ -79,6 +81,10 @@ export const translations = {
     "listing.top": "TOP e'lon",
     "listing.views": "ko'rildi",
     "listing.notRatedYet": "Hali baholanmagan",
+    "listing.bump": "Ko'tarish",
+    "listing.bumped": "E'lon yuqoriga ko'tarildi ✅",
+    "listing.blockUser": "Bloklash",
+    "listing.unblockUser": "Blokdan chiqarish",
     "listing.report": "Shikoyat",
     "listing.reportPlaceholder": "Nima uchun shikoyat qilyapsiz?",
     "listing.reportSubmit": "Shikoyat yuborish",
@@ -117,6 +123,8 @@ export const translations = {
     "create.phonePlaceholder": "+998901234567",
     "create.photos": "Rasmlar (maks. 8 ta)",
     "create.addPhoto": "Qo'shish",
+    "create.conditionNew": "Yangi",
+    "create.conditionUsed": "Ishlatilgan",
     "create.submit": "E'lonni joylash",
     "create.errCategory": "Kategoriyani tanlang",
     "create.errPlace": "Viloyat va tumanni tanlang",
@@ -323,6 +331,10 @@ export const translations = {
     "request.myTitle": "Mening so'rovlarim",
     "request.myEmpty": "Sizda hali so'rovlar yo'q",
 
+    // bloklangan foydalanuvchilar
+    "blocked.title": "Bloklangan foydalanuvchilar",
+    "blocked.empty": "Siz hech kimni bloklamagansiz",
+
     // til
     "lang.uz": "O'zbekcha",
     "lang.ru": "Русский",
@@ -384,6 +396,8 @@ export const translations = {
     "filters.priceRange": "Диапазон цен",
     "filters.priceFrom": "от",
     "filters.priceTo": "до",
+    "filters.condition": "Состояние",
+    "filters.allConditions": "Все",
     "filters.reset": "Сбросить",
     "filters.apply": "Применить",
 
@@ -397,6 +411,10 @@ export const translations = {
     "listing.top": "ТОП объявление",
     "listing.views": "просмотров",
     "listing.notRatedYet": "Пока нет оценок",
+    "listing.bump": "Поднять",
+    "listing.bumped": "Объявление поднято ✅",
+    "listing.blockUser": "Заблокировать",
+    "listing.unblockUser": "Разблокировать",
     "listing.report": "Жалоба",
     "listing.reportPlaceholder": "Почему вы жалуетесь?",
     "listing.reportSubmit": "Отправить жалобу",
@@ -434,6 +452,8 @@ export const translations = {
     "create.phonePlaceholder": "+998901234567",
     "create.photos": "Фото (макс. 8)",
     "create.addPhoto": "Добавить",
+    "create.conditionNew": "Новое",
+    "create.conditionUsed": "Б/у",
     "create.submit": "Разместить объявление",
     "create.errCategory": "Выберите категорию",
     "create.errPlace": "Выберите область и район",
@@ -633,6 +653,10 @@ export const translations = {
     "request.confirmDelete": "Подтвердить удаление",
     "request.myTitle": "Мои запросы",
     "request.myEmpty": "У вас пока нет запросов",
+
+    // заблокированные пользователи
+    "blocked.title": "Заблокированные пользователи",
+    "blocked.empty": "Вы никого не заблокировали",
 
     "lang.uz": "O'zbekcha",
     "lang.ru": "Русский",

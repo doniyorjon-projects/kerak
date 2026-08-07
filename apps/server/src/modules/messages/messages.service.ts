@@ -1,8 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { NotificationType, User } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { BotService } from "../bot/bot.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { BlocksService } from "../blocks/blocks.service";
 
 @Injectable()
 export class MessagesService {
@@ -10,6 +11,7 @@ export class MessagesService {
     private readonly prisma: PrismaService,
     private readonly botService: BotService,
     private readonly notificationsService: NotificationsService,
+    private readonly blocksService: BlocksService,
   ) {}
 
   async send(fromUser: User, listingId: string, text: string) {
@@ -20,6 +22,9 @@ export class MessagesService {
     if (!listing) throw new NotFoundException("Elon topilmadi");
     if (listing.sellerId === fromUser.id) {
       throw new BadRequestException("O'z eloningizga xabar yubora olmaysiz");
+    }
+    if (await this.blocksService.isBlockedEitherWay(fromUser.id, listing.sellerId)) {
+      throw new ForbiddenException("Xabar yuborib bo'lmadi");
     }
 
     const telegramMessageId = await this.botService.relayNewMessage({

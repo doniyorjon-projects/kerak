@@ -19,6 +19,7 @@ import { CreateRequest } from "./pages/CreateRequest";
 import { RequestDetail } from "./pages/RequestDetail";
 import { EditRequest } from "./pages/EditRequest";
 import { MyRequests } from "./pages/MyRequests";
+import { BlockedUsers } from "./pages/BlockedUsers";
 
 function useSharedListingRedirect() {
   const location = useLocation();
@@ -58,6 +59,7 @@ export default function App() {
         <Route path="/requests/:requestId" element={<RequestDetail />} />
         <Route path="/requests/:requestId/edit" element={<EditRequest />} />
         <Route path="/my-requests" element={<MyRequests />} />
+        <Route path="/blocked-users" element={<BlockedUsers />} />
       </Routes>
       <BottomNav />
     </div>

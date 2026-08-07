@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Ban,
   Check,
   ChevronRight,
   ListChecks,
@@ -272,6 +273,14 @@ export function Profile() {
             {me.listingsLimit >= UNLIMITED_LISTINGS ? t("plans.featureUnlimitedListings") : me.listingsLimit}
             <ChevronRight className="h-4 w-4" />
           </span>
+        </Link>
+
+        <Link to="/blocked-users" className="card flex items-center justify-between transition active:scale-[0.98]">
+          <span className="flex items-center gap-2 text-sm font-medium text-ink">
+            <Ban className="h-5 w-5 text-hint" />
+            {t("blocked.title")}
+          </span>
+          <ChevronRight className="h-4 w-4 text-hint" />
         </Link>
 
         {me.isAdmin && (

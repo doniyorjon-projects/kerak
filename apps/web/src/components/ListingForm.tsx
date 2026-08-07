@@ -13,7 +13,8 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { CreateListingInput } from "@kerak/shared";
+import { CategoryType } from "@kerak/shared";
+import type { CreateListingInput, ListingCondition } from "@kerak/shared";
 import { fetchCategories } from "../api/categories";
 import { uploadPhoto } from "../api/listings";
 import { RegionDistrictPicker, type PlaceValue } from "./RegionDistrictPicker";
@@ -30,6 +31,7 @@ export interface ListingFormInitialValues {
   phone: string;
   photos: string[];
   addressText: string | null;
+  condition?: ListingCondition | null;
 }
 
 interface ListingFormProps {
@@ -58,8 +60,10 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
   const { t } = useTranslation();
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
   const leafCategories = (categories ?? []).filter((c) => c.parentId);
+  const isProduct = leafCategories.find((c) => c.id === categoryId)?.type === CategoryType.PRODUCT;
 
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
+  const [condition, setCondition] = useState<ListingCondition | null>(initial?.condition ?? null);
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [price, setPrice] = useState(initial?.price != null ? String(initial.price) : "");
@@ -109,6 +113,7 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
       lat: place.lat,
       lng: place.lng,
       phone,
+      condition: isProduct ? condition : null,
     });
   };
 
@@ -131,6 +136,29 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
           </select>
           <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
         </div>
+
+        {isProduct && (
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setCondition("NEW")}
+              className={`rounded-xl py-2.5 text-sm font-semibold transition active:scale-[0.98] ${
+                condition === "NEW" ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"
+              }`}
+            >
+              {t("create.conditionNew")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCondition("USED")}
+              className={`rounded-xl py-2.5 text-sm font-semibold transition active:scale-[0.98] ${
+                condition === "USED" ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"
+              }`}
+            >
+              {t("create.conditionUsed")}
+            </button>
+          </div>
+        )}
 
         <div className="h-px bg-divider" />
 

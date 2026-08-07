@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsEnum,
   IsIn,
   IsNumber,
   IsOptional,
@@ -11,6 +12,7 @@ import {
   MaxLength,
   MinLength,
 } from "class-validator";
+import { ListingCondition } from "@prisma/client";
 
 export const SELLER_SETTABLE_STATUSES = ["ACTIVE", "PAUSED", "SOLD"] as const;
 
@@ -77,4 +79,8 @@ export class UpdateListingDto {
   @IsOptional()
   @Matches(/^\+?[0-9]{9,15}$/, { message: "Telefon raqami noto'g'ri formatda" })
   phone?: string;
+
+  @IsOptional()
+  @IsEnum(ListingCondition)
+  condition?: ListingCondition;
 }

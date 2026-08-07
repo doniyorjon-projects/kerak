@@ -5,6 +5,7 @@ import { Listing, NotificationType } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { SettingsService } from "../settings/settings.service";
+import { BlocksService } from "../blocks/blocks.service";
 
 @Injectable()
 export class BotService implements OnModuleInit {
@@ -19,6 +20,7 @@ export class BotService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
     private readonly settingsService: SettingsService,
+    private readonly blocksService: BlocksService,
   ) {
     const token = this.config.get<string>("BOT_TOKEN");
     if (!token) {
@@ -67,6 +69,11 @@ export class BotService implements OnModuleInit {
 
       const replier = original.toUser;
       const counterpart = original.fromUser;
+
+      if (await this.blocksService.isBlockedEitherWay(replier.id, counterpart.id)) {
+        await ctx.reply("Xabaringiz yetkazilmadi.");
+        return;
+      }
 
       const sentMessageId = await this.sendMessageTo(
         counterpart.telegramId,

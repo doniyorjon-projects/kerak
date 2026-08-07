@@ -53,6 +53,7 @@ export function EditListing() {
           phone: listing.phone,
           photos: listing.photos,
           addressText: listing.addressText,
+          condition: listing.condition,
         }}
         onSubmit={(payload) => updateMutation.mutate(payload)}
         isSubmitting={updateMutation.isPending}

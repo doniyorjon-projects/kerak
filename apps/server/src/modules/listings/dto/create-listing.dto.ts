@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsEnum,
   IsNumber,
   IsOptional,
   IsString,
@@ -10,6 +11,7 @@ import {
   MaxLength,
   MinLength,
 } from "class-validator";
+import { ListingCondition } from "@prisma/client";
 
 export class CreateListingDto {
   @IsString()
@@ -65,4 +67,8 @@ export class CreateListingDto {
 
   @Matches(/^\+?[0-9]{9,15}$/, { message: "Telefon raqami noto'g'ri formatda" })
   phone!: string;
+
+  @IsOptional()
+  @IsEnum(ListingCondition)
+  condition?: ListingCondition;
 }

@@ -1,5 +1,5 @@
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { ContactEventType, ListingStatus, Prisma } from "@prisma/client";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { ContactEventType, ListingCondition, ListingStatus, Prisma } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { CreateListingDto } from "./dto/create-listing.dto";
 import { UpdateListingDto } from "./dto/update-listing.dto";
@@ -8,6 +8,8 @@ import { BotService } from "../bot/bot.service";
 const FEED_INCLUDE = {
   seller: { select: { id: true, telegramId: true, username: true, firstName: true } },
 } as const;
+
+const BUMP_COOLDOWN_HOURS = 24;
 
 export type FeedSort = "distance" | "newest" | "price_asc" | "price_desc";
 
@@ -23,6 +25,7 @@ export interface FindFeedOptions {
   districtId?: number;
   minPrice?: number;
   maxPrice?: number;
+  condition?: ListingCondition;
 }
 
 interface FeedRow {
@@ -39,10 +42,12 @@ interface FeedRow {
   lat: number | null;
   lng: number | null;
   phone: string;
+  condition: ListingCondition | null;
   status: ListingStatus;
   viewsCount: number;
   createdAt: Date;
   boostedUntil: Date | null;
+  bumpedAt: Date | null;
   sellerId: string;
   sellerTelegramId: string;
   sellerUsername: string | null;
@@ -77,17 +82,29 @@ export class ListingsService {
   }
 
   async findFeed(options: FindFeedOptions) {
-    const { categoryId, lat, lng, radiusKm, sort, q, boostedOnly, regionId, districtId, minPrice, maxPrice } =
-      options;
+    const {
+      categoryId,
+      lat,
+      lng,
+      radiusKm,
+      sort,
+      q,
+      boostedOnly,
+      regionId,
+      districtId,
+      minPrice,
+      maxPrice,
+      condition,
+    } = options;
     const hasLocation = lat !== undefined && lng !== undefined;
 
     if (!hasLocation) {
-      const orderBy: Prisma.ListingOrderByWithRelationInput =
+      const orderBy: Prisma.ListingOrderByWithRelationInput[] =
         sort === "price_asc"
-          ? { price: "asc" }
+          ? [{ price: "asc" }]
           : sort === "price_desc"
-            ? { price: "desc" }
-            : { createdAt: "desc" };
+            ? [{ price: "desc" }]
+            : [{ bumpedAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }];
 
       const now = new Date();
       const baseWhere: Prisma.ListingWhereInput = {
@@ -95,6 +112,7 @@ export class ListingsService {
         ...(categoryId ? { categoryId } : {}),
         ...(regionId ? { regionId } : {}),
         ...(districtId ? { districtId } : {}),
+        ...(condition ? { condition } : {}),
         ...((minPrice !== undefined || maxPrice !== undefined)
           ? { price: { ...(minPrice !== undefined ? { gte: minPrice } : {}), ...(maxPrice !== undefined ? { lte: maxPrice } : {}) } }
           : {}),
@@ -141,6 +159,7 @@ export class ListingsService {
     if (categoryId) conditions.push(Prisma.sql`l."categoryId" = ${categoryId}`);
     if (regionId) conditions.push(Prisma.sql`l."regionId" = ${regionId}`);
     if (districtId) conditions.push(Prisma.sql`l."districtId" = ${districtId}`);
+    if (condition) conditions.push(Prisma.sql`l.condition = ${condition}::"ListingCondition"`);
     if (minPrice !== undefined) conditions.push(Prisma.sql`l.price >= ${minPrice}`);
     if (maxPrice !== undefined) conditions.push(Prisma.sql`l.price <= ${maxPrice}`);
     if (q) {
@@ -166,7 +185,7 @@ export class ListingsService {
         : sort === "price_desc"
           ? Prisma.sql`l.price DESC NULLS LAST`
           : sort === "newest"
-            ? Prisma.sql`l."createdAt" DESC`
+            ? Prisma.sql`GREATEST(l."bumpedAt", l."createdAt") DESC`
             : Prisma.sql`"distanceKm" ASC`;
 
     const rows = await this.prisma.$queryRaw<FeedRow[]>`
@@ -174,8 +193,8 @@ export class ListingsService {
         l.id, l."categoryId" as "categoryId", l.title, l.description, l.price,
         l."isNegotiable" as "isNegotiable", l.photos, l."addressText" as "addressText",
         l."regionId" as "regionId", l."districtId" as "districtId",
-        l.lat, l.lng, l.phone, l.status, l."viewsCount" as "viewsCount", l."createdAt" as "createdAt",
-        l."boostedUntil" as "boostedUntil",
+        l.lat, l.lng, l.phone, l.condition, l.status, l."viewsCount" as "viewsCount", l."createdAt" as "createdAt",
+        l."boostedUntil" as "boostedUntil", l."bumpedAt" as "bumpedAt",
         u.id as "sellerId", u."telegramId" as "sellerTelegramId", u.username as "sellerUsername", u."firstName" as "sellerFirstName",
         ST_Distance(
           ST_SetSRID(ST_MakePoint(l.lng, l.lat), 4326)::geography,
@@ -201,10 +220,12 @@ export class ListingsService {
       lat: r.lat,
       lng: r.lng,
       phone: r.phone,
+      condition: r.condition,
       status: r.status,
       viewsCount: r.viewsCount,
       createdAt: r.createdAt,
       boostedUntil: r.boostedUntil,
+      bumpedAt: r.bumpedAt,
       distanceKm: r.distanceKm,
       seller: {
         id: r.sellerId,
@@ -263,6 +284,29 @@ export class ListingsService {
     }
 
     return updated;
+  }
+
+  async bump(id: string, sellerId: string) {
+    const listing = await this.prisma.listing.findUnique({ where: { id } });
+    if (!listing) throw new NotFoundException("Elon topilmadi");
+    if (listing.sellerId !== sellerId) throw new ForbiddenException("Bu sizning eloningiz emas");
+    if (listing.status !== ListingStatus.ACTIVE) {
+      throw new BadRequestException("Faqat faol e'lonlarni yuqoriga ko'tarish mumkin");
+    }
+
+    const lastBump = listing.bumpedAt ?? listing.createdAt;
+    const cooldownEnds = new Date(lastBump.getTime() + BUMP_COOLDOWN_HOURS * 60 * 60 * 1000);
+    if (cooldownEnds > new Date()) {
+      throw new BadRequestException(
+        `Bu e'lonni faqat ${BUMP_COOLDOWN_HOURS} soatda bir marta bepul ko'tarish mumkin`,
+      );
+    }
+
+    return this.prisma.listing.update({
+      where: { id },
+      data: { bumpedAt: new Date() },
+      include: FEED_INCLUDE,
+    });
   }
 
   async remove(id: string, sellerId: string, isAdmin = false) {
