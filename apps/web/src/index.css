@@ -13,6 +13,7 @@
   --tg-button-text: 255 255 255;
   --tg-destructive: 239 68 68;
   --tg-border: rgb(17 24 39 / 0.08);
+  --tg-safe-top: 0px;
 }
 
 @media (prefers-color-scheme: dark) {

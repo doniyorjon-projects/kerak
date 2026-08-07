@@ -45,7 +45,7 @@ export default function App() {
   useSharedListingRedirect();
 
   return (
-    <div className="min-h-screen bg-app pb-28 text-ink">
+    <div className="min-h-screen bg-app pb-28 text-ink" style={{ paddingTop: "var(--tg-safe-top)" }}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/categories" element={<Categories />} />

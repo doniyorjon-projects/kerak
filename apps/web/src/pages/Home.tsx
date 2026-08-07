@@ -79,7 +79,10 @@ export function Home() {
 
   return (
     <div className="page">
-      <div className="sticky top-0 z-30 -mx-4 -mt-4 flex items-center gap-2 border-b border-divider bg-app px-4 pb-3 pt-4">
+      <div
+        className="sticky z-30 -mx-4 -mt-4 flex items-center gap-2 border-b border-divider bg-app px-4 pb-3 pt-4"
+        style={{ top: "var(--tg-safe-top)" }}
+      >
         <SearchBar onSearch={setSearch} />
         <NotificationBell />
         <LanguageSwitch />

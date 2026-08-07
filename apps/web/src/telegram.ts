@@ -1,3 +1,12 @@
+interface SafeAreaInset {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
+type TelegramEventType = "themeChanged" | "safeAreaChanged" | "contentSafeAreaChanged";
+
 interface TelegramWebApp {
   initData: string;
   version: string;
@@ -6,6 +15,8 @@ interface TelegramWebApp {
   requestFullscreen?(): void;
   colorScheme: "light" | "dark";
   themeParams: Record<string, string>;
+  safeAreaInset: SafeAreaInset;
+  contentSafeAreaInset: SafeAreaInset;
   BackButton: {
     show(): void;
     hide(): void;
@@ -16,8 +27,8 @@ interface TelegramWebApp {
     impactOccurred(style: "light" | "medium" | "heavy"): void;
     notificationOccurred(type: "error" | "success" | "warning"): void;
   };
-  onEvent(eventType: "themeChanged", cb: () => void): void;
-  offEvent(eventType: "themeChanged", cb: () => void): void;
+  onEvent(eventType: TelegramEventType, cb: () => void): void;
+  offEvent(eventType: TelegramEventType, cb: () => void): void;
   openLink(url: string, options?: { try_instant_view?: boolean }): void;
   openTelegramLink(url: string): void;
   openInvoice(url: string, callback: (status: "paid" | "cancelled" | "failed" | "pending") => void): void;
@@ -66,6 +77,13 @@ function applyThemeVars(): void {
   root.dataset.tgScheme = webApp.colorScheme;
 }
 
+function applySafeAreaVars(): void {
+  if (!webApp) return;
+  const root = document.documentElement;
+  const top = (webApp.safeAreaInset?.top ?? 0) + (webApp.contentSafeAreaInset?.top ?? 0);
+  root.style.setProperty("--tg-safe-top", `${top}px`);
+}
+
 export function initTelegramApp(): void {
   if (!webApp) return;
   webApp.ready();
@@ -78,7 +96,12 @@ export function initTelegramApp(): void {
     }
   }
   applyThemeVars();
+  applySafeAreaVars();
   webApp.onEvent("themeChanged", applyThemeVars);
+  // Fullscreen rejimida Telegram'ning close/menu tugmalari kontent ustiga chiqib
+  // qolmasligi uchun - bu qiymatlar fullscreen'ga kirish/chiqishda o'zgaradi.
+  webApp.onEvent("safeAreaChanged", applySafeAreaVars);
+  webApp.onEvent("contentSafeAreaChanged", applySafeAreaVars);
 }
 
 export function getInitData(): string {
