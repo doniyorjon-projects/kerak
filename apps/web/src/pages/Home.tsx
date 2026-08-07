@@ -78,14 +78,19 @@ export function Home() {
   });
 
   return (
-    <div className="page">
+    <div className="page" style={{ marginTop: "calc(-1 * var(--tg-safe-top))" }}>
+      {/* Tashqi quti tepadan (0) yopishib turadi va o'zining bg-app foni bilan
+          xavfsiz zonani ham to'ldiradi - shunda pin bo'lganda orqasidan hech
+          narsa ko'rinmaydi. Ichki bo'sh joy (safe-top) shu qutining o'zida. */}
       <div
-        className="sticky z-30 -mx-4 -mt-4 flex items-center gap-2 border-b border-divider bg-app px-4 pb-3 pt-4"
-        style={{ top: "var(--tg-safe-top)" }}
+        className="sticky top-0 z-30 -mx-4 -mt-4 border-b border-divider bg-app px-4 pb-3"
+        style={{ paddingTop: "calc(var(--tg-safe-top) + 1rem)" }}
       >
-        <SearchBar onSearch={setSearch} />
-        <NotificationBell />
-        <LanguageSwitch />
+        <div className="flex items-center gap-2">
+          <SearchBar onSearch={setSearch} />
+          <NotificationBell />
+          <LanguageSwitch />
+        </div>
       </div>
 
       {isSearching ? (
