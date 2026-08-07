@@ -26,9 +26,9 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ContactEventType } from "@kerak/shared";
-import type { ListingStatus } from "@kerak/shared";
+import type { BoostDuration, ListingStatus } from "@kerak/shared";
 import { deleteListing, fetchListing, fetchListingStats, logContactEvent, updateListingStatus } from "../api/listings";
-import { approveListing, rejectListing } from "../api/admin";
+import { approveListing, grantBoost, rejectListing } from "../api/admin";
 import { fetchMe } from "../api/users";
 import { addFavorite, fetchFavoriteStatus, removeFavorite } from "../api/favorites";
 import { sendListingMessage } from "../api/messages";
@@ -76,6 +76,8 @@ export function ListingDetail() {
   const [ratingComment, setRatingComment] = useState("");
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [boostDuration, setBoostDuration] = useState<BoostDuration>("DAYS_7");
+  const [boostStatus, setBoostStatus] = useState<string | null>(null);
 
   const { data: listing, isLoading, error } = useQuery({
     queryKey: ["listing", listingId],
@@ -101,7 +103,11 @@ export function ListingDetail() {
   const { data: stats } = useQuery({
     queryKey: ["listing-stats", listingId],
     queryFn: () => fetchListingStats(listingId!),
-    enabled: Boolean(listingId) && me != null && listing != null && me.id === listing.seller.id,
+    enabled:
+      Boolean(listingId) &&
+      me != null &&
+      listing != null &&
+      (me.id === listing.seller.id || me.isAdmin),
   });
 
   useEffect(() => {
@@ -168,12 +174,21 @@ export function ListingDetail() {
     },
   });
 
+  const grantBoostMutation = useMutation({
+    mutationFn: () => grantBoost(listingId!, boostDuration),
+    onSuccess: () => {
+      setBoostStatus(t("admin.boostGranted"));
+      queryClient.invalidateQueries({ queryKey: ["listing", listingId] });
+    },
+  });
+
   if (isLoading) return <Spinner label={t("loading")} />;
   if (error || !listing) return <div className="p-4 text-center text-destructive">{t("listing.notFound")}</div>;
 
   const isBoosted = Boolean(listing.boostedUntil && new Date(listing.boostedUntil) > new Date());
   const isOwner = Boolean(me && me.id === listing.seller.id);
-  const isAdminModeration = Boolean(me?.isAdmin && !isOwner && listing.status === "PENDING");
+  const isAdminViewing = Boolean(me?.isAdmin && !isOwner);
+  const isAdminModeration = Boolean(isAdminViewing && listing.status === "PENDING");
   const { labelKey: statusLabelKey, icon: StatusIcon, className: statusClassName } = STATUS_INFO[listing.status];
 
   const handleContact = (type: ContactEventType) => {
@@ -276,7 +291,7 @@ export function ListingDetail() {
         </div>
       )}
 
-      {isAdminModeration ? (
+      {isAdminModeration && (
         <div className="card flex flex-col gap-3">
           <span className="text-sm font-semibold text-ink">{t("listing.moderationTitle")}</span>
           <div className="flex items-center gap-3">
@@ -335,7 +350,9 @@ export function ListingDetail() {
             </div>
           )}
         </div>
-      ) : isOwner ? (
+      )}
+
+      {isOwner || isAdminViewing ? (
         <div className="card flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-ink">{t("listing.manageTitle")}</span>
@@ -345,6 +362,16 @@ export function ListingDetail() {
             </span>
           </div>
 
+          {isAdminViewing && (
+            <div className="flex items-center gap-2 rounded-xl bg-surface-secondary px-3 py-2 text-xs text-hint">
+              <User className="h-3.5 w-3.5 shrink-0" />
+              {t("admin.listingOwner")}:{" "}
+              <span className="font-medium text-ink">
+                {listing.seller.username ? `@${listing.seller.username}` : listing.seller.firstName}
+              </span>
+            </div>
+          )}
+
           {listing.status === "REJECTED" && listing.rejectionReason && (
             <div className="rounded-xl bg-destructive/10 p-3 text-xs text-destructive">
               <span className="font-semibold">{t("listing.rejectionReasonLabel")}: </span>
@@ -352,7 +379,7 @@ export function ListingDetail() {
             </div>
           )}
 
-          {listing.status === "ACTIVE" && (
+          {isOwner && listing.status === "ACTIVE" && (
             <Link
               to={`/listings/${listing.id}/advertise`}
               className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-500/10 py-2.5 text-xs font-semibold text-amber-500 transition active:scale-[0.98]"
@@ -448,6 +475,36 @@ export function ListingDetail() {
                 </span>
                 <span className="text-[10px] text-hint">{t("listing.statMessages")}</span>
               </div>
+            </div>
+          )}
+
+          {isAdminViewing && (
+            <div className="flex flex-col gap-2 border-t border-divider pt-3">
+              <span className="section-title">{t("admin.grantBoostTitle")}</span>
+              <div className="grid grid-cols-3 gap-1.5">
+                {(["DAYS_3", "DAYS_7", "DAYS_30"] as BoostDuration[]).map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setBoostDuration(d)}
+                    className={`rounded-lg py-2 text-xs font-semibold transition active:scale-[0.98] ${
+                      boostDuration === d ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"
+                    }`}
+                  >
+                    {t(`admin.boost.${d}` as TranslationKey)}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => grantBoostMutation.mutate()}
+                disabled={grantBoostMutation.isPending}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-500/10 py-2.5 text-xs font-semibold text-amber-600 transition active:scale-[0.98] disabled:opacity-50"
+              >
+                <Rocket className="h-3.5 w-3.5" />
+                {t("admin.grantBoost")}
+              </button>
+              {boostStatus && <span className="text-center text-xs text-hint">{boostStatus}</span>}
             </div>
           )}
         </div>

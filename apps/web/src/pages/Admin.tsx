@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Award,
   BarChart3,
   Ban,
   Banknote,
@@ -12,6 +13,7 @@ import {
   ImageIcon,
   Inbox,
   Images,
+  Infinity as InfinityIcon,
   Pencil,
   Plus,
   ShieldCheck,
@@ -24,7 +26,7 @@ import {
   UserX,
   X,
 } from "lucide-react";
-import { CategoryType } from "@kerak/shared";
+import { CategoryType, UNLIMITED_LISTINGS } from "@kerak/shared";
 import type { PricingConfigDto } from "@kerak/shared";
 import {
   addAdmin,
@@ -41,6 +43,8 @@ import {
   rejectListing,
   removeAdmin,
   resolveReport,
+  setListingsLimit,
+  setUserPlan,
   unblockUser,
 } from "../api/admin";
 import {
@@ -684,6 +688,8 @@ function UsersTab() {
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [tariffId, setTariffId] = useState<string | null>(null);
+  const [limitDrafts, setLimitDrafts] = useState<Record<string, string>>({});
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
   const blockMutation = useMutation({ mutationFn: blockUser, onSuccess: invalidate });
@@ -694,6 +700,14 @@ function UsersTab() {
       setDeletingId(null);
       invalidate();
     },
+  });
+  const planMutation = useMutation({
+    mutationFn: ({ id, tier }: { id: string; tier: "STANDARD" | "BUSINESS" }) => setUserPlan(id, tier),
+    onSuccess: invalidate,
+  });
+  const limitMutation = useMutation({
+    mutationFn: ({ id, limit }: { id: string; limit: number }) => setListingsLimit(id, limit),
+    onSuccess: invalidate,
   });
 
   const filtered = (users ?? []).filter((u) => {
@@ -742,6 +756,12 @@ function UsersTab() {
               <span>
                 {t("admin.userListings")}: <span className="font-medium text-ink">{u.listingsCount}</span>
               </span>
+              <span>
+                {t("admin.listingsLimit")}:{" "}
+                <span className="font-medium text-ink">
+                  {u.listingsLimit >= UNLIMITED_LISTINGS ? t("admin.unlimited") : u.listingsLimit}
+                </span>
+              </span>
               {u.rating.count > 0 && (
                 <span className="flex items-center gap-1">
                   <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
@@ -778,6 +798,70 @@ function UsersTab() {
                 </button>
               )}
             </div>
+
+            <button
+              onClick={() => setTariffId((id) => (id === u.id ? null : u.id))}
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-500/10 py-2.5 text-xs font-semibold text-amber-600 transition active:scale-[0.98]"
+            >
+              <Award className="h-3.5 w-3.5" />
+              {t("admin.manageTariff")}
+              {tariffId === u.id ? (
+                <ChevronUp className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5" />
+              )}
+            </button>
+
+            {tariffId === u.id && (
+              <div className="flex flex-col gap-2 rounded-xl bg-surface-secondary p-3">
+                <div className="grid grid-cols-3 gap-1.5">
+                  <button
+                    onClick={() => planMutation.mutate({ id: u.id, tier: "STANDARD" })}
+                    disabled={planMutation.isPending}
+                    className="rounded-lg bg-surface py-2 text-xs font-semibold text-ink transition active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {t("admin.tierStandard")}
+                  </button>
+                  <button
+                    onClick={() => planMutation.mutate({ id: u.id, tier: "BUSINESS" })}
+                    disabled={planMutation.isPending}
+                    className="rounded-lg bg-surface py-2 text-xs font-semibold text-ink transition active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {t("admin.tierBusiness")}
+                  </button>
+                  <button
+                    onClick={() => limitMutation.mutate({ id: u.id, limit: UNLIMITED_LISTINGS })}
+                    disabled={limitMutation.isPending}
+                    className="flex items-center justify-center gap-1 rounded-lg bg-surface py-2 text-xs font-semibold text-brand transition active:scale-[0.98] disabled:opacity-50"
+                  >
+                    <InfinityIcon className="h-3.5 w-3.5" />
+                    {t("admin.unlimited")}
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={UNLIMITED_LISTINGS}
+                    value={limitDrafts[u.id] ?? String(u.listingsLimit)}
+                    onChange={(e) => setLimitDrafts((prev) => ({ ...prev, [u.id]: e.target.value }))}
+                    className="input flex-1"
+                  />
+                  <button
+                    onClick={() =>
+                      limitMutation.mutate({
+                        id: u.id,
+                        limit: Number(limitDrafts[u.id] ?? u.listingsLimit),
+                      })
+                    }
+                    disabled={limitMutation.isPending}
+                    className="btn-secondary px-4 disabled:opacity-50"
+                  >
+                    {t("save")}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {!u.isAdmin && (
               deletingId === u.id ? (

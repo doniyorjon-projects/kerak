@@ -1,3 +1,4 @@
+import type { BoostDuration, PlanTier } from "@kerak/shared";
 import { api } from "./client";
 
 export interface AdminPendingListing {
@@ -116,6 +117,18 @@ export function unblockUser(id: string) {
 
 export function deleteUser(id: string) {
   return api.delete<void>(`/admin/users/${id}`);
+}
+
+export function setUserPlan(id: string, tier: PlanTier) {
+  return api.patch<AdminUserDetail>(`/admin/users/${id}/plan`, { tier });
+}
+
+export function setListingsLimit(id: string, limit: number) {
+  return api.patch<AdminUserDetail>(`/admin/users/${id}/listings-limit`, { limit });
+}
+
+export function grantBoost(listingId: string, duration: BoostDuration) {
+  return api.patch<void>(`/admin/listings/${listingId}/boost`, { duration });
 }
 
 export interface AdminUserListing {

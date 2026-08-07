@@ -33,6 +33,16 @@ export function PhoneInput({ value, onChange }: PhoneInputProps) {
     onChange(next.length > 0 ? `+998${next}` : "");
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Backspace" && e.key !== "Delete") return;
+    e.preventDefault();
+    const input = e.currentTarget;
+    const hasSelection = input.selectionStart !== input.selectionEnd;
+    const next = hasSelection ? "" : digits.slice(0, -1);
+    setDigits(next);
+    onChange(next.length > 0 ? `+998${next}` : "");
+  };
+
   return (
     <div className="flex items-center gap-2 rounded-xl border border-divider bg-app px-3 py-2.5 transition focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/25">
       <Phone className="h-4 w-4 shrink-0 text-hint" />
@@ -42,6 +52,7 @@ export function PhoneInput({ value, onChange }: PhoneInputProps) {
         inputMode="numeric"
         value={formatDigits(digits)}
         onChange={handleChange}
+        onKeyDown={handleKeyDown}
         placeholder="(90)123 45 67"
         className="w-full bg-transparent text-sm text-ink placeholder:text-hint focus:outline-none"
       />

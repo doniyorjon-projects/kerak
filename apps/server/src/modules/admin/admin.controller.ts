@@ -17,8 +17,12 @@ import { BotService } from "../bot/bot.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { AddAdminDto } from "./dto/add-admin.dto";
 import { RejectListingDto } from "./dto/reject-listing.dto";
+import { GrantBoostDto } from "./dto/grant-boost.dto";
+import { SetPlanDto } from "./dto/set-plan.dto";
+import { SetListingsLimitDto } from "./dto/set-listings-limit.dto";
 import type { User } from "@prisma/client";
 import { NotificationType } from "@prisma/client";
+import { BOOST_DAYS, PLAN_LISTINGS_LIMIT, UNLIMITED_LISTINGS } from "@kerak/shared";
 
 @Controller("admin")
 @UseGuards(TelegramAuthGuard, AdminGuard)
@@ -113,6 +117,43 @@ export class AdminController {
     await this.prisma.user.delete({ where: { id } });
   }
 
+  @Patch("users/:id/plan")
+  async setPlan(@Param("id") id: string, @Body() dto: SetPlanDto) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException("Foydalanuvchi topilmadi");
+
+    const newLimit = Math.max(user.listingsLimit, PLAN_LISTINGS_LIMIT[dto.tier]);
+    const updated = await this.prisma.user.update({ where: { id }, data: { listingsLimit: newLimit } });
+
+    await this.notificationsService.create(
+      id,
+      NotificationType.PLAN_PAID,
+      "Tarif faollashtirildi ✅",
+      `Admin tomonidan tarifingiz faollashtirildi. Endi ${newLimit >= UNLIMITED_LISTINGS ? "cheksiz" : newLimit} tagacha faol e'lon joylashingiz mumkin.`,
+      "/profile",
+    );
+
+    return updated;
+  }
+
+  @Patch("users/:id/listings-limit")
+  async setListingsLimit(@Param("id") id: string, @Body() dto: SetListingsLimitDto) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException("Foydalanuvchi topilmadi");
+
+    const updated = await this.prisma.user.update({ where: { id }, data: { listingsLimit: dto.limit } });
+
+    await this.notificationsService.create(
+      id,
+      NotificationType.PLAN_PAID,
+      "E'lon joylash limiti o'zgardi",
+      `Admin tomonidan limitingiz ${dto.limit >= UNLIMITED_LISTINGS ? "cheksiz" : dto.limit} tagacha o'zgartirildi.`,
+      "/profile",
+    );
+
+    return updated;
+  }
+
   @Patch("listings/:id/approve")
   async approve(@Param("id") id: string) {
     const listing = await this.prisma.listing.update({
@@ -159,6 +200,32 @@ export class AdminController {
     );
 
     return listing;
+  }
+
+  @Patch("listings/:id/boost")
+  async grantBoost(@Param("id") id: string, @Body() dto: GrantBoostDto) {
+    const listing = await this.prisma.listing.findUnique({ where: { id } });
+    if (!listing) throw new NotFoundException("Elon topilmadi");
+
+    const days = BOOST_DAYS[dto.duration];
+    const base = listing.boostedUntil && listing.boostedUntil > new Date() ? listing.boostedUntil : new Date();
+    const boostedUntil = new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
+
+    const updated = await this.prisma.listing.update({
+      where: { id },
+      data: { boostedUntil },
+      include: { seller: true },
+    });
+
+    await this.notificationsService.create(
+      updated.sellerId,
+      NotificationType.BOOST_PAID,
+      "Elon ko'tarildi 🚀",
+      `"${updated.title}" eloningiz admin tomonidan ${boostedUntil.toLocaleDateString("uz-UZ")} gacha ko'tarildi.`,
+      `/listings/${updated.id}`,
+    );
+
+    return updated;
   }
 
   @Get("reports")

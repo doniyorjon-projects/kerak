@@ -43,7 +43,7 @@ export class ListingsController {
   @UseGuards(TelegramAuthGuard)
   @Get(":id/stats")
   getStats(@Param("id") id: string, @CurrentUser() user: User) {
-    return this.listingsService.getStats(id, user.id);
+    return this.listingsService.getStats(id, user.id, user.isAdmin);
   }
 
   @UseGuards(TelegramAuthGuard)
@@ -55,13 +55,13 @@ export class ListingsController {
   @UseGuards(TelegramAuthGuard)
   @Patch(":id")
   update(@Param("id") id: string, @CurrentUser() user: User, @Body() dto: UpdateListingDto) {
-    return this.listingsService.update(id, user.id, dto);
+    return this.listingsService.update(id, user.id, dto, user.isAdmin);
   }
 
   @UseGuards(TelegramAuthGuard)
   @Delete(":id")
   remove(@Param("id") id: string, @CurrentUser() user: User) {
-    return this.listingsService.remove(id, user.id);
+    return this.listingsService.remove(id, user.id, user.isAdmin);
   }
 
   @UseGuards(TelegramAuthGuard)

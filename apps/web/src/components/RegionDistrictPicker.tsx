@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { REGIONS } from "../data/uzbekistanRegions";
 import { LocationMapPicker } from "./map/LocationMapPicker";
 import { useTranslation } from "../i18n/LanguageContext";
@@ -104,31 +105,37 @@ export function RegionDistrictPicker({ onChange, initialAddressText }: RegionDis
 
   return (
     <div className="flex flex-col gap-2">
-      <select
-        value={regionId}
-        onChange={(e) => handleRegionChange(e.target.value)}
-        className="input"
-      >
-        <option value="">{t("create.selectRegion")}</option>
-        {REGIONS.map((r) => (
-          <option key={r.id} value={r.id}>
-            {r.nameUz}
-          </option>
-        ))}
-      </select>
-      <select
-        value={districtId}
-        onChange={(e) => handleDistrictChange(e.target.value)}
-        disabled={!region}
-        className="input disabled:opacity-50"
-      >
-        <option value="">{t("create.selectDistrict")}</option>
-        {region?.districts.map((d) => (
-          <option key={d.id} value={d.id}>
-            {d.nameUz}
-          </option>
-        ))}
-      </select>
+      <div className="relative">
+        <select
+          value={regionId}
+          onChange={(e) => handleRegionChange(e.target.value)}
+          className="input appearance-none pr-9"
+        >
+          <option value="">{t("create.selectRegion")}</option>
+          {REGIONS.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.nameUz}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
+      </div>
+      <div className="relative">
+        <select
+          value={districtId}
+          onChange={(e) => handleDistrictChange(e.target.value)}
+          disabled={!region}
+          className="input appearance-none pr-9 disabled:opacity-50"
+        >
+          <option value="">{t("create.selectDistrict")}</option>
+          {region?.districts.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.nameUz}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
+      </div>
       {pin && (
         <div className="flex flex-col gap-1.5">
           <span className="text-xs text-hint">{t("create.fineTuneLocation")}</span>

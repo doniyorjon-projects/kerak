@@ -241,10 +241,10 @@ export class ListingsService {
     return listing;
   }
 
-  async update(id: string, sellerId: string, dto: UpdateListingDto) {
+  async update(id: string, sellerId: string, dto: UpdateListingDto, isAdmin = false) {
     const listing = await this.prisma.listing.findUnique({ where: { id } });
     if (!listing) throw new NotFoundException("Elon topilmadi");
-    if (listing.sellerId !== sellerId) throw new ForbiddenException("Bu sizning eloningiz emas");
+    if (listing.sellerId !== sellerId && !isAdmin) throw new ForbiddenException("Bu sizning eloningiz emas");
 
     const { status, ...content } = dto;
     const hasContentChanges = Object.values(content).some((value) => value !== undefined);
@@ -265,10 +265,10 @@ export class ListingsService {
     return updated;
   }
 
-  async remove(id: string, sellerId: string) {
+  async remove(id: string, sellerId: string, isAdmin = false) {
     const listing = await this.prisma.listing.findUnique({ where: { id } });
     if (!listing) throw new NotFoundException("Elon topilmadi");
-    if (listing.sellerId !== sellerId) throw new ForbiddenException("Bu sizning eloningiz emas");
+    if (listing.sellerId !== sellerId && !isAdmin) throw new ForbiddenException("Bu sizning eloningiz emas");
     await this.prisma.listing.delete({ where: { id } });
   }
 
@@ -277,10 +277,10 @@ export class ListingsService {
     return this.prisma.contactEvent.create({ data: { listingId, fromUserId, type } });
   }
 
-  async getStats(id: string, sellerId: string) {
+  async getStats(id: string, sellerId: string, isAdmin = false) {
     const listing = await this.prisma.listing.findUnique({ where: { id } });
     if (!listing) throw new NotFoundException("Elon topilmadi");
-    if (listing.sellerId !== sellerId) throw new ForbiddenException("Bu sizning eloningiz emas");
+    if (listing.sellerId !== sellerId && !isAdmin) throw new ForbiddenException("Bu sizning eloningiz emas");
 
     const [telegramClicks, phoneClicks, favoritesCount, messagesCount] = await Promise.all([
       this.prisma.contactEvent.count({ where: { listingId: id, type: ContactEventType.TELEGRAM_CLICK } }),
