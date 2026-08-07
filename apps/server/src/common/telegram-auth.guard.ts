@@ -28,7 +28,8 @@ export class TelegramAuthGuard implements CanActivate {
       throw new UnauthorizedException("initData imzosi noto'g'ri");
     }
 
-    const user = await this.usersService.upsertFromTelegram(parsed.user);
+    const referralId = request.header("x-referral-id");
+    const user = await this.usersService.upsertFromTelegram(parsed.user, referralId);
     if (user.isBlocked) {
       throw new UnauthorizedException("Foydalanuvchi bloklangan");
     }

@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Check, Rocket, ShieldCheck, Sparkles } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, Rocket, ShieldCheck, Sparkles, Wallet } from "lucide-react";
 import type { PlanTier, PricingConfigDto } from "@kerak/shared";
 import { PLAN_LISTINGS_LIMIT, UNLIMITED_LISTINGS, FREE_LISTINGS_LIMIT } from "@kerak/shared";
 import { fetchMe } from "../api/users";
 import { createPlanOrder } from "../api/plans";
+import { payPlanWithBalance } from "../api/wallet";
 import { fetchPricing } from "../api/pricing";
 import { PageHeader } from "../components/PageHeader";
 import { Spinner } from "../components/Spinner";
@@ -52,6 +53,7 @@ const PLAN_CARDS: PlanCardInfo[] = [
 export function Plans() {
   useBackButton("/profile");
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [pendingTier, setPendingTier] = useState<PlanTier | null>(null);
 
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
@@ -66,9 +68,23 @@ export function Plans() {
     onError: () => setPendingTier(null),
   });
 
+  const balanceMutation = useMutation({
+    mutationFn: (tier: PlanTier) => payPlanWithBalance(tier),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+      setPendingTier(null);
+    },
+    onError: () => setPendingTier(null),
+  });
+
   const handleBuy = (tier: PlanTier) => {
     setPendingTier(tier);
     orderMutation.mutate(tier);
+  };
+
+  const handlePayWithBalance = (tier: PlanTier) => {
+    setPendingTier(tier);
+    balanceMutation.mutate(tier);
   };
 
   return (
@@ -117,21 +133,35 @@ export function Plans() {
               </div>
 
               {isPurchasable && !alreadyIncluded && (
-                <button
-                  onClick={() => handleBuy(plan.tier as PlanTier)}
-                  disabled={orderMutation.isPending && pendingTier === plan.tier}
-                  className="btn-primary"
-                >
-                  {orderMutation.isPending && pendingTier === plan.tier ? t("sending") : t("plans.buy")}
-                </button>
+                <div className="grid grid-cols-[1fr_auto] gap-2">
+                  <button
+                    onClick={() => handleBuy(plan.tier as PlanTier)}
+                    disabled={pendingTier === plan.tier && (orderMutation.isPending || balanceMutation.isPending)}
+                    className="btn-primary"
+                  >
+                    {orderMutation.isPending && pendingTier === plan.tier ? t("sending") : t("plans.buy")}
+                  </button>
+                  {me && me.balance >= price && (
+                    <button
+                      onClick={() => handlePayWithBalance(plan.tier as PlanTier)}
+                      disabled={pendingTier === plan.tier && (orderMutation.isPending || balanceMutation.isPending)}
+                      aria-label={t("wallet.payWithBalance")}
+                      className="flex items-center justify-center gap-1.5 rounded-xl bg-brand/10 px-4 py-3 text-sm font-semibold text-brand transition active:scale-[0.98] disabled:opacity-50"
+                    >
+                      <Wallet className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           );
         })}
       </div>
 
-      {orderMutation.isError && (
-        <span className="text-xs text-destructive">{t("errorGeneric")}</span>
+      {(orderMutation.isError || balanceMutation.isError) && (
+        <span className="text-xs text-destructive">
+          {balanceMutation.error?.message || t("errorGeneric")}
+        </span>
       )}
       {!me && <Spinner label={t("loading")} />}
     </div>

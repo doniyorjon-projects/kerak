@@ -12,5 +12,6 @@ import { PricingModule } from "../pricing/pricing.module";
   imports: [NotificationsModule, PricingModule],
   providers: [ClickService, BoostsService, PlansService],
   controllers: [ClickController, BoostsController, PlansController],
+  exports: [ClickService],
 })
 export class PaymentsModule {}

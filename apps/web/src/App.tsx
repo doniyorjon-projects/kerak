@@ -20,6 +20,9 @@ import { RequestDetail } from "./pages/RequestDetail";
 import { EditRequest } from "./pages/EditRequest";
 import { MyRequests } from "./pages/MyRequests";
 import { BlockedUsers } from "./pages/BlockedUsers";
+import { Wallet } from "./pages/Wallet";
+import { SavedSearches } from "./pages/SavedSearches";
+import { captureReferralId } from "./api/client";
 
 function useSharedListingRedirect() {
   const location = useLocation();
@@ -29,8 +32,11 @@ function useSharedListingRedirect() {
     const params = new URLSearchParams(location.search);
     const listingId = params.get("listing");
     const requestId = params.get("request");
+    const referralId = params.get("ref");
+    if (referralId) captureReferralId(referralId);
     if (listingId) navigate(`/listings/${listingId}`, { replace: true });
     else if (requestId) navigate(`/requests/${requestId}`, { replace: true });
+    else if (referralId) navigate("/", { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 }
@@ -60,6 +66,8 @@ export default function App() {
         <Route path="/requests/:requestId/edit" element={<EditRequest />} />
         <Route path="/my-requests" element={<MyRequests />} />
         <Route path="/blocked-users" element={<BlockedUsers />} />
+        <Route path="/wallet" element={<Wallet />} />
+        <Route path="/saved-searches" element={<SavedSearches />} />
       </Routes>
       <BottomNav />
     </div>

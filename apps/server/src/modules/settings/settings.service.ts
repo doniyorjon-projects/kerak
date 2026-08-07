@@ -18,4 +18,9 @@ export class SettingsService {
       data: { channelId: channelId?.trim() || null },
     });
   }
+
+  async updateStarsRate(starsRate: number) {
+    const settings = await this.get();
+    return this.prisma.botSettings.update({ where: { id: settings.id }, data: { starsRate } });
+  }
 }

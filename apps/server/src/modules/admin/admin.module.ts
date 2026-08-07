@@ -8,6 +8,7 @@ import { BotModule } from "../bot/bot.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { SettingsModule } from "../settings/settings.module";
 import { RequestsModule } from "../requests/requests.module";
+import { SavedSearchesModule } from "../saved-searches/saved-searches.module";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { RequestsModule } from "../requests/requests.module";
     NotificationsModule,
     SettingsModule,
     RequestsModule,
+    SavedSearchesModule,
   ],
   controllers: [AdminController],
 })

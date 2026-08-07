@@ -16,6 +16,7 @@ interface TelegramWebApp {
   onEvent(eventType: "themeChanged", cb: () => void): void;
   offEvent(eventType: "themeChanged", cb: () => void): void;
   openLink(url: string, options?: { try_instant_view?: boolean }): void;
+  openInvoice(url: string, callback: (status: "paid" | "cancelled" | "failed" | "pending") => void): void;
 }
 
 declare global {
@@ -104,6 +105,18 @@ export function shareListing(title: string, listingId: string): void {
   }
 
   void navigator.clipboard?.writeText(link);
+}
+
+export function buildReferralLink(userId: string): string {
+  return BOT_USERNAME ? `https://t.me/${BOT_USERNAME}?start=ref_${userId}` : window.location.href;
+}
+
+export function openStarsInvoice(url: string, onDone: (status: "paid" | "cancelled" | "failed" | "pending") => void): void {
+  if (webApp) {
+    webApp.openInvoice(url, onDone);
+  } else {
+    window.open(url, "_blank");
+  }
 }
 
 export function showBackButton(onClick: () => void): void {

@@ -1,5 +1,5 @@
 import { Body, Controller, Post } from "@nestjs/common";
-import { NotificationType, PaymentStatus, Prisma, PlanOrder } from "@prisma/client";
+import { NotificationType, PaymentStatus, Prisma, PlanOrder, WalletTopupOrder, WalletTransactionType } from "@prisma/client";
 import { BOOST_DAYS } from "@kerak/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import { ClickService, ClickCallbackParams } from "./click.service";
@@ -41,11 +41,14 @@ export class ClickController {
     const planOrder = await this.prisma.planOrder.findUnique({ where: { id: body.merchant_trans_id } });
     if (planOrder) return this.prepareOrder("planOrder", planOrder, body);
 
+    const walletTopupOrder = await this.prisma.walletTopupOrder.findUnique({ where: { id: body.merchant_trans_id } });
+    if (walletTopupOrder) return this.prepareOrder("walletTopupOrder", walletTopupOrder, body);
+
     return this.reply(body, CLICK_ERROR.ORDER_NOT_FOUND, "Order not found");
   }
 
   private async prepareOrder(
-    table: "boostOrder" | "planOrder",
+    table: "boostOrder" | "planOrder" | "walletTopupOrder",
     order: { id: string; amount: number; status: PaymentStatus },
     body: ClickCallbackParams,
   ) {
@@ -61,8 +64,13 @@ export class ClickController {
         where: { id: order.id },
         data: { status: PaymentStatus.WAITING, clickTransId: body.click_trans_id },
       });
-    } else {
+    } else if (table === "planOrder") {
       await this.prisma.planOrder.update({
+        where: { id: order.id },
+        data: { status: PaymentStatus.WAITING, clickTransId: body.click_trans_id },
+      });
+    } else {
+      await this.prisma.walletTopupOrder.update({
         where: { id: order.id },
         data: { status: PaymentStatus.WAITING, clickTransId: body.click_trans_id },
       });
@@ -80,7 +88,41 @@ export class ClickController {
     const planOrder = await this.prisma.planOrder.findUnique({ where: { id: orderId } });
     if (planOrder) return this.completePlanOrder(planOrder, body);
 
+    const walletTopupOrder = await this.prisma.walletTopupOrder.findUnique({ where: { id: orderId } });
+    if (walletTopupOrder) return this.completeWalletTopupOrder(walletTopupOrder, body);
+
     return this.reply(body, CLICK_ERROR.TRANSACTION_NOT_FOUND, "Transaction not found");
+  }
+
+  private async completeWalletTopupOrder(order: WalletTopupOrder, body: ClickCallbackParams) {
+    if (Number(body.error) < 0) {
+      await this.prisma.walletTopupOrder.update({ where: { id: order.id }, data: { status: PaymentStatus.CANCELLED } });
+      return this.reply(body, CLICK_ERROR.SUCCESS, "Success", { merchant_confirm_id: order.id });
+    }
+    if (order.status === PaymentStatus.PAID) {
+      return this.reply(body, CLICK_ERROR.ALREADY_PAID, "Already paid");
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.walletTopupOrder.update({
+        where: { id: order.id },
+        data: { status: PaymentStatus.PAID, paidAt: new Date() },
+      }),
+      this.prisma.user.update({ where: { id: order.userId }, data: { balance: { increment: order.amount } } }),
+      this.prisma.walletTransaction.create({
+        data: { userId: order.userId, amount: order.amount, type: WalletTransactionType.TOPUP_CLICK },
+      }),
+    ]);
+
+    await this.notificationsService.create(
+      order.userId,
+      NotificationType.WALLET_TOPUP,
+      "Hamyon to'ldirildi ✅",
+      `Hamyoningizga ${order.amount.toLocaleString("uz-UZ")} so'm qo'shildi.`,
+      "/wallet",
+    );
+
+    return this.reply(body, CLICK_ERROR.SUCCESS, "Success", { merchant_confirm_id: order.id });
   }
 
   private async completeBoostOrder(

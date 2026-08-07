@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, MessageSquareText, PackageSearch } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { BellPlus, ChevronRight, MessageSquareText, PackageSearch } from "lucide-react";
 import type { FeedSort } from "@kerak/shared";
 import { fetchListingFeed } from "../api/listings";
 import { fetchCategories } from "../api/categories";
 import { fetchMe } from "../api/users";
+import { createSavedSearch } from "../api/savedSearches";
 import { ListingCard } from "../components/ListingCard";
 import { FeedControls } from "../components/FeedControls";
 import { FeedFilters, type FeedFilterValue } from "../components/FeedFilters";
@@ -22,6 +23,7 @@ import { useTranslation } from "../i18n/LanguageContext";
 export function Home() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
@@ -32,6 +34,21 @@ export function Home() {
   const [radiusKm, setRadiusKm] = useState(20);
   const [view, setView] = useState<"list" | "map">("list");
   const [filters, setFilters] = useState<FeedFilterValue>({});
+  const [saveSearchOpen, setSaveSearchOpen] = useState(false);
+  const [searchLabel, setSearchLabel] = useState("");
+
+  const hasActiveSearch = Boolean(
+    search || filters.categoryId || filters.regionId || filters.districtId || filters.minPrice || filters.maxPrice || filters.condition,
+  );
+
+  const saveSearchMutation = useMutation({
+    mutationFn: () => createSavedSearch({ label: searchLabel.trim() || search || t("savedSearch.defaultLabel"), q: search || undefined, ...filters }),
+    onSuccess: () => {
+      setSaveSearchOpen(false);
+      setSearchLabel("");
+      queryClient.invalidateQueries({ queryKey: ["saved-searches"] });
+    },
+  });
 
   const effectiveSort = sort === "distance" && !hasLocation ? "newest" : sort;
   const isSearching = search.trim().length > 0;
@@ -123,7 +140,41 @@ export function Home() {
             <h2 className="section-title">{t("home.recentTitle")}</h2>
             <div className="flex flex-wrap items-center gap-2">
               <FeedFilters value={filters} onChange={setFilters} categories={leafCategories} />
+              {hasActiveSearch && (
+                <button
+                  type="button"
+                  onClick={() => setSaveSearchOpen((v) => !v)}
+                  className="pill flex items-center gap-1.5 border border-divider bg-surface text-hint shadow-soft"
+                >
+                  <BellPlus className="h-3.5 w-3.5" />
+                  {t("savedSearch.save")}
+                </button>
+              )}
             </div>
+
+            {saveSearchOpen && (
+              <div className="card flex flex-col gap-2">
+                <span className="text-xs text-hint">{t("savedSearch.hint")}</span>
+                <input
+                  value={searchLabel}
+                  onChange={(e) => setSearchLabel(e.target.value)}
+                  placeholder={search || t("savedSearch.defaultLabel")}
+                  className="input"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => setSaveSearchOpen(false)} className="btn-secondary">
+                    {t("cancel")}
+                  </button>
+                  <button
+                    onClick={() => saveSearchMutation.mutate()}
+                    disabled={saveSearchMutation.isPending}
+                    className="btn-primary disabled:opacity-50"
+                  >
+                    {saveSearchMutation.isPending ? t("saving") : t("save")}
+                  </button>
+                </div>
+              </div>
+            )}
             <FeedControls
               sort={sort}
               onSortChange={handleSortChange}

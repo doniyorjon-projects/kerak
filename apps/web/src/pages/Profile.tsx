@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Ban,
+  BellRing,
   Check,
   ChevronRight,
   ListChecks,
@@ -14,6 +15,7 @@ import {
   Pencil,
   Rocket,
   ShieldCheck,
+  Wallet as WalletIcon,
   X,
 } from "lucide-react";
 import { UNLIMITED_LISTINGS } from "@kerak/shared";
@@ -264,6 +266,17 @@ export function Profile() {
           <ChevronRight className="h-4 w-4 text-hint" />
         </Link>
 
+        <Link to="/wallet" className="card flex items-center justify-between transition active:scale-[0.98]">
+          <span className="flex items-center gap-2 text-sm font-medium text-ink">
+            <WalletIcon className="h-5 w-5 text-hint" />
+            {t("wallet.title")}
+          </span>
+          <span className="flex items-center gap-1 text-xs text-hint">
+            {me.balance.toLocaleString("uz-UZ")} {t("som")}
+            <ChevronRight className="h-4 w-4" />
+          </span>
+        </Link>
+
         <Link to="/plans" className="card flex items-center justify-between transition active:scale-[0.98]">
           <span className="flex items-center gap-2 text-sm font-medium text-ink">
             <Rocket className="h-5 w-5 text-hint" />
@@ -273,6 +286,14 @@ export function Profile() {
             {me.listingsLimit >= UNLIMITED_LISTINGS ? t("plans.featureUnlimitedListings") : me.listingsLimit}
             <ChevronRight className="h-4 w-4" />
           </span>
+        </Link>
+
+        <Link to="/saved-searches" className="card flex items-center justify-between transition active:scale-[0.98]">
+          <span className="flex items-center gap-2 text-sm font-medium text-ink">
+            <BellRing className="h-5 w-5 text-hint" />
+            {t("savedSearch.title")}
+          </span>
+          <ChevronRight className="h-4 w-4 text-hint" />
         </Link>
 
         <Link to="/blocked-users" className="card flex items-center justify-between transition active:scale-[0.98]">

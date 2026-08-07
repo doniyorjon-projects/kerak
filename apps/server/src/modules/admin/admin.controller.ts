@@ -23,6 +23,8 @@ import { SetListingsLimitDto } from "./dto/set-listings-limit.dto";
 import { SetChannelDto } from "./dto/set-channel.dto";
 import { SettingsService } from "../settings/settings.service";
 import { RequestsService } from "../requests/requests.service";
+import { SavedSearchesService } from "../saved-searches/saved-searches.service";
+import { SetStarsRateDto } from "./dto/set-stars-rate.dto";
 import type { User } from "@prisma/client";
 import { NotificationType } from "@prisma/client";
 import { BOOST_DAYS, PLAN_LISTINGS_LIMIT, UNLIMITED_LISTINGS } from "@kerak/shared";
@@ -40,6 +42,7 @@ export class AdminController {
     private readonly notificationsService: NotificationsService,
     private readonly settingsService: SettingsService,
     private readonly requestsService: RequestsService,
+    private readonly savedSearchesService: SavedSearchesService,
   ) {}
 
   @Get("settings")
@@ -50,6 +53,11 @@ export class AdminController {
   @Patch("settings/channel")
   setChannel(@Body() dto: SetChannelDto) {
     return this.settingsService.updateChannel(dto.channelId ?? null);
+  }
+
+  @Patch("settings/stars-rate")
+  setStarsRate(@Body() dto: SetStarsRateDto) {
+    return this.settingsService.updateStarsRate(dto.starsRate);
   }
 
   @Get("requests")
@@ -199,6 +207,7 @@ export class AdminController {
       `/listings/${listing.id}`,
     );
     await this.botService.postToChannel(listing);
+    await this.savedSearchesService.notifyMatches(listing);
 
     return listing;
   }

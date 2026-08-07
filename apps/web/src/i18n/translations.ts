@@ -178,6 +178,9 @@ export const translations = {
     "myListings.boostedUntil": "Ko'tarilgan —",
     "myListings.until": "gacha",
     "myListings.filterAll": "Barchasi",
+    "myListings.selectMode": "Tanlash",
+    "myListings.select": "Tanlash",
+    "myListings.selectedCount": "{count} ta tanlandi",
     "myListings.activate": "Faollashtirish",
     "myListings.pause": "Pauza",
     "myListings.markSold": "Sotildi deb belgilash",
@@ -302,6 +305,8 @@ export const translations = {
     "admin.channelHint": "Tasdiqlangan e'lonlar avtomatik shu kanalga joylanadi. Bot kanalga admin sifatida qo'shilgan bo'lishi kerak. Kanal @username yoki -100 bilan boshlanuvchi ID ko'rinishida bo'lishi mumkin.",
     "admin.channelPlaceholder": "@mening_kanalim",
     "admin.channelSaved": "Kanal saqlandi ✅",
+    "admin.starsRateTitle": "Stars kursi",
+    "admin.starsRateHint": "1 ta Telegram Star nechi so'mga teng ekanligini belgilang. Hamyonni Stars orqali to'ldirishda shu kurs bo'yicha hisoblanadi.",
 
     // so'rovlar (talab qilaman)
     "request.pageTitle": "So'rovlar",
@@ -334,6 +339,34 @@ export const translations = {
     // bloklangan foydalanuvchilar
     "blocked.title": "Bloklangan foydalanuvchilar",
     "blocked.empty": "Siz hech kimni bloklamagansiz",
+
+    // saqlangan qidiruvlar
+    "savedSearch.title": "Saqlangan qidiruvlar",
+    "savedSearch.subtitle": "Mos e'lon chiqqanda sizga xabar beramiz",
+    "savedSearch.save": "Qidiruvni saqlash",
+    "savedSearch.hint": "Shu filtrlarga mos yangi e'lon chiqqanda bildirishnoma yuboramiz",
+    "savedSearch.defaultLabel": "Mening qidiruvim",
+    "savedSearch.empty": "Sizda saqlangan qidiruvlar yo'q",
+
+    // hamyon
+    "wallet.title": "Hamyon",
+    "wallet.topup": "Hamyonni to'ldirish",
+    "wallet.minAmount": "Minimal summa 1 000 so'm",
+    "wallet.payWithBalance": "Balansdan to'lash",
+    "wallet.referralTitle": "Do'stlarni taklif qiling",
+    "wallet.referralHint": "Havolangiz orqali qo'shilgan har bir do'stingiz uchun ikkalangizga {amount} so'mdan hamyonga qo'shiladi",
+    "wallet.copyLink": "Havolani nusxalash",
+    "wallet.linkCopied": "Nusxalandi ✅",
+    "wallet.shareLink": "Havolani ulashish",
+    "wallet.shareText": "Kerak — xizmat va mahsulotlar bozori. Men bilan qo'shiling!",
+    "wallet.history": "Tarix",
+    "wallet.historyEmpty": "Hozircha tranzaksiyalar yo'q",
+    "wallet.txTopupClick": "Click orqali to'ldirish",
+    "wallet.txTopupStars": "Stars orqali to'ldirish",
+    "wallet.txReferral": "Referal bonusi",
+    "wallet.txBoost": "Reklama uchun to'lov",
+    "wallet.txPlan": "Tarif uchun to'lov",
+    "wallet.txOther": "Tranzaksiya",
 
     // til
     "lang.uz": "O'zbekcha",
@@ -503,6 +536,9 @@ export const translations = {
     "myListings.boostedUntil": "Продвигается до —",
     "myListings.until": "",
     "myListings.filterAll": "Все",
+    "myListings.selectMode": "Выбрать",
+    "myListings.select": "Выбрать",
+    "myListings.selectedCount": "Выбрано: {count}",
     "myListings.activate": "Активировать",
     "myListings.pause": "Пауза",
     "myListings.markSold": "Отметить как продано",
@@ -625,6 +661,8 @@ export const translations = {
     "admin.channelHint": "Одобренные объявления автоматически публикуются в этом канале. Бот должен быть добавлен в канал как администратор. Укажите @username канала или ID, начинающийся с -100.",
     "admin.channelPlaceholder": "@мой_канал",
     "admin.channelSaved": "Канал сохранён ✅",
+    "admin.starsRateTitle": "Курс Stars",
+    "admin.starsRateHint": "Укажите, сколько сум стоит 1 Telegram Star. По этому курсу считается пополнение через Stars.",
 
     // запросы (куплю/ищу)
     "request.pageTitle": "Запросы",
@@ -657,6 +695,34 @@ export const translations = {
     // заблокированные пользователи
     "blocked.title": "Заблокированные пользователи",
     "blocked.empty": "Вы никого не заблокировали",
+
+    // сохранённые поиски
+    "savedSearch.title": "Сохранённые поиски",
+    "savedSearch.subtitle": "Уведомим вас, когда появится подходящее объявление",
+    "savedSearch.save": "Сохранить поиск",
+    "savedSearch.hint": "Мы уведомим вас, когда появится новое объявление по этим фильтрам",
+    "savedSearch.defaultLabel": "Мой поиск",
+    "savedSearch.empty": "У вас нет сохранённых поисков",
+
+    // кошелёк
+    "wallet.title": "Кошелёк",
+    "wallet.topup": "Пополнить кошелёк",
+    "wallet.minAmount": "Минимальная сумма 1 000 сум",
+    "wallet.payWithBalance": "Оплатить с баланса",
+    "wallet.referralTitle": "Приглашайте друзей",
+    "wallet.referralHint": "За каждого друга, присоединившегося по вашей ссылке, вы оба получите по {amount} сум на кошелёк",
+    "wallet.copyLink": "Скопировать ссылку",
+    "wallet.linkCopied": "Скопировано ✅",
+    "wallet.shareLink": "Поделиться ссылкой",
+    "wallet.shareText": "Kerak — рынок услуг и товаров. Присоединяйтесь!",
+    "wallet.history": "История",
+    "wallet.historyEmpty": "Пока нет транзакций",
+    "wallet.txTopupClick": "Пополнение через Click",
+    "wallet.txTopupStars": "Пополнение через Stars",
+    "wallet.txReferral": "Реферальный бонус",
+    "wallet.txBoost": "Оплата продвижения",
+    "wallet.txPlan": "Оплата тарифа",
+    "wallet.txOther": "Транзакция",
 
     "lang.uz": "O'zbekcha",
     "lang.ru": "Русский",

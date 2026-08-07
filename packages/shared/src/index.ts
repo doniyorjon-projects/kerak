@@ -226,4 +226,63 @@ export interface RequestFeedQuery {
 
 export interface BotSettingsDto {
   channelId: string | null;
+  starsRate: number;
+}
+
+export interface SavedSearchDto {
+  id: string;
+  label: string;
+  categoryId: string | null;
+  regionId: number | null;
+  districtId: number | null;
+  minPrice: number | null;
+  maxPrice: number | null;
+  condition: ListingCondition | null;
+  q: string | null;
+  createdAt: string;
+}
+
+export interface CreateSavedSearchInput {
+  label: string;
+  categoryId?: string;
+  regionId?: number;
+  districtId?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  condition?: ListingCondition;
+  q?: string;
+}
+
+export type WalletTransactionType =
+  | "TOPUP_CLICK"
+  | "TOPUP_STARS"
+  | "REFERRAL_BONUS"
+  | "BOOST_PURCHASE"
+  | "PLAN_PURCHASE";
+
+export interface WalletTransactionDto {
+  id: string;
+  amount: number;
+  type: WalletTransactionType;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface WalletDto {
+  balance: number;
+  transactions: WalletTransactionDto[];
+}
+
+export const REFERRAL_BONUS_AMOUNT = 5000;
+
+export interface WalletTopupResultDto {
+  orderId: string;
+  amount: number;
+  paymentUrl: string;
+}
+
+export interface StarsInvoiceResultDto {
+  orderId: string;
+  starsAmount: number;
+  invoiceLink: string;
 }

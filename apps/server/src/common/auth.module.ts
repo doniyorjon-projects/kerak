@@ -3,6 +3,7 @@ import { UsersService } from "../modules/users/users.service";
 import { TelegramAuthGuard } from "./telegram-auth.guard";
 import { AdminGuard } from "./admin.guard";
 import { OptionalAuthGuard } from "./optional-auth.guard";
+import { NotificationsModule } from "../modules/notifications/notifications.module";
 
 /**
  * UsersService bu yerda joylashgan, chunki TelegramAuthGuard unga bog'liq -
@@ -12,6 +13,7 @@ import { OptionalAuthGuard } from "./optional-auth.guard";
  */
 @Global()
 @Module({
+  imports: [NotificationsModule],
   providers: [UsersService, TelegramAuthGuard, AdminGuard, OptionalAuthGuard],
   exports: [UsersService, TelegramAuthGuard, AdminGuard, OptionalAuthGuard],
 })

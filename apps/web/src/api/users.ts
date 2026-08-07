@@ -10,6 +10,7 @@ export interface MeDto {
   lng: number | null;
   isAdmin: boolean;
   listingsLimit: number;
+  balance: number;
 }
 
 export function fetchMe() {

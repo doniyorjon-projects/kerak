@@ -153,6 +153,10 @@ export function setChannel(channelId: string | null) {
   return api.patch<BotSettingsDto>("/admin/settings/channel", { channelId });
 }
 
+export function setStarsRate(starsRate: number) {
+  return api.patch<BotSettingsDto>("/admin/settings/stars-rate", { starsRate });
+}
+
 export interface AdminRequest {
   id: string;
   title: string;

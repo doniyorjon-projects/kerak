@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Check, Rocket, TrendingUp, Zap } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, Rocket, TrendingUp, Wallet, Zap } from "lucide-react";
 import type { BoostDuration, PricingConfigDto } from "@kerak/shared";
 import { fetchListing } from "../api/listings";
 import { createBoostOrder } from "../api/payments";
+import { payBoostWithBalance } from "../api/wallet";
 import { fetchPricing } from "../api/pricing";
+import { fetchMe } from "../api/users";
 import { PageHeader } from "../components/PageHeader";
 import { Spinner } from "../components/Spinner";
 import { useBackButton } from "../hooks/useBackButton";
@@ -49,6 +51,7 @@ export function Advertise() {
   const { listingId } = useParams<{ listingId: string }>();
   useBackButton(`/listings/${listingId}`);
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [pendingDuration, setPendingDuration] = useState<BoostDuration | null>(null);
 
   const { data: listing, isLoading } = useQuery({
@@ -58,6 +61,7 @@ export function Advertise() {
   });
 
   const { data: pricing } = useQuery({ queryKey: ["pricing"], queryFn: fetchPricing });
+  const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
 
   const boostMutation = useMutation({
     mutationFn: (duration: BoostDuration) => createBoostOrder(listingId!, duration),
@@ -68,9 +72,24 @@ export function Advertise() {
     onError: () => setPendingDuration(null),
   });
 
+  const balanceMutation = useMutation({
+    mutationFn: (duration: BoostDuration) => payBoostWithBalance(listingId!, duration),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["listing", listingId], updated);
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+      setPendingDuration(null);
+    },
+    onError: () => setPendingDuration(null),
+  });
+
   const handleBuy = (duration: BoostDuration) => {
     setPendingDuration(duration);
     boostMutation.mutate(duration);
+  };
+
+  const handlePayWithBalance = (duration: BoostDuration) => {
+    setPendingDuration(duration);
+    balanceMutation.mutate(duration);
   };
 
   if (isLoading) return <Spinner label={t("loading")} />;
@@ -105,19 +124,35 @@ export function Advertise() {
                   </span>
                 ))}
               </div>
-              <button
-                onClick={() => handleBuy(opt.duration)}
-                disabled={boostMutation.isPending && pendingDuration === opt.duration}
-                className="btn-primary"
-              >
-                {boostMutation.isPending && pendingDuration === opt.duration ? t("sending") : t("advertise.buy")}
-              </button>
+              <div className="grid grid-cols-[1fr_auto] gap-2">
+                <button
+                  onClick={() => handleBuy(opt.duration)}
+                  disabled={pendingDuration === opt.duration && (boostMutation.isPending || balanceMutation.isPending)}
+                  className="btn-primary"
+                >
+                  {boostMutation.isPending && pendingDuration === opt.duration ? t("sending") : t("advertise.buy")}
+                </button>
+                {me && me.balance >= (pricing?.[opt.pricingField] ?? Infinity) && (
+                  <button
+                    onClick={() => handlePayWithBalance(opt.duration)}
+                    disabled={pendingDuration === opt.duration && (boostMutation.isPending || balanceMutation.isPending)}
+                    aria-label={t("wallet.payWithBalance")}
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-brand/10 px-4 py-3 text-sm font-semibold text-brand transition active:scale-[0.98] disabled:opacity-50"
+                  >
+                    <Wallet className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
           );
         })}
       </div>
 
-      {boostMutation.isError && <span className="text-xs text-destructive">{t("errorGeneric")}</span>}
+      {(boostMutation.isError || balanceMutation.isError) && (
+        <span className="text-xs text-destructive">
+          {balanceMutation.error?.message || t("errorGeneric")}
+        </span>
+      )}
     </div>
   );
 }

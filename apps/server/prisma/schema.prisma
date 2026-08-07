@@ -57,6 +57,9 @@ enum NotificationType {
   NEW_MESSAGE
   REPORT_RESOLVED
   LISTING_EXPIRED
+  SAVED_SEARCH_MATCH
+  REFERRAL_BONUS
+  WALLET_TOPUP
 }
 
 enum RequestStatus {
@@ -67,6 +70,19 @@ enum RequestStatus {
 enum ListingCondition {
   NEW
   USED
+}
+
+enum TopupMethod {
+  CLICK
+  STARS
+}
+
+enum WalletTransactionType {
+  TOPUP_CLICK
+  TOPUP_STARS
+  REFERRAL_BONUS
+  BOOST_PURCHASE
+  PLAN_PURCHASE
 }
 
 model User {
@@ -80,21 +96,28 @@ model User {
   isAdmin       Boolean  @default(false)
   isBlocked     Boolean  @default(false)
   listingsLimit Int      @default(1)
+  balance       Int      @default(0)
+  referredById  String?
+  referredBy    User?    @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals     User[]   @relation("Referrals")
   createdAt     DateTime @default(now())
 
-  listings         Listing[]
-  favorites        Favorite[]
-  messagesSent     Message[]    @relation("MessagesSent")
-  messagesReceived Message[]    @relation("MessagesReceived")
-  reports          Report[]
-  ratingsGiven     Rating[]     @relation("RatingsGiven")
-  ratingsReceived  Rating[]     @relation("RatingsReceived")
-  boostOrders      BoostOrder[]
-  planOrders       PlanOrder[]
-  notifications    Notification[]
-  requests         Request[]
-  blocksMade       UserBlock[] @relation("BlocksMade")
-  blocksReceived   UserBlock[] @relation("BlocksReceived")
+  listings           Listing[]
+  favorites          Favorite[]
+  messagesSent       Message[]    @relation("MessagesSent")
+  messagesReceived   Message[]    @relation("MessagesReceived")
+  reports            Report[]
+  ratingsGiven       Rating[]     @relation("RatingsGiven")
+  ratingsReceived    Rating[]     @relation("RatingsReceived")
+  boostOrders        BoostOrder[]
+  planOrders         PlanOrder[]
+  notifications      Notification[]
+  requests           Request[]
+  blocksMade         UserBlock[] @relation("BlocksMade")
+  blocksReceived     UserBlock[] @relation("BlocksReceived")
+  savedSearches      SavedSearch[]
+  walletTransactions WalletTransaction[]
+  walletTopupOrders  WalletTopupOrder[]
 }
 
 model Category {
@@ -304,6 +327,7 @@ model Request {
 model BotSettings {
   id        String   @id @default(cuid())
   channelId String?
+  starsRate Int      @default(200)
   updatedAt DateTime @updatedAt
 }
 
@@ -316,4 +340,42 @@ model UserBlock {
   createdAt DateTime @default(now())
 
   @@unique([blockerId, blockedId])
+}
+
+model SavedSearch {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label      String
+  categoryId String?
+  regionId   Int?
+  districtId Int?
+  minPrice   Int?
+  maxPrice   Int?
+  condition  ListingCondition?
+  q          String?
+  createdAt  DateTime @default(now())
+}
+
+model WalletTransaction {
+  id        String                @id @default(cuid())
+  userId    String
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Int
+  type      WalletTransactionType
+  note      String?
+  createdAt DateTime              @default(now())
+}
+
+model WalletTopupOrder {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount       Int
+  method       TopupMethod
+  starsAmount  Int?
+  status       PaymentStatus @default(CREATED)
+  clickTransId String?
+  createdAt    DateTime      @default(now())
+  paidAt       DateTime?
 }

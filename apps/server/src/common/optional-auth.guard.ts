@@ -18,7 +18,8 @@ export class OptionalAuthGuard implements CanActivate {
     if (initData && botToken) {
       const parsed = verifyTelegramInitData(initData, botToken);
       if (parsed) {
-        const user = await this.usersService.upsertFromTelegram(parsed.user);
+        const referralId = request.header("x-referral-id");
+        const user = await this.usersService.upsertFromTelegram(parsed.user, referralId);
         if (!user.isBlocked) {
           (request as Request & { user: typeof user }).user = user;
         }

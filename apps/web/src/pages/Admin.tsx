@@ -52,6 +52,7 @@ import {
   resolveReport,
   setChannel,
   setListingsLimit,
+  setStarsRate,
   setUserPlan,
   unblockUser,
 } from "../api/admin";
@@ -1071,9 +1072,13 @@ function SettingsTab() {
   const queryClient = useQueryClient();
   const { data: settings, isLoading } = useQuery({ queryKey: ["admin", "settings"], queryFn: fetchBotSettings });
   const [channelId, setChannelId] = useState("");
+  const [starsRate, setStarsRateValue] = useState("");
 
   useEffect(() => {
-    if (settings) setChannelId(settings.channelId ?? "");
+    if (settings) {
+      setChannelId(settings.channelId ?? "");
+      setStarsRateValue(String(settings.starsRate));
+    }
   }, [settings]);
 
   const saveMutation = useMutation({
@@ -1081,32 +1086,66 @@ function SettingsTab() {
     onSuccess: (updated) => queryClient.setQueryData(["admin", "settings"], updated),
   });
 
+  const saveStarsRateMutation = useMutation({
+    mutationFn: () => setStarsRate(Number(starsRate)),
+    onSuccess: (updated) => queryClient.setQueryData(["admin", "settings"], updated),
+  });
+
   if (isLoading) return <Spinner label={t("loading")} />;
 
   return (
-    <div className="card flex flex-col gap-3">
-      <div className="flex items-center gap-2.5">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
-          <Send className="h-4 w-4" />
+    <div className="flex flex-col gap-3">
+      <div className="card flex flex-col gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
+            <Send className="h-4 w-4" />
+          </div>
+          <span className="text-sm font-semibold text-ink">{t("admin.channelTitle")}</span>
         </div>
-        <span className="text-sm font-semibold text-ink">{t("admin.channelTitle")}</span>
+        <p className="text-xs text-hint">{t("admin.channelHint")}</p>
+        <input
+          value={channelId}
+          onChange={(e) => setChannelId(e.target.value)}
+          placeholder={t("admin.channelPlaceholder")}
+          className="input"
+        />
+        <button
+          onClick={() => saveMutation.mutate()}
+          disabled={saveMutation.isPending}
+          className="btn-primary disabled:opacity-50"
+        >
+          {saveMutation.isPending ? t("saving") : t("save")}
+        </button>
+        {saveMutation.isSuccess && <span className="text-xs text-emerald-500">{t("admin.channelSaved")}</span>}
+        {saveMutation.isError && <span className="text-xs text-destructive">{saveMutation.error.message}</span>}
       </div>
-      <p className="text-xs text-hint">{t("admin.channelHint")}</p>
-      <input
-        value={channelId}
-        onChange={(e) => setChannelId(e.target.value)}
-        placeholder={t("admin.channelPlaceholder")}
-        className="input"
-      />
-      <button
-        onClick={() => saveMutation.mutate()}
-        disabled={saveMutation.isPending}
-        className="btn-primary disabled:opacity-50"
-      >
-        {saveMutation.isPending ? t("saving") : t("save")}
-      </button>
-      {saveMutation.isSuccess && <span className="text-xs text-emerald-500">{t("admin.channelSaved")}</span>}
-      {saveMutation.isError && <span className="text-xs text-destructive">{saveMutation.error.message}</span>}
+
+      <div className="card flex flex-col gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-600">
+            <Star className="h-4 w-4" />
+          </div>
+          <span className="text-sm font-semibold text-ink">{t("admin.starsRateTitle")}</span>
+        </div>
+        <p className="text-xs text-hint">{t("admin.starsRateHint")}</p>
+        <input
+          type="number"
+          min={1}
+          value={starsRate}
+          onChange={(e) => setStarsRateValue(e.target.value)}
+          className="input"
+        />
+        <button
+          onClick={() => saveStarsRateMutation.mutate()}
+          disabled={saveStarsRateMutation.isPending}
+          className="btn-primary disabled:opacity-50"
+        >
+          {saveStarsRateMutation.isPending ? t("saving") : t("save")}
+        </button>
+        {saveStarsRateMutation.isSuccess && (
+          <span className="text-xs text-emerald-500">{t("admin.channelSaved")}</span>
+        )}
+      </div>
     </div>
   );
 }

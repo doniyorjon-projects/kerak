@@ -20,6 +20,8 @@ import { MetaModule } from "./modules/meta/meta.module";
 import { RequestsModule } from "./modules/requests/requests.module";
 import { SettingsModule } from "./modules/settings/settings.module";
 import { BlocksModule } from "./modules/blocks/blocks.module";
+import { SavedSearchesModule } from "./modules/saved-searches/saved-searches.module";
+import { WalletModule } from "./modules/wallet/wallet.module";
 
 @Module({
   imports: [
@@ -44,6 +46,8 @@ import { BlocksModule } from "./modules/blocks/blocks.module";
     RequestsModule,
     SettingsModule,
     BlocksModule,
+    SavedSearchesModule,
+    WalletModule,
   ],
 })
 export class AppModule {}

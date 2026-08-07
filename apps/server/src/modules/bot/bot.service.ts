@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Bot, InlineKeyboard } from "grammy";
-import { Listing, NotificationType } from "@prisma/client";
+import { Listing, NotificationType, PaymentStatus, WalletTransactionType } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { SettingsService } from "../settings/settings.service";
@@ -41,20 +41,67 @@ export class BotService implements OnModuleInit {
     this.bot.command("start", async (ctx) => {
       const payload = ctx.match?.toString().trim();
       const listingId = payload?.startsWith("listing_") ? payload.slice("listing_".length) : null;
-      const appUrl = listingId
-        ? `${this.miniAppUrl}?listing=${encodeURIComponent(listingId)}`
-        : this.miniAppUrl;
+      const requestId = payload?.startsWith("request_") ? payload.slice("request_".length) : null;
+      const referralId = payload?.startsWith("ref_") ? payload.slice("ref_".length) : null;
+
+      const params = new URLSearchParams();
+      if (listingId) params.set("listing", listingId);
+      if (requestId) params.set("request", requestId);
+      if (referralId) params.set("ref", referralId);
+      const qs = params.toString();
+      const appUrl = qs ? `${this.miniAppUrl}?${qs}` : this.miniAppUrl;
 
       const keyboard = new InlineKeyboard().webApp(
-        listingId ? "🚀 Elonni ko'rish" : "🚀 Kerak'ni ochish",
+        listingId || requestId ? "🚀 Ko'rish" : "🚀 Kerak'ni ochish",
         appUrl,
       );
       await ctx.reply(
-        listingId
-          ? "Ulashilgan elonni ko'rish uchun tugmani bosing 👇"
+        listingId || requestId
+          ? "Ulashilgan e'lonni ko'rish uchun tugmani bosing 👇"
           : "Kerak'ga xush kelibsiz!\n\nBu yerda xizmat va mahsulotlarni topishingiz yoki o'zingiznikini joylashingiz mumkin.",
         { reply_markup: keyboard },
       );
+    });
+
+    this.bot.on("pre_checkout_query", async (ctx) => {
+      const order = await this.prisma.walletTopupOrder.findUnique({ where: { id: ctx.preCheckoutQuery.invoice_payload } });
+      if (!order || order.status === PaymentStatus.PAID) {
+        await ctx.answerPreCheckoutQuery(false, "Buyurtma topilmadi yoki allaqachon to'langan");
+        return;
+      }
+      await ctx.answerPreCheckoutQuery(true);
+    });
+
+    this.bot.on("message:successful_payment", async (ctx) => {
+      const payload = ctx.message.successful_payment.invoice_payload;
+      const order = await this.prisma.walletTopupOrder.findUnique({ where: { id: payload } });
+      if (!order || order.status === PaymentStatus.PAID) return;
+
+      await this.prisma.$transaction([
+        this.prisma.walletTopupOrder.update({
+          where: { id: order.id },
+          data: { status: PaymentStatus.PAID, paidAt: new Date() },
+        }),
+        this.prisma.user.update({ where: { id: order.userId }, data: { balance: { increment: order.amount } } }),
+        this.prisma.walletTransaction.create({
+          data: {
+            userId: order.userId,
+            amount: order.amount,
+            type: WalletTransactionType.TOPUP_STARS,
+            note: `${order.starsAmount} ⭐`,
+          },
+        }),
+      ]);
+
+      await this.notificationsService.create(
+        order.userId,
+        NotificationType.WALLET_TOPUP,
+        "Hamyon to'ldirildi ✅",
+        `Hamyoningizga ${order.amount.toLocaleString("uz-UZ")} so'm qo'shildi.`,
+        "/wallet",
+      );
+
+      await ctx.reply(`✅ Hamyoningizga ${order.amount.toLocaleString("uz-UZ")} so'm qo'shildi.`);
     });
 
     this.bot.on("message:text", async (ctx) => {
@@ -103,6 +150,45 @@ export class BotService implements OnModuleInit {
           ? "Xabaringiz yuborildi ✅"
           : "Xabaringiz yetkazilmadi — foydalanuvchi botni hali ishga tushirmagan.",
       );
+    });
+
+    this.bot.on("inline_query", async (ctx) => {
+      const query = ctx.inlineQuery.query.trim();
+      if (query.length < 2) {
+        await ctx.answerInlineQuery([], { cache_time: 10 });
+        return;
+      }
+
+      const listings = await this.prisma.listing.findMany({
+        where: {
+          status: "ACTIVE",
+          OR: [
+            { title: { contains: query, mode: "insensitive" } },
+            { description: { contains: query, mode: "insensitive" } },
+          ],
+        },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      });
+
+      const results = listings.map((listing) => {
+        const url = `https://t.me/${this.botUsername}?start=listing_${listing.id}`;
+        const priceText = listing.price != null ? `${listing.price.toLocaleString("uz-UZ")} so'm` : "Kelishilgan holda";
+        return {
+          type: "article" as const,
+          id: listing.id,
+          title: listing.title,
+          description: priceText,
+          thumbnail_url: listing.photos[0] || undefined,
+          input_message_content: {
+            message_text: `🔎 <b>${listing.title}</b>\n💰 ${priceText}\n\n${url}`,
+            parse_mode: "HTML" as const,
+          },
+          reply_markup: new InlineKeyboard().url("🚀 Ko'rish", url),
+        };
+      });
+
+      await ctx.answerInlineQuery(results, { cache_time: 30 });
     });
   }
 
@@ -201,6 +287,22 @@ export class BotService implements OnModuleInit {
     } catch (err) {
       this.logger.warn(`Kanalga post qilinmadi: ${err}`);
     }
+  }
+
+  async createStarsInvoiceLink(
+    orderId: string,
+    title: string,
+    description: string,
+    starsAmount: number,
+  ): Promise<string> {
+    return this.bot.api.createInvoiceLink(
+      title,
+      description,
+      orderId,
+      "",
+      "XTR",
+      [{ label: title, amount: starsAmount }],
+    );
   }
 
   async notifyAdminNewListing(listing: Listing) {
