@@ -625,17 +625,18 @@ export function ListingDetail() {
                 {t("listing.contactTelegram")}
               </button>
             )}
-            <a
-              href={`tel:${listing.phone}`}
+            <button
+              type="button"
               onClick={() => {
                 handleContact(ContactEventType.PHONE_CLICK);
                 void navigator.clipboard?.writeText(listing.phone);
+                window.location.href = `tel:${listing.phone}`;
               }}
               className="btn-secondary"
             >
               <Phone className="h-4 w-4" />
               {t("listing.contactPhone")}: {listing.phone}
-            </a>
+            </button>
           </div>
 
           <div className="card flex flex-col gap-2">

@@ -194,14 +194,17 @@ export function RequestDetail() {
               {t("listing.contactTelegram")}
             </button>
           )}
-          <a
-            href={`tel:${request.phone}`}
-            onClick={() => void navigator.clipboard?.writeText(request.phone)}
+          <button
+            type="button"
+            onClick={() => {
+              void navigator.clipboard?.writeText(request.phone);
+              window.location.href = `tel:${request.phone}`;
+            }}
             className="btn-secondary"
           >
             <Phone className="h-4 w-4" />
             {t("listing.contactPhone")}: {request.phone}
-          </a>
+          </button>
 
           {isAdminViewing && (
             <div className="card mt-1 flex flex-col gap-2">

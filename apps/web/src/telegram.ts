@@ -13,6 +13,7 @@ interface TelegramWebApp {
   ready(): void;
   expand(): void;
   requestFullscreen?(): void;
+  disableVerticalSwipes?(): void;
   colorScheme: "light" | "dark";
   themeParams: Record<string, string>;
   safeAreaInset: SafeAreaInset;
@@ -93,6 +94,15 @@ export function initTelegramApp(): void {
       webApp.requestFullscreen();
     } catch {
       // eski klient versiyalarida ushlab qolinadi, oddiy expand() bilan davom etadi
+    }
+  }
+  if (webApp.disableVerticalSwipes && webApp.isVersionAtLeast("7.7")) {
+    try {
+      // Sahifa tepasida pastdan-yuqoriga svayp qilinganda mini-app tasodifan
+      // yopilib qolmasligi uchun - endi faqat Close/orqaga tugmasi bilan yopiladi.
+      webApp.disableVerticalSwipes();
+    } catch {
+      // eski klient versiyalarida ushlab qolinadi
     }
   }
   applyThemeVars();
