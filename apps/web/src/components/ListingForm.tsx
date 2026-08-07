@@ -60,10 +60,10 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
   const { t } = useTranslation();
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
   const leafCategories = (categories ?? []).filter((c) => c.parentId);
-  const isProduct = leafCategories.find((c) => c.id === categoryId)?.type === CategoryType.PRODUCT;
 
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [condition, setCondition] = useState<ListingCondition | null>(initial?.condition ?? null);
+  const isProduct = leafCategories.find((c) => c.id === categoryId)?.type === CategoryType.PRODUCT;
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [price, setPrice] = useState(initial?.price != null ? String(initial.price) : "");
