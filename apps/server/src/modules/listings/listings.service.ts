@@ -223,10 +223,21 @@ export class ListingsService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, viewerId?: string) {
     const listing = await this.prisma.listing.findUnique({ where: { id }, include: FEED_INCLUDE });
     if (!listing) throw new NotFoundException("Elon topilmadi");
-    await this.prisma.listing.update({ where: { id }, data: { viewsCount: { increment: 1 } } });
+
+    if (viewerId && viewerId !== listing.sellerId && listing.status === ListingStatus.ACTIVE) {
+      const { count } = await this.prisma.listingView.createMany({
+        data: [{ listingId: id, viewerId }],
+        skipDuplicates: true,
+      });
+      if (count > 0) {
+        await this.prisma.listing.update({ where: { id }, data: { viewsCount: { increment: 1 } } });
+        listing.viewsCount += 1;
+      }
+    }
+
     return listing;
   }
 

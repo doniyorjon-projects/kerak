@@ -30,6 +30,7 @@ import {
   addAdmin,
   approveListing,
   blockUser,
+  deleteUser,
   dismissReport,
   fetchAdminStats,
   fetchAdmins,
@@ -682,10 +683,18 @@ function UsersTab() {
   const { data: users, isLoading } = useQuery({ queryKey: ["admin", "users"], queryFn: fetchUsers });
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
   const blockMutation = useMutation({ mutationFn: blockUser, onSuccess: invalidate });
   const unblockMutation = useMutation({ mutationFn: unblockUser, onSuccess: invalidate });
+  const deleteMutation = useMutation({
+    mutationFn: deleteUser,
+    onSuccess: () => {
+      setDeletingId(null);
+      invalidate();
+    },
+  });
 
   const filtered = (users ?? []).filter((u) => {
     const q = search.trim().toLowerCase();
@@ -769,6 +778,41 @@ function UsersTab() {
                 </button>
               )}
             </div>
+
+            {!u.isAdmin && (
+              deletingId === u.id ? (
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs text-destructive">{t("admin.confirmDeleteUser")}</span>
+                  {deleteMutation.isError && (
+                    <span className="text-xs text-destructive">{deleteMutation.error.message}</span>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setDeletingId(null)}
+                      className="flex items-center justify-center gap-1.5 rounded-xl bg-surface-secondary py-2.5 text-xs font-semibold text-hint transition active:scale-[0.98]"
+                    >
+                      {t("cancel")}
+                    </button>
+                    <button
+                      onClick={() => deleteMutation.mutate(u.id)}
+                      disabled={deleteMutation.isPending}
+                      className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive py-2.5 text-xs font-semibold text-white transition active:scale-[0.98] disabled:opacity-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {t("admin.deleteUser")}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setDeletingId(u.id)}
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-destructive/10 py-2.5 text-xs font-semibold text-destructive transition active:scale-[0.98]"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {t("admin.deleteUser")}
+                </button>
+              )
+            )}
 
             {expandedId === u.id && <UserListingsPanel userId={u.id} />}
           </div>

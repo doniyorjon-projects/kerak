@@ -99,7 +99,7 @@ model Category {
 model Listing {
   id           String        @id @default(cuid())
   sellerId     String
-  seller       User          @relation(fields: [sellerId], references: [id])
+  seller       User          @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   categoryId   String
   category     Category      @relation(fields: [categoryId], references: [id])
   title        String
@@ -126,6 +126,7 @@ model Listing {
   reports       Report[]
   ratings       Rating[]
   boostOrders   BoostOrder[]
+  views         ListingView[]
 
   @@index([categoryId, status])
 }
@@ -133,9 +134,9 @@ model Listing {
 model Favorite {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   listingId String
-  listing   Listing  @relation(fields: [listingId], references: [id])
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
   @@unique([userId, listingId])
@@ -144,7 +145,7 @@ model Favorite {
 model ContactEvent {
   id         String           @id @default(cuid())
   listingId  String
-  listing    Listing          @relation(fields: [listingId], references: [id])
+  listing    Listing          @relation(fields: [listingId], references: [id], onDelete: Cascade)
   fromUserId String
   type       ContactEventType
   createdAt  DateTime         @default(now())
@@ -153,11 +154,11 @@ model ContactEvent {
 model Message {
   id                String   @id @default(cuid())
   listingId         String
-  listing           Listing  @relation(fields: [listingId], references: [id])
+  listing           Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
   fromUserId        String
-  fromUser          User     @relation("MessagesSent", fields: [fromUserId], references: [id])
+  fromUser          User     @relation("MessagesSent", fields: [fromUserId], references: [id], onDelete: Cascade)
   toUserId          String
-  toUser            User     @relation("MessagesReceived", fields: [toUserId], references: [id])
+  toUser            User     @relation("MessagesReceived", fields: [toUserId], references: [id], onDelete: Cascade)
   text              String
   telegramMessageId Int?
   createdAt         DateTime @default(now())
@@ -168,9 +169,9 @@ model Message {
 model Report {
   id         String       @id @default(cuid())
   listingId  String
-  listing    Listing      @relation(fields: [listingId], references: [id])
+  listing    Listing      @relation(fields: [listingId], references: [id], onDelete: Cascade)
   reporterId String
-  reporter   User         @relation(fields: [reporterId], references: [id])
+  reporter   User         @relation(fields: [reporterId], references: [id], onDelete: Cascade)
   reason     String
   status     ReportStatus @default(PENDING)
   createdAt  DateTime     @default(now())
@@ -179,11 +180,11 @@ model Report {
 model Rating {
   id        String   @id @default(cuid())
   listingId String
-  listing   Listing  @relation(fields: [listingId], references: [id])
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
   raterId   String
-  rater     User     @relation("RatingsGiven", fields: [raterId], references: [id])
+  rater     User     @relation("RatingsGiven", fields: [raterId], references: [id], onDelete: Cascade)
   sellerId  String
-  seller    User     @relation("RatingsReceived", fields: [sellerId], references: [id])
+  seller    User     @relation("RatingsReceived", fields: [sellerId], references: [id], onDelete: Cascade)
   stars     Int
   comment   String?
   createdAt DateTime @default(now())
@@ -194,9 +195,9 @@ model Rating {
 model BoostOrder {
   id           String        @id @default(cuid())
   listingId    String
-  listing      Listing       @relation(fields: [listingId], references: [id])
+  listing      Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
   userId       String
-  user         User          @relation(fields: [userId], references: [id])
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   duration     BoostDuration
   amount       Int
   status       PaymentStatus @default(CREATED)
@@ -208,7 +209,7 @@ model BoostOrder {
 model PlanOrder {
   id           String        @id @default(cuid())
   userId       String
-  user         User          @relation(fields: [userId], references: [id])
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   tier         PlanTier
   amount       Int
   listingsLimit Int
@@ -216,6 +217,16 @@ model PlanOrder {
   clickTransId String?
   createdAt    DateTime      @default(now())
   paidAt       DateTime?
+}
+
+model ListingView {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  viewerId  String
+  createdAt DateTime @default(now())
+
+  @@unique([listingId, viewerId])
 }
 
 model PricingConfig {
@@ -241,7 +252,7 @@ model Banner {
 model Notification {
   id        String           @id @default(cuid())
   userId    String
-  user      User             @relation(fields: [userId], references: [id])
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      NotificationType
   title     String
   body      String

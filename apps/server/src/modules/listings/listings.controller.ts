@@ -11,6 +11,7 @@ import {
 } from "@nestjs/common";
 import { User } from "@prisma/client";
 import { TelegramAuthGuard } from "../../common/telegram-auth.guard";
+import { OptionalAuthGuard } from "../../common/optional-auth.guard";
 import { CurrentUser } from "../../common/current-user.decorator";
 import { ListingsService } from "./listings.service";
 import { CreateListingDto } from "./dto/create-listing.dto";
@@ -33,9 +34,10 @@ export class ListingsController {
     return this.listingsService.findMine(user.id);
   }
 
+  @UseGuards(OptionalAuthGuard)
   @Get(":id")
-  findOne(@Param("id") id: string) {
-    return this.listingsService.findOne(id);
+  findOne(@Param("id") id: string, @CurrentUser() viewer?: User) {
+    return this.listingsService.findOne(id, viewer?.id);
   }
 
   @UseGuards(TelegramAuthGuard)

@@ -98,6 +98,21 @@ export class AdminController {
     return this.prisma.user.update({ where: { id }, data: { isBlocked: false } });
   }
 
+  @Delete("users/:id")
+  async deleteUser(@Param("id") id: string, @CurrentUser() currentUser: User) {
+    if (id === currentUser.id) {
+      throw new BadRequestException("O'zingizni o'chira olmaysiz");
+    }
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new NotFoundException("Foydalanuvchi topilmadi");
+    }
+    if (user.isAdmin) {
+      throw new BadRequestException("Avval admin huquqini bekor qiling, keyin o'chiring");
+    }
+    await this.prisma.user.delete({ where: { id } });
+  }
+
   @Patch("listings/:id/approve")
   async approve(@Param("id") id: string) {
     const listing = await this.prisma.listing.update({

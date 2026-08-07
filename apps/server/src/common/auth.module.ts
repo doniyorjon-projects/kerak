@@ -2,6 +2,7 @@ import { Global, Module } from "@nestjs/common";
 import { UsersService } from "../modules/users/users.service";
 import { TelegramAuthGuard } from "./telegram-auth.guard";
 import { AdminGuard } from "./admin.guard";
+import { OptionalAuthGuard } from "./optional-auth.guard";
 
 /**
  * UsersService bu yerda joylashgan, chunki TelegramAuthGuard unga bog'liq -
@@ -11,7 +12,7 @@ import { AdminGuard } from "./admin.guard";
  */
 @Global()
 @Module({
-  providers: [UsersService, TelegramAuthGuard, AdminGuard],
-  exports: [UsersService, TelegramAuthGuard, AdminGuard],
+  providers: [UsersService, TelegramAuthGuard, AdminGuard, OptionalAuthGuard],
+  exports: [UsersService, TelegramAuthGuard, AdminGuard, OptionalAuthGuard],
 })
 export class AuthModule {}

@@ -119,11 +119,13 @@ export const translations = {
     "create.errCategory": "Kategoriyani tanlang",
     "create.errPlace": "Viloyat va tumanni tanlang",
     "create.errPhone": "Telefon raqamini kiriting",
+    "create.errPhoneIncomplete": "Telefon raqamini to'liq kiriting",
     "create.errPhoto": "Rasm yuklashda xatolik yuz berdi",
     "create.selectRegion": "Viloyatni tanlang",
     "create.selectDistrict": "Tumanni tanlang",
     "create.fineTuneLocation": "Xaritada aniqroq joyni belgilang (nuqtani suring)",
     "create.viewPlans": "Tariflarni ko'rish",
+    "create.mainPhoto": "Asosiy",
 
     // elonni tahrirlash
     "edit.title": "E'lonni tahrirlash",
@@ -268,6 +270,8 @@ export const translations = {
     "admin.viewListings": "E'lonlarini ko'rish",
     "admin.blockUser": "Bloklash",
     "admin.unblockUser": "Blokdan chiqarish",
+    "admin.deleteUser": "O'chirish",
+    "admin.confirmDeleteUser": "Foydalanuvchi va uning barcha e'lonlari butunlay o'chiriladi. Davom etasizmi?",
 
     // til
     "lang.uz": "O'zbekcha",
@@ -382,11 +386,13 @@ export const translations = {
     "create.errCategory": "Выберите категорию",
     "create.errPlace": "Выберите область и район",
     "create.errPhone": "Введите номер телефона",
+    "create.errPhoneIncomplete": "Введите номер телефона полностью",
     "create.errPhoto": "Ошибка при загрузке фото",
     "create.selectRegion": "Выберите область",
     "create.selectDistrict": "Выберите район",
     "create.fineTuneLocation": "Уточните местоположение на карте (передвиньте точку)",
     "create.viewPlans": "Посмотреть тарифы",
+    "create.mainPhoto": "Главное",
 
     "edit.title": "Редактировать объявление",
     "edit.subtitle": "Обновите информацию",
@@ -525,6 +531,8 @@ export const translations = {
     "admin.viewListings": "Посмотреть объявления",
     "admin.blockUser": "Заблокировать",
     "admin.unblockUser": "Разблокировать",
+    "admin.deleteUser": "Удалить",
+    "admin.confirmDeleteUser": "Пользователь и все его объявления будут удалены навсегда. Продолжить?",
 
     "lang.uz": "O'zbekcha",
     "lang.ru": "Русский",

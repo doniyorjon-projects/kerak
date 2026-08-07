@@ -114,6 +114,10 @@ export function unblockUser(id: string) {
   return api.patch<AdminUserDetail>(`/admin/users/${id}/unblock`);
 }
 
+export function deleteUser(id: string) {
+  return api.delete<void>(`/admin/users/${id}`);
+}
+
 export interface AdminUserListing {
   id: string;
   title: string;
