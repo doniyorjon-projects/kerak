@@ -2,16 +2,18 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { NotificationType } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { BotService } from "../bot/bot.service";
 
 @Injectable()
 export class RatingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly botService: BotService,
   ) {}
 
   async upsert(raterId: string, listingId: string, stars: number, comment?: string, isAnonymous?: boolean) {
-    const listing = await this.prisma.listing.findUnique({ where: { id: listingId } });
+    const listing = await this.prisma.listing.findUnique({ where: { id: listingId }, include: { seller: true } });
     if (!listing) throw new NotFoundException("Elon topilmadi");
     if (listing.sellerId === raterId) {
       throw new BadRequestException("O'zingizni baholay olmaysiz");
@@ -25,12 +27,13 @@ export class RatingsService {
 
     const rater = await this.prisma.user.findUnique({ where: { id: raterId } });
     const raterName = rater ? rater.username ?? rater.firstName : null;
+    const publicRaterName = isAnonymous ? null : raterName;
     const title = "Yangi sharh ⭐";
-    const body =
-      isAnonymous || !raterName
-        ? `"${listing.title}" eloningizga anonim ravishda ${stars} yulduzli sharh qoldirildi.`
-        : `${raterName} tomonidan "${listing.title}" eloningizga ${stars} yulduzli sharh qoldirildi.`;
+    const body = publicRaterName
+      ? `${publicRaterName} tomonidan "${listing.title}" eloningizga ${stars} yulduzli sharh qoldirildi.`
+      : `"${listing.title}" eloningizga anonim ravishda ${stars} yulduzli sharh qoldirildi.`;
     await this.notificationsService.create(listing.sellerId, NotificationType.NEW_RATING, title, body, `/listings/${listingId}`);
+    await this.botService.notifyNewRating(listing.seller.telegramId, listingId, listing.title, stars, publicRaterName);
 
     return rating;
   }

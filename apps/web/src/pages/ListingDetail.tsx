@@ -739,73 +739,73 @@ export function ListingDetail() {
               <span className="text-xs text-emerald-500">{t("listing.ratingSaved")}</span>
             )}
           </div>
-
-          {listingRatings && listingRatings.length > 0 && (
-            <div className="card flex flex-col gap-3">
-              <span className="text-sm font-semibold text-ink">{t("listing.reviewsTitle")}</span>
-              <div className="flex flex-col gap-3">
-                {listingRatings.map((r) => (
-                  <div
-                    key={r.id}
-                    className="flex flex-col gap-1.5 border-t border-divider pt-3 first:border-0 first:pt-0"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <StarRating value={r.stars} size={14} />
-                        <span className="text-xs font-medium text-ink">
-                          {r.raterName ?? t("listing.anonymousReviewer")}
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-hint">{formatRelativeDate(r.createdAt, t, lang)}</span>
-                    </div>
-                    {r.comment && <p className="text-sm text-ink">{r.comment}</p>}
-
-                    {r.sellerReply ? (
-                      <div className="ml-3 flex flex-col gap-0.5 rounded-xl bg-surface-secondary p-2.5">
-                        <span className="text-xs font-semibold text-brand">{t("listing.sellerReplyLabel")}</span>
-                        <span className="text-xs text-ink">{r.sellerReply}</span>
-                      </div>
-                    ) : (
-                      isOwner && (
-                        <div className="ml-3 flex flex-col gap-1.5">
-                          {openReplyId === r.id ? (
-                            <>
-                              <textarea
-                                value={replyDrafts[r.id] ?? ""}
-                                onChange={(e) =>
-                                  setReplyDrafts((prev) => ({ ...prev, [r.id]: e.target.value }))
-                                }
-                                placeholder={t("listing.replyPlaceholder")}
-                                className="input min-h-10 text-xs"
-                              />
-                              <button
-                                onClick={() => replyMutation.mutate(r.id)}
-                                disabled={
-                                  !replyDrafts[r.id]?.trim() ||
-                                  (replyMutation.isPending && replyMutation.variables === r.id)
-                                }
-                                className="btn-secondary text-xs disabled:opacity-50"
-                              >
-                                {t("listing.sendReply")}
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              onClick={() => setOpenReplyId(r.id)}
-                              className="w-fit text-xs text-brand active:underline"
-                            >
-                              {t("listing.replyToReview")}
-                            </button>
-                          )}
-                        </div>
-                      )
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </>
+      )}
+
+      {listingRatings && listingRatings.length > 0 && (
+        <div className="card flex flex-col gap-3">
+          <span className="text-sm font-semibold text-ink">{t("listing.reviewsTitle")}</span>
+          <div className="flex flex-col gap-3">
+            {listingRatings.map((r) => (
+              <div
+                key={r.id}
+                className="flex flex-col gap-1.5 border-t border-divider pt-3 first:border-0 first:pt-0"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <StarRating value={r.stars} size={14} />
+                    <span className="text-xs font-medium text-ink">
+                      {r.raterName ?? t("listing.anonymousReviewer")}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-hint">{formatRelativeDate(r.createdAt, t, lang)}</span>
+                </div>
+                {r.comment && <p className="text-sm text-ink">{r.comment}</p>}
+
+                {r.sellerReply ? (
+                  <div className="ml-3 flex flex-col gap-0.5 rounded-xl bg-surface-secondary p-2.5">
+                    <span className="text-xs font-semibold text-brand">{t("listing.sellerReplyLabel")}</span>
+                    <span className="text-xs text-ink">{r.sellerReply}</span>
+                  </div>
+                ) : (
+                  isOwner && (
+                    <div className="ml-3 flex flex-col gap-1.5">
+                      {openReplyId === r.id ? (
+                        <>
+                          <textarea
+                            value={replyDrafts[r.id] ?? ""}
+                            onChange={(e) =>
+                              setReplyDrafts((prev) => ({ ...prev, [r.id]: e.target.value }))
+                            }
+                            placeholder={t("listing.replyPlaceholder")}
+                            className="input min-h-10 text-xs"
+                          />
+                          <button
+                            onClick={() => replyMutation.mutate(r.id)}
+                            disabled={
+                              !replyDrafts[r.id]?.trim() ||
+                              (replyMutation.isPending && replyMutation.variables === r.id)
+                            }
+                            className="btn-secondary text-xs disabled:opacity-50"
+                          >
+                            {t("listing.sendReply")}
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => setOpenReplyId(r.id)}
+                          className="w-fit text-xs text-brand active:underline"
+                        >
+                          {t("listing.replyToReview")}
+                        </button>
+                      )}
+                    </div>
+                  )
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

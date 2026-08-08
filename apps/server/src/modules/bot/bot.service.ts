@@ -240,6 +240,28 @@ export class BotService implements OnModuleInit {
       .catch((err) => this.logger.warn(`Sotuvchiga xabar yuborilmadi: ${err}`));
   }
 
+  async notifyNewRating(
+    telegramId: string,
+    listingId: string,
+    listingTitle: string,
+    stars: number,
+    raterName: string | null,
+  ) {
+    const keyboard = new InlineKeyboard().webApp(
+      "🔍 Ko'rish",
+      `${this.miniAppUrl}?listing=${encodeURIComponent(listingId)}`,
+    );
+
+    const starsText = "⭐".repeat(stars);
+    const text = raterName
+      ? `${starsText} ${raterName} tomonidan "${listingTitle}" eloningizga sharh qoldirildi.`
+      : `${starsText} "${listingTitle}" eloningizga anonim ravishda sharh qoldirildi.`;
+
+    await this.bot.api
+      .sendMessage(telegramId, text, { reply_markup: keyboard })
+      .catch((err) => this.logger.warn(`Sharh haqida xabar yuborilmadi: ${err}`));
+  }
+
   async notifyListingExpired(telegramId: string, listingId: string, listingTitle: string) {
     const keyboard = new InlineKeyboard().webApp(
       "🔄 Faollashtirish",
