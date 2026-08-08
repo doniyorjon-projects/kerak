@@ -54,4 +54,15 @@ export class MessagesService {
 
     return { delivered: telegramMessageId !== null };
   }
+
+  async findThread(listingId: string, userId: string) {
+    return this.prisma.message.findMany({
+      where: {
+        listingId,
+        OR: [{ fromUserId: userId }, { toUserId: userId }],
+      },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, fromUserId: true, text: true, createdAt: true },
+    });
+  }
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, UseGuards } from "@nestjs/common";
+import { Controller, Body, Get, Param, Post, UseGuards } from "@nestjs/common";
 import { User } from "@prisma/client";
 import { TelegramAuthGuard } from "../../common/telegram-auth.guard";
 import { CurrentUser } from "../../common/current-user.decorator";
@@ -9,6 +9,11 @@ import { SendMessageDto } from "./dto/send-message.dto";
 @UseGuards(TelegramAuthGuard)
 export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
+
+  @Get()
+  findThread(@Param("listingId") listingId: string, @CurrentUser() user: User) {
+    return this.messagesService.findThread(listingId, user.id);
+  }
 
   @Post()
   send(

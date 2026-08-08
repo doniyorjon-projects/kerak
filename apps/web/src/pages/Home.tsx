@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BellPlus, ChevronRight, MessageSquareText, PackageSearch } from "lucide-react";
 import type { FeedSort } from "@kerak/shared";
-import { fetchListingFeed } from "../api/listings";
+import { fetchListingFeed, fetchListingsByIds } from "../api/listings";
 import { fetchCategories } from "../api/categories";
 import { fetchMe } from "../api/users";
 import { createSavedSearch } from "../api/savedSearches";
@@ -19,6 +19,7 @@ import { LanguageSwitch } from "../components/LanguageSwitch";
 import { BannerCarousel } from "../components/BannerCarousel";
 import { CategoryScroller } from "../components/CategoryScroller";
 import { useTranslation } from "../i18n/LanguageContext";
+import { getRecentlyViewedIds } from "../utils/recentlyViewed";
 
 export function Home() {
   const { t } = useTranslation();
@@ -74,6 +75,12 @@ export function Home() {
   const { data: featured } = useQuery({
     queryKey: ["listings", "featured"],
     queryFn: () => fetchListingFeed({ sort: "newest", boostedOnly: true }),
+    enabled: !isSearching,
+  });
+
+  const { data: recentlyViewed } = useQuery({
+    queryKey: ["listings", "recently-viewed"],
+    queryFn: () => fetchListingsByIds(getRecentlyViewedIds()),
     enabled: !isSearching,
   });
 
@@ -153,6 +160,21 @@ export function Home() {
               <div ref={featuredScrollRef} className="no-scrollbar -mx-4 overflow-x-auto px-4">
                 <div className="flex gap-3">
                   {featured.map((listing) => (
+                    <div key={listing.id} className="w-40 shrink-0">
+                      <ListingCard listing={listing} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {recentlyViewed && recentlyViewed.length > 0 && (
+            <section className="flex flex-col gap-2">
+              <h2 className="section-title">{t("home.recentlyViewedTitle")}</h2>
+              <div className="no-scrollbar -mx-4 overflow-x-auto px-4">
+                <div className="flex gap-3">
+                  {recentlyViewed.map((listing) => (
                     <div key={listing.id} className="w-40 shrink-0">
                       <ListingCard listing={listing} />
                     </div>

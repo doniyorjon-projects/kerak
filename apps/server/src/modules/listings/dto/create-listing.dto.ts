@@ -28,6 +28,11 @@ export class CreateListingDto {
   description!: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  brand?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
   price?: number;

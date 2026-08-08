@@ -1,5 +1,5 @@
 import { ContactEventType } from "@kerak/shared";
-import type { CreateListingInput, FeedQuery, ListingDto } from "@kerak/shared";
+import type { CreateListingInput, FeedQuery, ListingDto, PriceHistoryEntryDto } from "@kerak/shared";
 import { api } from "./client";
 
 export function fetchListingFeed(query: FeedQuery = {}) {
@@ -22,6 +22,11 @@ export function fetchListingFeed(query: FeedQuery = {}) {
 
 export function fetchMyListings() {
   return api.get<ListingDto[]>("/listings/mine");
+}
+
+export function fetchListingsByIds(ids: string[]) {
+  if (ids.length === 0) return Promise.resolve<ListingDto[]>([]);
+  return api.get<ListingDto[]>(`/listings/batch?ids=${ids.join(",")}`);
 }
 
 export function fetchListing(id: string) {
@@ -68,4 +73,12 @@ export function uploadPhoto(file: File) {
   const formData = new FormData();
   formData.append("file", file);
   return api.post<{ url: string }>("/uploads", formData);
+}
+
+export function fetchPriceHistory(id: string) {
+  return api.get<PriceHistoryEntryDto[]>(`/listings/${id}/price-history`);
+}
+
+export function fetchSimilarListings(id: string) {
+  return api.get<ListingDto[]>(`/listings/${id}/similar`);
 }

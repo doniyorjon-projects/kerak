@@ -61,6 +61,7 @@ enum NotificationType {
   REFERRAL_BONUS
   WALLET_TOPUP
   NEW_RATING
+  PRICE_DROP
 }
 
 enum RequestStatus {
@@ -143,6 +144,7 @@ model Listing {
   category        Category          @relation(fields: [categoryId], references: [id])
   title           String
   description     String
+  brand           String?
   price           Float?
   isNegotiable    Boolean           @default(false)
   photos          String[]
@@ -168,8 +170,17 @@ model Listing {
   ratings       Rating[]
   boostOrders   BoostOrder[]
   views         ListingView[]
+  priceHistory  PriceHistory[]
 
   @@index([categoryId, status])
+}
+
+model PriceHistory {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  price     Float?
+  createdAt DateTime @default(now())
 }
 
 model Favorite {

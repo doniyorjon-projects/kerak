@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Ban,
+  BadgeCheck,
   Check,
   CheckCircle2,
   Clock,
@@ -22,6 +23,7 @@ import {
   Share2,
   Tag,
   Trash2,
+  TrendingDown,
   TrendingUp,
   User,
   X,
@@ -30,15 +32,25 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { ContactEventType } from "@kerak/shared";
 import type { BoostDuration, ListingStatus } from "@kerak/shared";
-import { bumpListing, deleteListing, fetchListing, fetchListingStats, logContactEvent, updateListingStatus } from "../api/listings";
+import {
+  bumpListing,
+  deleteListing,
+  fetchListing,
+  fetchListingStats,
+  fetchPriceHistory,
+  fetchSimilarListings,
+  logContactEvent,
+  updateListingStatus,
+} from "../api/listings";
 import { approveListing, grantBoost, rejectListing } from "../api/admin";
 import { fetchMe } from "../api/users";
 import { blockUser, checkBlockStatus, unblockUser } from "../api/blocks";
 import { addFavorite, fetchFavoriteStatus, removeFavorite } from "../api/favorites";
-import { sendListingMessage } from "../api/messages";
+import { fetchListingMessages, sendListingMessage } from "../api/messages";
 import { reportListing } from "../api/reports";
 import { fetchListingRatings, fetchMyRating, fetchSellerRatingSummary, rateListing, replyToRating } from "../api/ratings";
 import { ListingsMap } from "../components/map/ListingsMap";
+import { ListingCard } from "../components/ListingCard";
 import { PhotoCarousel } from "../components/PhotoCarousel";
 import { BackButton } from "../components/BackButton";
 import { StarRating } from "../components/StarRating";
@@ -48,6 +60,7 @@ import { callPhone, openTelegramLink, shareListing, showAlert } from "../telegra
 import { useTranslation } from "../i18n/LanguageContext";
 import type { TranslationKey } from "../i18n/translations";
 import { formatRelativeDate } from "../utils/formatRelativeDate";
+import { addRecentlyViewed } from "../utils/recentlyViewed";
 
 const STATUS_INFO: Record<ListingStatus, { labelKey: TranslationKey; icon: LucideIcon; className: string }> = {
   PENDING: { labelKey: "status.pending", icon: Clock, className: "text-amber-500" },
@@ -120,6 +133,21 @@ export function ListingDetail() {
     queryFn: () => fetchListingRatings(listingId!),
     enabled: Boolean(listingId),
   });
+  const { data: priceHistory } = useQuery({
+    queryKey: ["price-history", listingId],
+    queryFn: () => fetchPriceHistory(listingId!),
+    enabled: Boolean(listingId),
+  });
+  const { data: similarListings } = useQuery({
+    queryKey: ["similar-listings", listingId],
+    queryFn: () => fetchSimilarListings(listingId!),
+    enabled: Boolean(listingId),
+  });
+  const { data: messages } = useQuery({
+    queryKey: ["listing-messages", listingId],
+    queryFn: () => fetchListingMessages(listingId!),
+    enabled: Boolean(listingId && me && listing && me.id !== listing.seller.id),
+  });
   const { data: stats } = useQuery({
     queryKey: ["listing-stats", listingId],
     queryFn: () => fetchListingStats(listingId!),
@@ -135,6 +163,10 @@ export function ListingDetail() {
     if (myRating?.stars) setPendingStars(myRating.stars);
   }, [myRating?.comment, myRating?.stars]);
 
+  useEffect(() => {
+    if (listing?.id) addRecentlyViewed(listing.id);
+  }, [listing?.id]);
+
   const favoriteMutation = useMutation({
     mutationFn: () =>
       favoriteStatus?.isFavorite ? removeFavorite(listingId!) : addFavorite(listingId!),
@@ -149,6 +181,7 @@ export function ListingDetail() {
     onSuccess: (result) => {
       setMessageText("");
       setMessageStatus(result.delivered ? t("listing.messageSent") : t("listing.messageNotDelivered"));
+      void queryClient.invalidateQueries({ queryKey: ["listing-messages", listingId] });
     },
     onError: (err: Error) => setMessageStatus(err.message),
   });
@@ -231,6 +264,7 @@ export function ListingDetail() {
 
   const isBoosted = Boolean(listing.boostedUntil && new Date(listing.boostedUntil) > new Date());
   const isOwner = Boolean(me && me.id === listing.seller.id);
+  const lastOldPrice = priceHistory && priceHistory.length > 0 ? priceHistory[priceHistory.length - 1].price : null;
   const isAdminViewing = Boolean(me?.isAdmin && !isOwner);
   const isAdminModeration = Boolean(isAdminViewing && listing.status === "PENDING");
   const { labelKey: statusLabelKey, icon: StatusIcon, className: statusClassName } = STATUS_INFO[listing.status];
@@ -282,15 +316,33 @@ export function ListingDetail() {
             </span>
           )}
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xl font-bold text-brand">
-            {formatPrice(listing.price, listing.isNegotiable)}
+        {listing.brand && (
+          <span className="w-fit rounded-full bg-brand/10 px-2 py-0.5 text-xs font-medium text-brand">
+            {listing.brand}
           </span>
+        )}
+        <div className="flex items-center justify-between">
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-bold text-brand">
+              {formatPrice(listing.price, listing.isNegotiable)}
+            </span>
+            {lastOldPrice != null && listing.price != null && lastOldPrice > listing.price && (
+              <span className="flex items-center gap-1 text-xs text-hint line-through">
+                {lastOldPrice.toLocaleString("uz-UZ")} {t("som")}
+              </span>
+            )}
+          </div>
           <span className="flex items-center gap-1 text-xs text-hint">
             <Eye className="h-3.5 w-3.5" />
             {listing.viewsCount.toLocaleString("uz-UZ")} {t("listing.views")}
           </span>
         </div>
+        {lastOldPrice != null && listing.price != null && lastOldPrice > listing.price && (
+          <span className="flex w-fit items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600">
+            <TrendingDown className="h-3 w-3" />
+            {t("listing.priceDropped")}
+          </span>
+        )}
       </div>
 
       <p className="whitespace-pre-line text-sm leading-relaxed text-ink">{listing.description}</p>
@@ -592,13 +644,14 @@ export function ListingDetail() {
       {!isOwner && (
         <>
           <div className="card flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <Link to={`/sellers/${listing.seller.id}`} className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-secondary">
                 <User className="h-4 w-4 text-hint" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-medium text-ink">
+                <span className="flex items-center gap-1 text-sm font-medium text-ink">
                   {listing.seller.username ? `@${listing.seller.username}` : listing.seller.firstName}
+                  {ratingSummary?.isVerified && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-brand" />}
                 </span>
                 {ratingSummary && ratingSummary.count > 0 ? (
                   <div className="flex items-center gap-1">
@@ -609,7 +662,7 @@ export function ListingDetail() {
                   <span className="text-xs text-hint">{t("listing.notRatedYet")}</span>
                 )}
               </div>
-            </div>
+            </Link>
             <div className="flex flex-col items-end gap-1">
               <button
                 onClick={() => setReportOpen((v) => !v)}
@@ -689,6 +742,25 @@ export function ListingDetail() {
 
           <div className="card flex flex-col gap-2">
             <span className="text-sm font-semibold text-ink">{t("listing.messageSellerTitle")}</span>
+            {messages && messages.length > 0 && (
+              <div className="flex max-h-64 flex-col gap-2 overflow-y-auto rounded-xl bg-surface-secondary p-2.5">
+                {messages.map((m) => {
+                  const isMine = m.fromUserId === me?.id;
+                  return (
+                    <div key={m.id} className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}>
+                      <div
+                        className={`max-w-[85%] rounded-xl px-3 py-1.5 text-sm ${
+                          isMine ? "bg-brand text-brand-contrast" : "bg-surface text-ink"
+                        }`}
+                      >
+                        {m.text}
+                      </div>
+                      <span className="mt-0.5 text-[10px] text-hint">{formatRelativeDate(m.createdAt, t, lang)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <textarea
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
@@ -804,6 +876,21 @@ export function ListingDetail() {
                 )}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {similarListings && similarListings.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <span className="section-title">{t("listing.similarTitle")}</span>
+          <div className="no-scrollbar -mx-4 overflow-x-auto px-4">
+            <div className="flex gap-3">
+              {similarListings.map((l) => (
+                <div key={l.id} className="w-40 shrink-0">
+                  <ListingCard listing={l} />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

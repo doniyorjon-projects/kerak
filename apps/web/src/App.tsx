@@ -22,6 +22,7 @@ import { MyRequests } from "./pages/MyRequests";
 import { BlockedUsers } from "./pages/BlockedUsers";
 import { Wallet } from "./pages/Wallet";
 import { SavedSearches } from "./pages/SavedSearches";
+import { SellerProfile } from "./pages/SellerProfile";
 import { captureReferralId } from "./api/client";
 
 function useSharedListingRedirect() {
@@ -68,6 +69,7 @@ export default function App() {
         <Route path="/blocked-users" element={<BlockedUsers />} />
         <Route path="/wallet" element={<Wallet />} />
         <Route path="/saved-searches" element={<SavedSearches />} />
+        <Route path="/sellers/:sellerId" element={<SellerProfile />} />
       </Routes>
       <BottomNav />
     </div>

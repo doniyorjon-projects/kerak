@@ -34,6 +34,11 @@ export class ListingsController {
     return this.listingsService.findMine(user.id);
   }
 
+  @Get("batch")
+  findBatch(@Query("ids") ids?: string) {
+    return this.listingsService.findByIds(ids ? ids.split(",").filter(Boolean) : []);
+  }
+
   @UseGuards(OptionalAuthGuard)
   @Get(":id")
   findOne(@Param("id") id: string, @CurrentUser() viewer?: User) {
@@ -44,6 +49,16 @@ export class ListingsController {
   @Get(":id/stats")
   getStats(@Param("id") id: string, @CurrentUser() user: User) {
     return this.listingsService.getStats(id, user.id, user.isAdmin);
+  }
+
+  @Get(":id/price-history")
+  getPriceHistory(@Param("id") id: string) {
+    return this.listingsService.getPriceHistory(id);
+  }
+
+  @Get(":id/similar")
+  findSimilar(@Param("id") id: string) {
+    return this.listingsService.findSimilar(id);
   }
 
   @UseGuards(TelegramAuthGuard)

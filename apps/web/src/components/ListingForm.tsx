@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
   AlignLeft,
@@ -8,16 +8,19 @@ import {
   ChevronDown,
   MapPin,
   Phone,
+  Sparkles,
   Tag,
   Type,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { CategoryType } from "@kerak/shared";
+import { CategoryType, FREE_LISTINGS_LIMIT } from "@kerak/shared";
 import type { CreateListingInput, ListingCondition } from "@kerak/shared";
 import { fetchCategories } from "../api/categories";
 import { uploadPhoto } from "../api/listings";
 import { fetchPublicSettings } from "../api/settings";
+import { generateAiDescription } from "../api/ai";
+import { fetchMe } from "../api/users";
 import { RegionDistrictPicker, type PlaceValue } from "./RegionDistrictPicker";
 import { PhoneInput, phoneToDigits } from "./PhoneInput";
 import { PriceInput } from "./PriceInput";
@@ -27,6 +30,7 @@ export interface ListingFormInitialValues {
   categoryId: string;
   title: string;
   description: string;
+  brand?: string | null;
   price: number | null;
   isNegotiable: boolean;
   phone: string;
@@ -63,12 +67,23 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
   const leafCategories = (categories ?? []).filter((c) => c.parentId);
   const { data: publicSettings } = useQuery({ queryKey: ["public-settings"], queryFn: fetchPublicSettings });
   const usdRate = publicSettings?.usdRate ?? 12700;
+  const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
+  const canUseAi = Boolean(me && me.listingsLimit > FREE_LISTINGS_LIMIT);
 
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [condition, setCondition] = useState<ListingCondition | null>(initial?.condition ?? null);
   const isProduct = leafCategories.find((c) => c.id === categoryId)?.type === CategoryType.PRODUCT;
   const [title, setTitle] = useState(initial?.title ?? "");
+  const [brand, setBrand] = useState(initial?.brand ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
+
+  const aiDescriptionMutation = useMutation({
+    mutationFn: () => {
+      const categoryName = leafCategories.find((c) => c.id === categoryId)?.nameUz;
+      return generateAiDescription(title, categoryName, description || undefined);
+    },
+    onSuccess: (result) => setDescription(result.description.slice(0, 2000)),
+  });
   const [price, setPrice] = useState(initial?.price != null ? String(initial.price) : "");
   const [priceCurrency, setPriceCurrency] = useState<"UZS" | "USD">("UZS");
   const [usdPrice, setUsdPrice] = useState("");
@@ -109,6 +124,7 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
       categoryId,
       title,
       description,
+      brand: isProduct && brand.trim() ? brand.trim() : null,
       price: isNegotiable || !price ? null : Number(price),
       isNegotiable,
       photos,
@@ -165,6 +181,15 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
           </div>
         )}
 
+        {isProduct && (
+          <input
+            value={brand}
+            onChange={(e) => setBrand(e.target.value.slice(0, 60))}
+            className="input"
+            placeholder={t("create.brandPlaceholder")}
+          />
+        )}
+
         <div className="h-px bg-divider" />
 
         <SectionHeader icon={Type} title={t("create.listingTitle")} hint={`${title.length}/120`} />
@@ -184,6 +209,20 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
           className="input min-h-28 resize-none"
           placeholder={t("create.descriptionPlaceholder")}
         />
+        {canUseAi && (
+          <button
+            type="button"
+            onClick={() => aiDescriptionMutation.mutate()}
+            disabled={!title.trim() || aiDescriptionMutation.isPending}
+            className="flex w-fit items-center gap-1.5 rounded-full bg-brand/10 px-3 py-1.5 text-xs font-semibold text-brand transition active:scale-[0.98] disabled:opacity-50"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            {aiDescriptionMutation.isPending ? t("create.aiGenerating") : t("create.aiGenerate")}
+          </button>
+        )}
+        {aiDescriptionMutation.isError && (
+          <span className="text-xs text-destructive">{aiDescriptionMutation.error.message}</span>
+        )}
       </div>
 
       <div className="card flex flex-col gap-3">

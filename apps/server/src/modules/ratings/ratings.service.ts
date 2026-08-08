@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { NotificationType } from "@prisma/client";
+import { VERIFIED_SELLER_MIN_AVG, VERIFIED_SELLER_MIN_RATINGS } from "@kerak/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { BotService } from "../bot/bot.service";
@@ -79,6 +80,8 @@ export class RatingsService {
       _avg: { stars: true },
       _count: true,
     });
-    return { avg: result._avg.stars, count: result._count };
+    const isVerified =
+      result._count >= VERIFIED_SELLER_MIN_RATINGS && (result._avg.stars ?? 0) >= VERIFIED_SELLER_MIN_AVG;
+    return { avg: result._avg.stars, count: result._count, isVerified };
   }
 }

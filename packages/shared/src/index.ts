@@ -37,7 +37,12 @@ export interface UserSummaryDto {
 export interface RatingSummaryDto {
   avg: number | null;
   count: number;
+  isVerified: boolean;
 }
+
+/** "Tasdiqlangan sotuvchi" belgisi shu chegaralarga yetganda avtomatik beriladi. */
+export const VERIFIED_SELLER_MIN_RATINGS = 5;
+export const VERIFIED_SELLER_MIN_AVG = 4.5;
 
 export interface MessageSendResultDto {
   delivered: boolean;
@@ -47,6 +52,7 @@ export interface ListingDto {
   id: string;
   title: string;
   description: string;
+  brand?: string | null;
   price: number | null;
   isNegotiable: boolean;
   photos: string[];
@@ -160,7 +166,8 @@ export type NotificationType =
   | "NEW_MESSAGE"
   | "REPORT_RESOLVED"
   | "LISTING_EXPIRED"
-  | "NEW_RATING";
+  | "NEW_RATING"
+  | "PRICE_DROP";
 
 export interface NotificationDto {
   id: string;
@@ -176,6 +183,7 @@ export interface CreateListingInput {
   categoryId: string;
   title: string;
   description: string;
+  brand?: string | null;
   price: number | null;
   isNegotiable: boolean;
   photos: string[];
@@ -291,4 +299,31 @@ export interface StarsInvoiceResultDto {
   orderId: string;
   starsAmount: number;
   invoiceLink: string;
+}
+
+export interface PriceHistoryEntryDto {
+  price: number | null;
+  createdAt: string;
+}
+
+export interface ListingMessageDto {
+  id: string;
+  fromUserId: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface SellerProfileDto {
+  id: string;
+  username: string | null;
+  firstName: string;
+  createdAt: string;
+  ratingAvg: number | null;
+  ratingCount: number;
+  isVerified: boolean;
+  activeListingsCount: number;
+}
+
+export interface AiDescriptionResultDto {
+  description: string;
 }

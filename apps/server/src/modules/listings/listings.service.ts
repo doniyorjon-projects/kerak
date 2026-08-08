@@ -1,9 +1,10 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { ContactEventType, ListingCondition, ListingStatus, Prisma } from "@prisma/client";
+import { ContactEventType, ListingCondition, ListingStatus, NotificationType, Prisma } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { CreateListingDto } from "./dto/create-listing.dto";
 import { UpdateListingDto } from "./dto/update-listing.dto";
 import { BotService } from "../bot/bot.service";
+import { NotificationsService } from "../notifications/notifications.service";
 
 const FEED_INCLUDE = {
   seller: { select: { id: true, telegramId: true, username: true, firstName: true } },
@@ -60,6 +61,7 @@ export class ListingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly botService: BotService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(sellerId: string, dto: CreateListingDto) {
@@ -262,6 +264,40 @@ export class ListingsService {
     return listing;
   }
 
+  async findByIds(ids: string[]) {
+    if (ids.length === 0) return [];
+    const listings = await this.prisma.listing.findMany({
+      where: { id: { in: ids }, status: ListingStatus.ACTIVE },
+      include: FEED_INCLUDE,
+    });
+    const byId = new Map(listings.map((l) => [l.id, l]));
+    return ids.map((id) => byId.get(id)).filter((l): l is NonNullable<typeof l> => l != null);
+  }
+
+  async getPriceHistory(id: string) {
+    return this.prisma.priceHistory.findMany({
+      where: { listingId: id },
+      orderBy: { createdAt: "asc" },
+      select: { price: true, createdAt: true },
+    });
+  }
+
+  async findSimilar(id: string) {
+    const listing = await this.prisma.listing.findUnique({ where: { id } });
+    if (!listing) throw new NotFoundException("Elon topilmadi");
+
+    return this.prisma.listing.findMany({
+      where: {
+        categoryId: listing.categoryId,
+        status: ListingStatus.ACTIVE,
+        id: { not: id },
+      },
+      include: FEED_INCLUDE,
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    });
+  }
+
   async update(id: string, sellerId: string, dto: UpdateListingDto, isAdmin = false) {
     const listing = await this.prisma.listing.findUnique({ where: { id } });
     if (!listing) throw new NotFoundException("Elon topilmadi");
@@ -269,6 +305,8 @@ export class ListingsService {
 
     const { status, ...content } = dto;
     const hasContentChanges = Object.values(content).some((value) => value !== undefined);
+    const priceDropped =
+      content.price !== undefined && content.price != null && listing.price != null && content.price < listing.price;
 
     const data: Prisma.ListingUpdateInput = { ...content };
     if (status) {
@@ -279,11 +317,37 @@ export class ListingsService {
 
     const updated = await this.prisma.listing.update({ where: { id }, data, include: FEED_INCLUDE });
 
+    if (content.price !== undefined && content.price !== listing.price) {
+      await this.prisma.priceHistory.create({ data: { listingId: id, price: listing.price } });
+    }
+
     if (data.status === ListingStatus.PENDING) {
       await this.botService.notifyAdminNewListing(updated);
     }
 
+    if (priceDropped && updated.status === ListingStatus.ACTIVE) {
+      await this.notifyPriceDrop(updated, listing.price!, content.price!);
+    }
+
     return updated;
+  }
+
+  private async notifyPriceDrop(listing: { id: string; title: string; sellerId: string }, oldPrice: number, newPrice: number) {
+    const favorites = await this.prisma.favorite.findMany({
+      where: { listingId: listing.id, userId: { not: listing.sellerId } },
+      include: { user: true },
+    });
+
+    for (const fav of favorites) {
+      await this.notificationsService.create(
+        fav.userId,
+        NotificationType.PRICE_DROP,
+        "Narx tushdi 📉",
+        `"${listing.title}" — sevimlilaringizdagi e'lon narxi ${oldPrice.toLocaleString("uz-UZ")} so'mdan ${newPrice.toLocaleString("uz-UZ")} so'mga tushdi.`,
+        `/listings/${listing.id}`,
+      );
+      await this.botService.notifyPriceDrop(fav.user.telegramId, listing.id, listing.title, oldPrice, newPrice);
+    }
   }
 
   async bump(id: string, sellerId: string) {

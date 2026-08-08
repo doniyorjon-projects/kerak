@@ -48,6 +48,7 @@ export function EditListing() {
           categoryId: listing.categoryId,
           title: listing.title,
           description: listing.description,
+          brand: listing.brand,
           price: listing.price,
           isNegotiable: listing.isNegotiable,
           phone: listing.phone,

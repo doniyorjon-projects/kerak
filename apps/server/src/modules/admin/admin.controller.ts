@@ -23,7 +23,6 @@ import { SetListingsLimitDto } from "./dto/set-listings-limit.dto";
 import { SetChannelDto } from "./dto/set-channel.dto";
 import { SettingsService } from "../settings/settings.service";
 import { RequestsService } from "../requests/requests.service";
-import { SavedSearchesService } from "../saved-searches/saved-searches.service";
 import { SetStarsRateDto } from "./dto/set-stars-rate.dto";
 import { SetUsdRateDto } from "./dto/set-usd-rate.dto";
 import { BroadcastDto } from "./dto/broadcast.dto";
@@ -44,7 +43,6 @@ export class AdminController {
     private readonly notificationsService: NotificationsService,
     private readonly settingsService: SettingsService,
     private readonly requestsService: RequestsService,
-    private readonly savedSearchesService: SavedSearchesService,
   ) {}
 
   @Get("settings")
@@ -214,7 +212,6 @@ export class AdminController {
       `/listings/${listing.id}`,
     );
     await this.botService.postToChannel(listing);
-    await this.savedSearchesService.notifyMatches(listing);
 
     return listing;
   }

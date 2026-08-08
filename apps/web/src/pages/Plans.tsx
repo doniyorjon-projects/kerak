@@ -38,7 +38,7 @@ const PLAN_CARDS: PlanCardInfo[] = [
     icon: Sparkles,
     pricingField: "planStandard",
     listingsLimit: PLAN_LISTINGS_LIMIT.STANDARD,
-    featureKeys: ["plans.featureFiveListings", "plans.featureOneTime", "plans.featureSupport"],
+    featureKeys: ["plans.featureFiveListings", "plans.featureOneTime", "plans.featureSupport", "plans.featureAiDescription"],
   },
   {
     tier: "BUSINESS",
@@ -46,7 +46,12 @@ const PLAN_CARDS: PlanCardInfo[] = [
     icon: Rocket,
     pricingField: "planBusiness",
     listingsLimit: PLAN_LISTINGS_LIMIT.BUSINESS,
-    featureKeys: ["plans.featureUnlimitedListings", "plans.featureOneTime", "plans.featurePrioritySupport"],
+    featureKeys: [
+      "plans.featureUnlimitedListings",
+      "plans.featureOneTime",
+      "plans.featurePrioritySupport",
+      "plans.featureAiDescription",
+    ],
   },
 ];
 

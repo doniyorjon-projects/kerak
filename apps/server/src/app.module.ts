@@ -22,6 +22,7 @@ import { SettingsModule } from "./modules/settings/settings.module";
 import { BlocksModule } from "./modules/blocks/blocks.module";
 import { SavedSearchesModule } from "./modules/saved-searches/saved-searches.module";
 import { WalletModule } from "./modules/wallet/wallet.module";
+import { AiModule } from "./modules/ai/ai.module";
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { WalletModule } from "./modules/wallet/wallet.module";
     BlocksModule,
     SavedSearchesModule,
     WalletModule,
+    AiModule,
   ],
 })
 export class AppModule {}

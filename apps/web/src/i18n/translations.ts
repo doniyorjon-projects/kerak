@@ -29,6 +29,7 @@ export const translations = {
     "home.advertiseHere": "Bu yerga reklama joylashtirish",
     "home.categoriesTitle": "Toifalar",
     "home.featuredTitle": "Tanlangan e'lonlar",
+    "home.recentlyViewedTitle": "Yaqinda ko'rilganlar",
     "home.requestsPromoTitle": "Kerakli narsangizni topolmadingizmi?",
     "home.requestsPromoSubtitle": "So'rov qoldiring, sotuvchilar o'zi sizga murojaat qiladi",
     "home.recentTitle": "So'nggi elonlar",
@@ -81,6 +82,8 @@ export const translations = {
     "listing.top": "TOP e'lon",
     "listing.views": "ko'rildi",
     "listing.notRatedYet": "Hali baholanmagan",
+    "listing.priceDropped": "Narx tushdi",
+    "listing.similarTitle": "O'xshash e'lonlar",
     "listing.bump": "Ko'tarish",
     "listing.bumped": "E'lon yuqoriga ko'tarildi ✅",
     "listing.blockUser": "Bloklash",
@@ -125,6 +128,9 @@ export const translations = {
     "create.titlePlaceholder": "Masalan: Elektrik xizmati, tez va sifatli",
     "create.description": "Tavsif",
     "create.descriptionPlaceholder": "Xizmat yoki mahsulot haqida batafsil yozing",
+    "create.brandPlaceholder": "Brend (ixtiyoriy)",
+    "create.aiGenerate": "AI bilan tavsif yozish",
+    "create.aiGenerating": "Yozilmoqda...",
     "create.priceSection": "Narx",
     "create.price": "Narx (so'm)",
     "create.address": "Manzil",
@@ -152,6 +158,12 @@ export const translations = {
     "edit.submit": "O'zgarishlarni saqlash",
     "myListings.edit": "Tahrirlash",
     "edit.resubmitNote": "Tahrirlangandan so'ng elon qayta moderatsiyaga yuboriladi",
+
+    // sotuvchi profili
+    "seller.title": "Sotuvchi profili",
+    "seller.memberSince": "Ro'yxatdan o'tgan:",
+    "seller.activeListings": "Faol e'lonlar",
+    "seller.noListings": "Faol e'lonlar yo'q",
 
     // sevimlilar
     "favorites.title": "Sevimlilar",
@@ -239,6 +251,7 @@ export const translations = {
     "plans.featureOneTime": "Bir martalik to'lov",
     "plans.featureSupport": "Oddiy qo'llab-quvvatlash",
     "plans.featurePrioritySupport": "Ustuvor qo'llab-quvvatlash",
+    "plans.featureAiDescription": "AI yordamida tavsif yozish",
     "plans.listingsCountSuffix": "tagacha faol e'lon",
 
     // admin
@@ -424,6 +437,7 @@ export const translations = {
     "home.advertiseHere": "Разместить рекламу здесь",
     "home.categoriesTitle": "Категории",
     "home.featuredTitle": "Рекомендуемые объявления",
+    "home.recentlyViewedTitle": "Недавно просмотренные",
     "home.requestsPromoTitle": "Не можете найти нужное?",
     "home.requestsPromoSubtitle": "Оставьте запрос, и продавцы сами вам напишут",
     "home.recentTitle": "Последние объявления",
@@ -471,6 +485,8 @@ export const translations = {
     "listing.top": "ТОП объявление",
     "listing.views": "просмотров",
     "listing.notRatedYet": "Пока нет оценок",
+    "listing.priceDropped": "Цена снижена",
+    "listing.similarTitle": "Похожие объявления",
     "listing.bump": "Поднять",
     "listing.bumped": "Объявление поднято ✅",
     "listing.blockUser": "Заблокировать",
@@ -514,6 +530,9 @@ export const translations = {
     "create.titlePlaceholder": "Например: Услуги электрика, быстро и качественно",
     "create.description": "Описание",
     "create.descriptionPlaceholder": "Подробно опишите услугу или товар",
+    "create.brandPlaceholder": "Бренд (необязательно)",
+    "create.aiGenerate": "Написать описание с ИИ",
+    "create.aiGenerating": "Пишем...",
     "create.priceSection": "Цена",
     "create.price": "Цена (сум)",
     "create.address": "Адрес",
@@ -540,6 +559,11 @@ export const translations = {
     "edit.submit": "Сохранить изменения",
     "myListings.edit": "Редактировать",
     "edit.resubmitNote": "После редактирования объявление будет отправлено на повторную модерацию",
+
+    "seller.title": "Профиль продавца",
+    "seller.memberSince": "На платформе с:",
+    "seller.activeListings": "Активные объявления",
+    "seller.noListings": "Нет активных объявлений",
 
     "favorites.title": "Избранное",
     "favorites.loadError": "Не удалось загрузить",
@@ -623,6 +647,7 @@ export const translations = {
     "plans.featureOneTime": "Единоразовый платёж",
     "plans.featureSupport": "Обычная поддержка",
     "plans.featurePrioritySupport": "Приоритетная поддержка",
+    "plans.featureAiDescription": "Написание описания с помощью ИИ",
     "plans.listingsCountSuffix": "активных объявлений",
 
     "admin.title": "Панель администратора",

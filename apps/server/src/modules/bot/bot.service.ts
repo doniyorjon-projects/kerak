@@ -262,6 +262,27 @@ export class BotService implements OnModuleInit {
       .catch((err) => this.logger.warn(`Sharh haqida xabar yuborilmadi: ${err}`));
   }
 
+  async notifyPriceDrop(telegramId: string, listingId: string, listingTitle: string, oldPrice: number, newPrice: number) {
+    const keyboard = new InlineKeyboard().webApp(
+      "🔍 Ko'rish",
+      `${this.miniAppUrl}?listing=${encodeURIComponent(listingId)}`,
+    );
+    const text = `📉 "${listingTitle}" narxi tushdi!\n${oldPrice.toLocaleString("uz-UZ")} so'm → ${newPrice.toLocaleString("uz-UZ")} so'm`;
+
+    await this.bot.api
+      .sendMessage(telegramId, text, { reply_markup: keyboard })
+      .catch((err) => this.logger.warn(`Narx tushishi haqida xabar yuborilmadi: ${err}`));
+  }
+
+  async notifySavedSearchDigest(telegramId: string, totalMatches: number, labels: string[]) {
+    const keyboard = new InlineKeyboard().webApp("🔍 Ko'rish", `${this.miniAppUrl}/saved-searches`);
+    const text = `🔔 Saqlangan qidiruvlaringiz bo'yicha ${totalMatches} ta yangi e'lon topildi:\n${labels.join("\n")}`;
+
+    await this.bot.api
+      .sendMessage(telegramId, text, { reply_markup: keyboard })
+      .catch((err) => this.logger.warn(`Kunlik digest yuborilmadi: ${err}`));
+  }
+
   async notifyListingExpired(telegramId: string, listingId: string, listingTitle: string) {
     const keyboard = new InlineKeyboard().webApp(
       "🔄 Faollashtirish",
