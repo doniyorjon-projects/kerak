@@ -4,6 +4,7 @@ import { TelegramAuthGuard } from "../../common/telegram-auth.guard";
 import { CurrentUser } from "../../common/current-user.decorator";
 import { RatingsService } from "./ratings.service";
 import { CreateRatingDto } from "./dto/create-rating.dto";
+import { ReplyRatingDto } from "./dto/reply-rating.dto";
 
 @Controller()
 export class RatingsController {
@@ -16,13 +17,24 @@ export class RatingsController {
     @CurrentUser() user: User,
     @Body() dto: CreateRatingDto,
   ) {
-    return this.ratingsService.upsert(user.id, listingId, dto.stars, dto.comment);
+    return this.ratingsService.upsert(user.id, listingId, dto.stars, dto.comment, dto.isAnonymous);
   }
 
   @UseGuards(TelegramAuthGuard)
   @Get("listings/:listingId/ratings/me")
   findMine(@Param("listingId") listingId: string, @CurrentUser() user: User) {
     return this.ratingsService.findMine(user.id, listingId);
+  }
+
+  @Get("listings/:listingId/ratings")
+  findForListing(@Param("listingId") listingId: string) {
+    return this.ratingsService.findForListing(listingId);
+  }
+
+  @UseGuards(TelegramAuthGuard)
+  @Post("ratings/:ratingId/reply")
+  reply(@Param("ratingId") ratingId: string, @CurrentUser() user: User, @Body() dto: ReplyRatingDto) {
+    return this.ratingsService.reply(ratingId, user.id, dto.reply);
   }
 
   @Get("sellers/:sellerId/rating-summary")

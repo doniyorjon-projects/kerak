@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BellPlus, ChevronRight, MessageSquareText, PackageSearch } from "lucide-react";
@@ -77,6 +77,24 @@ export function Home() {
     enabled: !isSearching,
   });
 
+  const featuredScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!featured || featured.length <= 1) return;
+    const CARD_STEP_PX = 172; // w-40 (160px) + gap-3 (12px)
+    const interval = setInterval(() => {
+      const el = featuredScrollRef.current;
+      if (!el) return;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (el.scrollLeft >= maxScroll - 5) {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        el.scrollBy({ left: CARD_STEP_PX, behavior: "smooth" });
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [featured]);
+
   return (
     <div className="page" style={{ marginTop: "calc(-1 * var(--tg-safe-top))" }}>
       {/* Tashqi quti tepadan (0) yopishib turadi va o'zining bg-app foni bilan
@@ -132,7 +150,7 @@ export function Home() {
           {featured && featured.length > 0 && (
             <section className="flex flex-col gap-2">
               <h2 className="section-title">{t("home.featuredTitle")}</h2>
-              <div className="no-scrollbar -mx-4 overflow-x-auto px-4">
+              <div ref={featuredScrollRef} className="no-scrollbar -mx-4 overflow-x-auto px-4">
                 <div className="flex gap-3">
                   {featured.map((listing) => (
                     <div key={listing.id} className="w-40 shrink-0">

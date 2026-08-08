@@ -159,7 +159,8 @@ export type NotificationType =
   | "PLAN_PAID"
   | "NEW_MESSAGE"
   | "REPORT_RESOLVED"
-  | "LISTING_EXPIRED";
+  | "LISTING_EXPIRED"
+  | "NEW_RATING";
 
 export interface NotificationDto {
   id: string;

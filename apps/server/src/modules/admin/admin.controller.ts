@@ -270,6 +270,10 @@ export class AdminController {
       `/listings/${updated.id}`,
     );
 
+    if (updated.status === "ACTIVE") {
+      await this.botService.postToChannel(updated);
+    }
+
     return updated;
   }
 

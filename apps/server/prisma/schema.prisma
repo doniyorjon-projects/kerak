@@ -60,6 +60,7 @@ enum NotificationType {
   SAVED_SEARCH_MATCH
   REFERRAL_BONUS
   WALLET_TOPUP
+  NEW_RATING
 }
 
 enum RequestStatus {
@@ -86,13 +87,13 @@ enum WalletTransactionType {
 }
 
 model User {
-  id         String   @id @default(cuid())
-  telegramId String   @unique
-  username   String?
-  firstName  String
-  phone      String?
-  lat        Float?
-  lng        Float?
+  id            String   @id @default(cuid())
+  telegramId    String   @unique
+  username      String?
+  firstName     String
+  phone         String?
+  lat           Float?
+  lng           Float?
   isAdmin       Boolean  @default(false)
   isBlocked     Boolean  @default(false)
   listingsLimit Int      @default(1)
@@ -104,61 +105,61 @@ model User {
 
   listings           Listing[]
   favorites          Favorite[]
-  messagesSent       Message[]    @relation("MessagesSent")
-  messagesReceived   Message[]    @relation("MessagesReceived")
+  messagesSent       Message[]           @relation("MessagesSent")
+  messagesReceived   Message[]           @relation("MessagesReceived")
   reports            Report[]
-  ratingsGiven       Rating[]     @relation("RatingsGiven")
-  ratingsReceived    Rating[]     @relation("RatingsReceived")
+  ratingsGiven       Rating[]            @relation("RatingsGiven")
+  ratingsReceived    Rating[]            @relation("RatingsReceived")
   boostOrders        BoostOrder[]
   planOrders         PlanOrder[]
   notifications      Notification[]
   requests           Request[]
-  blocksMade         UserBlock[] @relation("BlocksMade")
-  blocksReceived     UserBlock[] @relation("BlocksReceived")
+  blocksMade         UserBlock[]         @relation("BlocksMade")
+  blocksReceived     UserBlock[]         @relation("BlocksReceived")
   savedSearches      SavedSearch[]
   walletTransactions WalletTransaction[]
   walletTopupOrders  WalletTopupOrder[]
 }
 
 model Category {
-  id       String       @id @default(cuid())
-  parentId String?
-  parent   Category?    @relation("CategoryTree", fields: [parentId], references: [id])
-  children Category[]   @relation("CategoryTree")
-  nameUz   String
-  type     CategoryType
-  icon     String?
-  sortOrder Int         @default(0)
+  id        String       @id @default(cuid())
+  parentId  String?
+  parent    Category?    @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[]   @relation("CategoryTree")
+  nameUz    String
+  type      CategoryType
+  icon      String?
+  sortOrder Int          @default(0)
 
   listings Listing[]
   requests Request[]
 }
 
 model Listing {
-  id           String        @id @default(cuid())
-  sellerId     String
-  seller       User          @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  categoryId   String
-  category     Category      @relation(fields: [categoryId], references: [id])
-  title        String
-  description  String
-  price        Float?
-  isNegotiable Boolean       @default(false)
-  photos       String[]
-  addressText  String?
-  regionId     Int?
-  districtId   Int?
-  lat          Float?
-  lng          Float?
-  phone        String
-  condition    ListingCondition?
-  status       ListingStatus @default(PENDING)
+  id              String            @id @default(cuid())
+  sellerId        String
+  seller          User              @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  categoryId      String
+  category        Category          @relation(fields: [categoryId], references: [id])
+  title           String
+  description     String
+  price           Float?
+  isNegotiable    Boolean           @default(false)
+  photos          String[]
+  addressText     String?
+  regionId        Int?
+  districtId      Int?
+  lat             Float?
+  lng             Float?
+  phone           String
+  condition       ListingCondition?
+  status          ListingStatus     @default(PENDING)
   rejectionReason String?
-  viewsCount   Int           @default(0)
-  boostedUntil DateTime?
-  bumpedAt     DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  viewsCount      Int               @default(0)
+  boostedUntil    DateTime?
+  bumpedAt        DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   contactEvents ContactEvent[]
   favorites     Favorite[]
@@ -218,16 +219,19 @@ model Report {
 }
 
 model Rating {
-  id        String   @id @default(cuid())
-  listingId String
-  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  raterId   String
-  rater     User     @relation("RatingsGiven", fields: [raterId], references: [id], onDelete: Cascade)
-  sellerId  String
-  seller    User     @relation("RatingsReceived", fields: [sellerId], references: [id], onDelete: Cascade)
-  stars     Int
-  comment   String?
-  createdAt DateTime @default(now())
+  id              String    @id @default(cuid())
+  listingId       String
+  listing         Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  raterId         String
+  rater           User      @relation("RatingsGiven", fields: [raterId], references: [id], onDelete: Cascade)
+  sellerId        String
+  seller          User      @relation("RatingsReceived", fields: [sellerId], references: [id], onDelete: Cascade)
+  stars           Int
+  comment         String?
+  isAnonymous     Boolean   @default(false)
+  sellerReply     String?
+  sellerRepliedAt DateTime?
+  createdAt       DateTime  @default(now())
 
   @@unique([listingId, raterId])
 }
@@ -247,16 +251,16 @@ model BoostOrder {
 }
 
 model PlanOrder {
-  id           String        @id @default(cuid())
-  userId       String
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tier         PlanTier
-  amount       Int
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tier          PlanTier
+  amount        Int
   listingsLimit Int
-  status       PaymentStatus @default(CREATED)
-  clickTransId String?
-  createdAt    DateTime      @default(now())
-  paidAt       DateTime?
+  status        PaymentStatus @default(CREATED)
+  clickTransId  String?
+  createdAt     DateTime      @default(now())
+  paidAt        DateTime?
 }
 
 model ListingView {
@@ -344,9 +348,9 @@ model UserBlock {
 }
 
 model SavedSearch {
-  id         String   @id @default(cuid())
+  id         String            @id @default(cuid())
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   label      String
   categoryId String?
   regionId   Int?
@@ -355,7 +359,7 @@ model SavedSearch {
   maxPrice   Int?
   condition  ListingCondition?
   q          String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime          @default(now())
 }
 
 model WalletTransaction {

@@ -37,7 +37,7 @@ import { blockUser, checkBlockStatus, unblockUser } from "../api/blocks";
 import { addFavorite, fetchFavoriteStatus, removeFavorite } from "../api/favorites";
 import { sendListingMessage } from "../api/messages";
 import { reportListing } from "../api/reports";
-import { fetchMyRating, fetchSellerRatingSummary, rateListing } from "../api/ratings";
+import { fetchListingRatings, fetchMyRating, fetchSellerRatingSummary, rateListing, replyToRating } from "../api/ratings";
 import { ListingsMap } from "../components/map/ListingsMap";
 import { PhotoCarousel } from "../components/PhotoCarousel";
 import { BackButton } from "../components/BackButton";
@@ -80,6 +80,10 @@ export function ListingDetail() {
   const [reportReason, setReportReason] = useState("");
   const [reportStatus, setReportStatus] = useState<string | null>(null);
   const [ratingComment, setRatingComment] = useState("");
+  const [pendingStars, setPendingStars] = useState(0);
+  const [ratingIsAnonymous, setRatingIsAnonymous] = useState(false);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [openReplyId, setOpenReplyId] = useState<string | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [boostDuration, setBoostDuration] = useState<BoostDuration>("DAYS_7");
@@ -111,6 +115,11 @@ export function ListingDetail() {
     queryFn: () => fetchMyRating(listingId!),
     enabled: Boolean(listingId),
   });
+  const { data: listingRatings } = useQuery({
+    queryKey: ["listing-ratings", listingId],
+    queryFn: () => fetchListingRatings(listingId!),
+    enabled: Boolean(listingId),
+  });
   const { data: stats } = useQuery({
     queryKey: ["listing-stats", listingId],
     queryFn: () => fetchListingStats(listingId!),
@@ -123,7 +132,8 @@ export function ListingDetail() {
 
   useEffect(() => {
     if (myRating?.comment) setRatingComment(myRating.comment);
-  }, [myRating?.comment]);
+    if (myRating?.stars) setPendingStars(myRating.stars);
+  }, [myRating?.comment, myRating?.stars]);
 
   const favoriteMutation = useMutation({
     mutationFn: () =>
@@ -154,10 +164,19 @@ export function ListingDetail() {
   });
 
   const ratingMutation = useMutation({
-    mutationFn: (stars: number) => rateListing(listingId!, stars, ratingComment || undefined),
+    mutationFn: () => rateListing(listingId!, pendingStars, ratingComment || undefined, ratingIsAnonymous),
     onSuccess: (result) => {
       queryClient.setQueryData(["my-rating", listingId], result);
       void queryClient.invalidateQueries({ queryKey: ["rating-summary", listing?.seller.id] });
+      void queryClient.invalidateQueries({ queryKey: ["listing-ratings", listingId] });
+    },
+  });
+
+  const replyMutation = useMutation({
+    mutationFn: (ratingId: string) => replyToRating(ratingId, replyDrafts[ratingId] ?? ""),
+    onSuccess: () => {
+      setOpenReplyId(null);
+      void queryClient.invalidateQueries({ queryKey: ["listing-ratings", listingId] });
     },
   });
 
@@ -691,18 +710,101 @@ export function ListingDetail() {
             <span className="text-sm font-semibold text-ink">
               {myRating ? t("listing.updateRating") : t("listing.rateSeller")}
             </span>
-            <StarRating
-              value={myRating?.stars ?? 0}
-              onChange={(stars) => ratingMutation.mutate(stars)}
-              size={26}
-            />
+            <StarRating value={pendingStars} onChange={setPendingStars} size={26} />
             <textarea
               value={ratingComment}
               onChange={(e) => setRatingComment(e.target.value)}
               placeholder={t("listing.commentPlaceholder")}
               className="input min-h-12"
             />
+            <label className="flex items-center gap-2 text-xs text-hint">
+              <input
+                type="checkbox"
+                checked={ratingIsAnonymous}
+                onChange={(e) => setRatingIsAnonymous(e.target.checked)}
+                className="h-4 w-4 rounded accent-brand"
+              />
+              {t("listing.rateAnonymously")}
+            </label>
+            {pendingStars > 0 && (
+              <button
+                onClick={() => ratingMutation.mutate()}
+                disabled={ratingMutation.isPending}
+                className="btn-primary disabled:opacity-50"
+              >
+                {ratingMutation.isPending ? t("saving") : t("listing.saveRating")}
+              </button>
+            )}
+            {ratingMutation.isSuccess && (
+              <span className="text-xs text-emerald-500">{t("listing.ratingSaved")}</span>
+            )}
           </div>
+
+          {listingRatings && listingRatings.length > 0 && (
+            <div className="card flex flex-col gap-3">
+              <span className="text-sm font-semibold text-ink">{t("listing.reviewsTitle")}</span>
+              <div className="flex flex-col gap-3">
+                {listingRatings.map((r) => (
+                  <div
+                    key={r.id}
+                    className="flex flex-col gap-1.5 border-t border-divider pt-3 first:border-0 first:pt-0"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <StarRating value={r.stars} size={14} />
+                        <span className="text-xs font-medium text-ink">
+                          {r.raterName ?? t("listing.anonymousReviewer")}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-hint">{formatRelativeDate(r.createdAt, t, lang)}</span>
+                    </div>
+                    {r.comment && <p className="text-sm text-ink">{r.comment}</p>}
+
+                    {r.sellerReply ? (
+                      <div className="ml-3 flex flex-col gap-0.5 rounded-xl bg-surface-secondary p-2.5">
+                        <span className="text-xs font-semibold text-brand">{t("listing.sellerReplyLabel")}</span>
+                        <span className="text-xs text-ink">{r.sellerReply}</span>
+                      </div>
+                    ) : (
+                      isOwner && (
+                        <div className="ml-3 flex flex-col gap-1.5">
+                          {openReplyId === r.id ? (
+                            <>
+                              <textarea
+                                value={replyDrafts[r.id] ?? ""}
+                                onChange={(e) =>
+                                  setReplyDrafts((prev) => ({ ...prev, [r.id]: e.target.value }))
+                                }
+                                placeholder={t("listing.replyPlaceholder")}
+                                className="input min-h-10 text-xs"
+                              />
+                              <button
+                                onClick={() => replyMutation.mutate(r.id)}
+                                disabled={
+                                  !replyDrafts[r.id]?.trim() ||
+                                  (replyMutation.isPending && replyMutation.variables === r.id)
+                                }
+                                className="btn-secondary text-xs disabled:opacity-50"
+                              >
+                                {t("listing.sendReply")}
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => setOpenReplyId(r.id)}
+                              className="w-fit text-xs text-brand active:underline"
+                            >
+                              {t("listing.replyToReview")}
+                            </button>
+                          )}
+                        </div>
+                      )
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

@@ -98,6 +98,10 @@ export class WalletService {
       `/listings/${listingId}`,
     );
 
+    if (listing.status === "ACTIVE") {
+      await this.botService.postToChannel(listing);
+    }
+
     return this.prisma.listing.findUnique({ where: { id: listingId } });
   }
 

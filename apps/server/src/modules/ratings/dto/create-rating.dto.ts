@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
+import { IsBoolean, IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
 
 export class CreateRatingDto {
   @IsInt()
@@ -10,4 +10,8 @@ export class CreateRatingDto {
   @IsString()
   @MaxLength(500)
   comment?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isAnonymous?: boolean;
 }

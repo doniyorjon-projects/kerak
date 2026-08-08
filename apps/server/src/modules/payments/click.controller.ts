@@ -4,6 +4,7 @@ import { BOOST_DAYS } from "@kerak/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import { ClickService, ClickCallbackParams } from "./click.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { BotService } from "../bot/bot.service";
 
 const CLICK_ERROR = {
   SUCCESS: 0,
@@ -21,6 +22,7 @@ export class ClickController {
     private readonly prisma: PrismaService,
     private readonly clickService: ClickService,
     private readonly notificationsService: NotificationsService,
+    private readonly botService: BotService,
   ) {}
 
   @Post()
@@ -160,6 +162,10 @@ export class ClickController {
       `"${order.listing.title}" eloningiz ${boostedUntil.toLocaleDateString("uz-UZ")} gacha ko'tarildi.`,
       `/listings/${order.listingId}`,
     );
+
+    if (order.listing.status === "ACTIVE") {
+      await this.botService.postToChannel(order.listing);
+    }
 
     return this.reply(body, CLICK_ERROR.SUCCESS, "Success", { merchant_confirm_id: order.id });
   }
