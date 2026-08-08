@@ -328,6 +328,7 @@ model BotSettings {
   id        String   @id @default(cuid())
   channelId String?
   starsRate Int      @default(200)
+  usdRate   Int      @default(12700)
   updatedAt DateTime @updatedAt
 }
 

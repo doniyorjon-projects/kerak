@@ -17,6 +17,7 @@ import { CategoryType } from "@kerak/shared";
 import type { CreateListingInput, ListingCondition } from "@kerak/shared";
 import { fetchCategories } from "../api/categories";
 import { uploadPhoto } from "../api/listings";
+import { fetchPublicSettings } from "../api/settings";
 import { RegionDistrictPicker, type PlaceValue } from "./RegionDistrictPicker";
 import { PhoneInput, phoneToDigits } from "./PhoneInput";
 import { PriceInput } from "./PriceInput";
@@ -60,6 +61,8 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
   const { t } = useTranslation();
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
   const leafCategories = (categories ?? []).filter((c) => c.parentId);
+  const { data: publicSettings } = useQuery({ queryKey: ["public-settings"], queryFn: fetchPublicSettings });
+  const usdRate = publicSettings?.usdRate ?? 12700;
 
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [condition, setCondition] = useState<ListingCondition | null>(initial?.condition ?? null);
@@ -67,6 +70,8 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [price, setPrice] = useState(initial?.price != null ? String(initial.price) : "");
+  const [priceCurrency, setPriceCurrency] = useState<"UZS" | "USD">("UZS");
+  const [usdPrice, setUsdPrice] = useState("");
   const [isNegotiable, setIsNegotiable] = useState(initial?.isNegotiable ?? false);
   const [phone, setPhone] = useState(initial?.phone ?? "");
   const [place, setPlace] = useState<PlaceValue | null>(null);
@@ -182,19 +187,64 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
       </div>
 
       <div className="card flex flex-col gap-3">
-        <SectionHeader icon={Banknote} title={t("create.priceSection")} />
+        <div className="flex items-center justify-between gap-2.5">
+          <SectionHeader icon={Banknote} title={t("create.priceSection")} />
+          <div className="flex shrink-0 gap-1 rounded-full bg-surface-secondary p-0.5">
+            <button
+              type="button"
+              disabled={isNegotiable}
+              onClick={() => setPriceCurrency("UZS")}
+              className={`rounded-full px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50 ${
+                priceCurrency === "UZS" ? "bg-brand text-brand-contrast" : "text-hint"
+              }`}
+            >
+              {t("som")}
+            </button>
+            <button
+              type="button"
+              disabled={isNegotiable}
+              onClick={() => {
+                setUsdPrice(price ? String(Math.round(Number(price) / usdRate)) : "");
+                setPriceCurrency("USD");
+              }}
+              className={`rounded-full px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50 ${
+                priceCurrency === "USD" ? "bg-brand text-brand-contrast" : "text-hint"
+              }`}
+            >
+              $
+            </button>
+          </div>
+        </div>
         <div className="relative">
-          <PriceInput
-            value={price}
-            onChange={setPrice}
-            disabled={isNegotiable}
-            className="input pr-14 text-base font-semibold disabled:opacity-50"
-            placeholder="0"
-          />
+          {priceCurrency === "USD" ? (
+            <PriceInput
+              value={usdPrice}
+              onChange={(digits) => {
+                setUsdPrice(digits);
+                setPrice(digits ? String(Math.round(Number(digits) * usdRate)) : "");
+              }}
+              disabled={isNegotiable}
+              className="input pr-10 text-base font-semibold disabled:opacity-50"
+              placeholder="0"
+            />
+          ) : (
+            <PriceInput
+              value={price}
+              onChange={setPrice}
+              disabled={isNegotiable}
+              className="input pr-14 text-base font-semibold disabled:opacity-50"
+              placeholder="0"
+            />
+          )}
           <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-hint">
-            {t("som")}
+            {priceCurrency === "USD" ? "$" : t("som")}
           </span>
         </div>
+        {priceCurrency === "USD" && price && (
+          <span className="text-xs text-hint">
+            ≈ {Number(price).toLocaleString("uz-UZ")} {t("som")}
+          </span>
+        )}
         <label className="flex cursor-pointer items-center justify-between rounded-xl bg-surface-secondary px-3.5 py-2.5">
           <span className="text-sm text-ink">{t("negotiable")}</span>
           <button

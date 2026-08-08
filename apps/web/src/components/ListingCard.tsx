@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, Heart, ImageOff, MapPin, Rocket } from "lucide-react";
+import { Clock, Eye, Heart, ImageOff, MapPin, Rocket } from "lucide-react";
 import type { ListingDto } from "@kerak/shared";
 import { addFavorite, removeFavorite } from "../api/favorites";
 import { REGIONS } from "../data/uzbekistanRegions";
 import { useFavoriteIds } from "../hooks/useFavoriteIds";
 import { useTranslation } from "../i18n/LanguageContext";
+import { formatRelativeDate } from "../utils/formatRelativeDate";
 
 function formatDistance(distanceKm: number): string {
   if (distanceKm < 1) return `${Math.round(distanceKm * 1000)} m`;
@@ -19,7 +20,7 @@ function getDistrictName(regionId: number | null, districtId: number | null): st
 }
 
 export function ListingCard({ listing }: { listing: ListingDto }) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const queryClient = useQueryClient();
   const { data: favoriteIds } = useFavoriteIds();
   const isFavorite = favoriteIds?.has(listing.id) ?? false;
@@ -100,6 +101,10 @@ export function ListingCard({ listing }: { listing: ListingDto }) {
             {formatDistance(listing.distanceKm)}
           </span>
         )}
+        <span className="flex items-center gap-1 text-[11px] text-hint">
+          <Clock className="h-3 w-3" />
+          {formatRelativeDate(listing.createdAt, t, lang)}
+        </span>
       </div>
     </Link>
   );

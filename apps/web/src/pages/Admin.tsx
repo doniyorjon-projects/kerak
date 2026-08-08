@@ -9,6 +9,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  DollarSign,
   Flag,
   ImageIcon,
   Inbox,
@@ -55,6 +56,7 @@ import {
   setChannel,
   setListingsLimit,
   setStarsRate,
+  setUsdRate,
   setUserPlan,
   unblockUser,
 } from "../api/admin";
@@ -1131,11 +1133,13 @@ function SettingsTab() {
   const { data: settings, isLoading } = useQuery({ queryKey: ["admin", "settings"], queryFn: fetchBotSettings });
   const [channelId, setChannelId] = useState("");
   const [starsRate, setStarsRateValue] = useState("");
+  const [usdRate, setUsdRateValue] = useState("");
 
   useEffect(() => {
     if (settings) {
       setChannelId(settings.channelId ?? "");
       setStarsRateValue(String(settings.starsRate));
+      setUsdRateValue(String(settings.usdRate));
     }
   }, [settings]);
 
@@ -1146,6 +1150,11 @@ function SettingsTab() {
 
   const saveStarsRateMutation = useMutation({
     mutationFn: () => setStarsRate(Number(starsRate)),
+    onSuccess: (updated) => queryClient.setQueryData(["admin", "settings"], updated),
+  });
+
+  const saveUsdRateMutation = useMutation({
+    mutationFn: () => setUsdRate(Number(usdRate)),
     onSuccess: (updated) => queryClient.setQueryData(["admin", "settings"], updated),
   });
 
@@ -1201,6 +1210,33 @@ function SettingsTab() {
           {saveStarsRateMutation.isPending ? t("saving") : t("save")}
         </button>
         {saveStarsRateMutation.isSuccess && (
+          <span className="text-xs text-emerald-500">{t("admin.channelSaved")}</span>
+        )}
+      </div>
+
+      <div className="card flex flex-col gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+            <DollarSign className="h-4 w-4" />
+          </div>
+          <span className="text-sm font-semibold text-ink">{t("admin.usdRateTitle")}</span>
+        </div>
+        <p className="text-xs text-hint">{t("admin.usdRateHint")}</p>
+        <input
+          type="number"
+          min={1}
+          value={usdRate}
+          onChange={(e) => setUsdRateValue(e.target.value)}
+          className="input"
+        />
+        <button
+          onClick={() => saveUsdRateMutation.mutate()}
+          disabled={saveUsdRateMutation.isPending}
+          className="btn-primary disabled:opacity-50"
+        >
+          {saveUsdRateMutation.isPending ? t("saving") : t("save")}
+        </button>
+        {saveUsdRateMutation.isSuccess && (
           <span className="text-xs text-emerald-500">{t("admin.channelSaved")}</span>
         )}
       </div>

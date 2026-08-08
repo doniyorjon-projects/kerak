@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "BotSettings" ADD COLUMN     "usdRate" INTEGER NOT NULL DEFAULT 12700;

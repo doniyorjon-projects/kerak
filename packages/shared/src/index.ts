@@ -227,6 +227,11 @@ export interface RequestFeedQuery {
 export interface BotSettingsDto {
   channelId: string | null;
   starsRate: number;
+  usdRate: number;
+}
+
+export interface PublicSettingsDto {
+  usdRate: number;
 }
 
 export interface SavedSearchDto {

@@ -41,13 +41,15 @@ export function RegionDistrictPicker({ onChange, initialAddressText }: RegionDis
 
     const matchedRegion = REGIONS.find((r) => r.id === match.regionId);
     if (matchedRegion) {
-      setPin({ lat: matchedRegion.lat, lng: matchedRegion.lng });
+      const matchedDistrict = matchedRegion.districts.find((d) => d.id === match.districtId);
+      const coords = matchedDistrict ?? matchedRegion;
+      setPin({ lat: coords.lat, lng: coords.lng });
       onChange({
         addressText: initialAddressText,
         regionId: matchedRegion.id,
         districtId: match.districtId || null,
-        lat: matchedRegion.lat,
-        lng: matchedRegion.lng,
+        lat: coords.lat,
+        lng: coords.lng,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -80,13 +82,14 @@ export function RegionDistrictPicker({ onChange, initialAddressText }: RegionDis
     setDistrictId(id);
     if (!region) return;
     const district = region.districts.find((d) => d.id === id);
-    setPin({ lat: region.lat, lng: region.lng });
+    const coords = district ?? region;
+    setPin({ lat: coords.lat, lng: coords.lng });
     onChange({
       addressText: district ? `${district.nameUz}, ${region.nameUz}` : region.nameUz,
       regionId: region.id,
       districtId: district ? district.id : null,
-      lat: region.lat,
-      lng: region.lng,
+      lat: coords.lat,
+      lng: coords.lng,
     });
   };
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -46,6 +47,7 @@ import { useBackButton } from "../hooks/useBackButton";
 import { callPhone, openTelegramLink, shareListing, showAlert } from "../telegram";
 import { useTranslation } from "../i18n/LanguageContext";
 import type { TranslationKey } from "../i18n/translations";
+import { formatRelativeDate } from "../utils/formatRelativeDate";
 
 const STATUS_INFO: Record<ListingStatus, { labelKey: TranslationKey; icon: LucideIcon; className: string }> = {
   PENDING: { labelKey: "status.pending", icon: Clock, className: "text-amber-500" },
@@ -58,7 +60,7 @@ const STATUS_INFO: Record<ListingStatus, { labelKey: TranslationKey; icon: Lucid
 export function ListingDetail() {
   const { listingId } = useParams<{ listingId: string }>();
   useBackButton("/");
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -281,45 +283,60 @@ export function ListingDetail() {
         </div>
       )}
 
+      <div className="flex items-center gap-1.5 text-xs text-hint">
+        <Clock className="h-3.5 w-3.5 shrink-0" />
+        {formatRelativeDate(listing.createdAt, t, lang)}
+      </div>
+
       {listing.lat != null && listing.lng != null && (
-        <ListingsMap listings={[listing]} heightClassName="h-36" zoom={15} interactive={false} />
+        <ListingsMap listings={[listing]} heightClassName="h-36" zoom={15} />
       )}
 
-      {showAdvertiseSuggestion && isOwner && (
-        <div className="card flex flex-col gap-3 border-amber-500/30 bg-amber-500/5">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-sm font-semibold text-amber-600">
-              <Megaphone className="h-4 w-4" />
-              {t("advertise.suggestTitle")}
-            </span>
-            <button
-              onClick={() => setShowAdvertiseSuggestion(false)}
-              aria-label={t("cancel")}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-secondary"
-            >
-              <X className="h-3.5 w-3.5 text-hint" />
-            </button>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <span className="flex items-center gap-1.5 text-xs text-ink">
-              <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-              {t("advertise.suggestFeature1")}
-            </span>
-            <span className="flex items-center gap-1.5 text-xs text-ink">
-              <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-              {t("advertise.suggestFeature2")}
-            </span>
-          </div>
-          <Link
-            to={`/listings/${listing.id}/advertise`}
-            onClick={() => setShowAdvertiseSuggestion(false)}
-            className="btn-primary"
-          >
-            <Megaphone className="h-4 w-4" />
-            {t("advertise.button")}
-          </Link>
-        </div>
-      )}
+      {showAdvertiseSuggestion &&
+        isOwner &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] flex items-end justify-center">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setShowAdvertiseSuggestion(false)} />
+            <div className="relative z-10 flex w-full max-w-md flex-col gap-4 rounded-t-2xl bg-app p-4 pb-6">
+              <div className="flex flex-col items-center gap-2 pt-2 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
+                  <CheckCircle2 className="h-6 w-6" />
+                </div>
+                <span className="text-base font-bold text-ink">{t("create.successMessage")}</span>
+              </div>
+
+              <div className="card flex flex-col gap-3 border-amber-500/30 bg-amber-500/5">
+                <span className="flex items-center gap-2 text-sm font-semibold text-amber-600">
+                  <Megaphone className="h-4 w-4" />
+                  {t("advertise.suggestTitle")}
+                </span>
+                <div className="flex flex-col gap-1.5">
+                  <span className="flex items-center gap-1.5 text-xs text-ink">
+                    <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                    {t("advertise.suggestFeature1")}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-xs text-ink">
+                    <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                    {t("advertise.suggestFeature2")}
+                  </span>
+                </div>
+                <Link
+                  to={`/listings/${listing.id}/advertise`}
+                  onClick={() => setShowAdvertiseSuggestion(false)}
+                  className="btn-primary"
+                >
+                  <Megaphone className="h-4 w-4" />
+                  {t("advertise.button")}
+                </Link>
+              </div>
+
+              <button onClick={() => setShowAdvertiseSuggestion(false)} className="btn-secondary">
+                {t("create.skipAdvertise")}
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
 
       {isAdminModeration && (
         <div className="card flex flex-col gap-3">

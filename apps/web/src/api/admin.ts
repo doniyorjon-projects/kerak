@@ -157,6 +157,10 @@ export function setStarsRate(starsRate: number) {
   return api.patch<BotSettingsDto>("/admin/settings/stars-rate", { starsRate });
 }
 
+export function setUsdRate(usdRate: number) {
+  return api.patch<BotSettingsDto>("/admin/settings/usd-rate", { usdRate });
+}
+
 export interface AdminRequest {
   id: string;
   title: string;

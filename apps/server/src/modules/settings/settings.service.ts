@@ -23,4 +23,9 @@ export class SettingsService {
     const settings = await this.get();
     return this.prisma.botSettings.update({ where: { id: settings.id }, data: { starsRate } });
   }
+
+  async updateUsdRate(usdRate: number) {
+    const settings = await this.get();
+    return this.prisma.botSettings.update({ where: { id: settings.id }, data: { usdRate } });
+  }
 }
