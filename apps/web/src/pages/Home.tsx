@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BellPlus, ChevronRight, MessageSquareText, PackageSearch } from "lucide-react";
+import { BellPlus, ChevronRight, MessageSquareText, PackageSearch, Rocket } from "lucide-react";
 import type { FeedSort } from "@kerak/shared";
 import { fetchListingFeed, fetchListingsByIds } from "../api/listings";
 import { fetchCategories } from "../api/categories";
@@ -155,9 +155,12 @@ export function Home() {
           </Link>
 
           {featured && featured.length > 0 && (
-            <section className="flex flex-col gap-2">
-              <h2 className="section-title-lg">{t("home.featuredTitle")}</h2>
-              <div ref={featuredScrollRef} className="no-scrollbar -mx-4 overflow-x-auto px-4">
+            <section className="panel-promo flex flex-col gap-2 rounded-2xl p-3 shadow-soft">
+              <h2 className="flex items-center gap-1.5 text-base font-bold text-white">
+                <Rocket className="h-4 w-4" />
+                {t("home.featuredTitle")}
+              </h2>
+              <div ref={featuredScrollRef} className="no-scrollbar -mx-3 overflow-x-auto px-3">
                 <div className="flex gap-3">
                   {featured.map((listing) => (
                     <div key={listing.id} className="w-40 shrink-0">

@@ -68,6 +68,15 @@ body {
     @apply text-base font-bold text-ink;
   }
 
+  /* Platformaning "reklama/tanlangan" signal rangi - TOP belgisi, ko'tarish
+     tugmasi va reklama taklifida ishlatiladigan amber-orange gradient bilan
+     bir xil, shu bilan "pullik ko'rinuvchanlik" tushunchasi butun ilova
+     bo'ylab bitta rangga bog'lanadi. Faqat shu maqsad uchun ishlatiladi -
+     Telegram mavzusiga moslashmaydi, doim shu ikki rang bo'ladi. */
+  .panel-promo {
+    background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+  }
+
   .btn-primary {
     @apply flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-brand-contrast transition active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100;
   }
