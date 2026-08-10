@@ -1,3 +1,5 @@
+export * from "./categoryAttributes";
+
 export enum CategoryType {
   PRODUCT = "PRODUCT",
   SERVICE = "SERVICE",
@@ -53,6 +55,7 @@ export interface ListingDto {
   title: string;
   description: string;
   brand?: string | null;
+  attributes?: Record<string, string> | null;
   price: number | null;
   isNegotiable: boolean;
   photos: string[];
@@ -186,6 +189,7 @@ export interface CreateListingInput {
   title: string;
   description: string;
   brand?: string | null;
+  attributes?: Record<string, string> | null;
   price: number | null;
   isNegotiable: boolean;
   photos: string[];

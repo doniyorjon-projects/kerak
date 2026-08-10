@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsEnum,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   Matches,
@@ -31,6 +32,10 @@ export class CreateListingDto {
   @IsString()
   @MaxLength(60)
   brand?: string;
+
+  @IsOptional()
+  @IsObject()
+  attributes?: Record<string, string>;
 
   @IsOptional()
   @Type(() => Number)

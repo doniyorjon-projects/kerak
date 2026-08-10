@@ -145,6 +145,7 @@ model Listing {
   title           String
   description     String
   brand           String?
+  attributes      Json?
   price           Float?
   isNegotiable    Boolean           @default(false)
   photos          String[]

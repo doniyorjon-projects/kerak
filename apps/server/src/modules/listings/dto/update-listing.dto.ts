@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsIn,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   Matches,
@@ -41,6 +42,10 @@ export class UpdateListingDto {
   @IsString()
   @MaxLength(60)
   brand?: string;
+
+  @IsOptional()
+  @IsObject()
+  attributes?: Record<string, string>;
 
   @IsOptional()
   @Type(() => Number)

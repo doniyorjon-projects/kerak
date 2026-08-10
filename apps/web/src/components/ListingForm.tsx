@@ -6,6 +6,7 @@ import {
   Banknote,
   Camera,
   ChevronDown,
+  ListChecks,
   MapPin,
   Phone,
   Sparkles,
@@ -14,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { CategoryType, FREE_LISTINGS_LIMIT } from "@kerak/shared";
+import { CATEGORY_ATTRIBUTES, CategoryType, FREE_LISTINGS_LIMIT } from "@kerak/shared";
 import type { CreateListingInput, ListingCondition } from "@kerak/shared";
 import { fetchCategories } from "../api/categories";
 import { uploadPhoto } from "../api/listings";
@@ -31,6 +32,7 @@ export interface ListingFormInitialValues {
   title: string;
   description: string;
   brand?: string | null;
+  attributes?: Record<string, string> | null;
   price: number | null;
   isNegotiable: boolean;
   phone: string;
@@ -72,10 +74,21 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
 
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [condition, setCondition] = useState<ListingCondition | null>(initial?.condition ?? null);
-  const isProduct = leafCategories.find((c) => c.id === categoryId)?.type === CategoryType.PRODUCT;
+  const selectedCategory = leafCategories.find((c) => c.id === categoryId);
+  const isProduct = selectedCategory?.type === CategoryType.PRODUCT;
+  const attributeFields = selectedCategory ? (CATEGORY_ATTRIBUTES[selectedCategory.nameUz] ?? []) : [];
   const [title, setTitle] = useState(initial?.title ?? "");
   const [brand, setBrand] = useState(initial?.brand ?? "");
+  const [attributes, setAttributes] = useState<Record<string, string>>(initial?.attributes ?? {});
   const [description, setDescription] = useState(initial?.description ?? "");
+
+  const handleCategoryChange = (newCategoryId: string) => {
+    setCategoryId(newCategoryId);
+    const newCategory = leafCategories.find((c) => c.id === newCategoryId);
+    const newFields = newCategory ? (CATEGORY_ATTRIBUTES[newCategory.nameUz] ?? []) : [];
+    const allowedKeys = new Set(newFields.map((f) => f.key));
+    setAttributes((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => allowedKeys.has(key))));
+  };
 
   const aiDescriptionMutation = useMutation({
     mutationFn: () => {
@@ -120,11 +133,16 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
     if (!phone) return setFormError(t("create.errPhone"));
     if (phoneToDigits(phone).length !== 9) return setFormError(t("create.errPhoneIncomplete"));
 
+    const filledAttributes = Object.fromEntries(
+      Object.entries(attributes).filter(([, value]) => value.trim().length > 0),
+    );
+
     onSubmit({
       categoryId,
       title,
       description,
       brand: isProduct && brand.trim() ? brand.trim() : null,
+      attributes: Object.keys(filledAttributes).length > 0 ? filledAttributes : null,
       price: isNegotiable || !price ? null : Number(price),
       isNegotiable,
       photos,
@@ -145,7 +163,7 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
         <div className="relative">
           <select
             value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
+            onChange={(e) => handleCategoryChange(e.target.value)}
             className="input appearance-none pr-9"
           >
             <option value="">{t("create.selectCategory")}</option>
@@ -188,6 +206,60 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
             className="input"
             placeholder={t("create.brandPlaceholder")}
           />
+        )}
+
+        {attributeFields.length > 0 && (
+          <>
+            <div className="h-px bg-divider" />
+            <SectionHeader icon={ListChecks} title={t("create.attributes")} />
+            <div className="grid grid-cols-2 gap-2">
+              {attributeFields.map((field) => (
+                <div
+                  key={field.key}
+                  className={field.type === "text" ? "col-span-2 flex flex-col gap-1" : "flex flex-col gap-1"}
+                >
+                  <span className="text-xs text-hint">{field.label}</span>
+                  {field.type === "select" ? (
+                    <div className="relative">
+                      <select
+                        value={attributes[field.key] ?? ""}
+                        onChange={(e) =>
+                          setAttributes((prev) => ({ ...prev, [field.key]: e.target.value }))
+                        }
+                        className="input appearance-none pr-9"
+                      >
+                        <option value="">—</option>
+                        {field.options?.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <input
+                        type={field.type === "number" ? "number" : "text"}
+                        inputMode={field.type === "number" ? "numeric" : undefined}
+                        value={attributes[field.key] ?? ""}
+                        onChange={(e) =>
+                          setAttributes((prev) => ({ ...prev, [field.key]: e.target.value }))
+                        }
+                        className={field.unit ? "input pr-12" : "input"}
+                        placeholder={field.placeholder}
+                      />
+                      {field.unit && (
+                        <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-hint">
+                          {field.unit}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         <div className="h-px bg-divider" />

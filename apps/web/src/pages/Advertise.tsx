@@ -1,7 +1,7 @@
 ﻿import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Rocket, TrendingUp, Wallet, Zap } from "lucide-react";
+import { ArrowRight, Check, ChevronRight, CreditCard, Rocket, TrendingUp, Wallet, Zap } from "lucide-react";
 import type { BoostDuration, PricingConfigDto } from "@kerak/shared";
 import { fetchListing } from "../api/listings";
 import { createBoostOrder } from "../api/payments";
@@ -53,6 +53,7 @@ export function Advertise() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [pendingDuration, setPendingDuration] = useState<BoostDuration | null>(null);
+  const [methods, setMethods] = useState<Partial<Record<BoostDuration, "click" | "wallet">>>({});
 
   const { data: listing, isLoading } = useQuery({
     queryKey: ["listing", listingId],
@@ -82,15 +83,17 @@ export function Advertise() {
     onError: () => setPendingDuration(null),
   });
 
-  const handleBuy = (duration: BoostDuration) => {
+  const handlePay = (duration: BoostDuration) => {
     setPendingDuration(duration);
-    boostMutation.mutate(duration);
+    if (methods[duration] === "wallet") {
+      balanceMutation.mutate(duration);
+    } else {
+      boostMutation.mutate(duration);
+    }
   };
 
-  const handlePayWithBalance = (duration: BoostDuration) => {
-    setPendingDuration(duration);
-    balanceMutation.mutate(duration);
-  };
+  const isPending = (duration: BoostDuration) =>
+    pendingDuration === duration && (boostMutation.isPending || balanceMutation.isPending);
 
   if (isLoading) return <Spinner label={t("loading")} />;
 
@@ -102,9 +105,35 @@ export function Advertise() {
         <div className="rounded-xl bg-promo/10 p-3 text-xs text-promo-dark">{t("advertise.pendingNote")}</div>
       )}
 
+      {me && (
+        <Link
+          to="/wallet"
+          className="card flex items-center gap-3 bg-brand text-brand-contrast transition active:scale-[0.98]"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15">
+            <Wallet className="h-5 w-5" />
+          </div>
+          <div className="flex flex-1 flex-col">
+            <span className="text-xs opacity-80">{t("wallet.balanceLabel")}</span>
+            <span className="text-lg font-bold">
+              {me.balance.toLocaleString("uz-UZ")} {t("som")}
+            </span>
+          </div>
+          <span className="flex items-center gap-0.5 text-xs font-semibold opacity-90">
+            {t("wallet.topup")}
+            <ChevronRight className="h-3.5 w-3.5" />
+          </span>
+        </Link>
+      )}
+
       <div className="flex flex-col gap-3">
         {OPTIONS.map((opt) => {
           const Icon = opt.icon;
+          const price = pricing?.[opt.pricingField] ?? 0;
+          const canUseWallet = Boolean(me && me.balance >= price);
+          const method = methods[opt.duration] ?? "click";
+          const remaining = me ? me.balance - price : 0;
+
           return (
             <div key={opt.duration} className="card flex flex-col gap-3">
               <div className="flex items-center justify-between">
@@ -113,7 +142,7 @@ export function Advertise() {
                   {t(opt.labelKey)}
                 </span>
                 <span className="text-lg font-bold text-brand">
-                  {(pricing?.[opt.pricingField] ?? 0).toLocaleString("uz-UZ")} {t("som")}
+                  {price.toLocaleString("uz-UZ")} {t("som")}
                 </span>
               </div>
               <div className="flex flex-col gap-1.5">
@@ -124,25 +153,54 @@ export function Advertise() {
                   </span>
                 ))}
               </div>
-              <div className="grid grid-cols-[1fr_auto] gap-2">
+
+              <div className="flex gap-1 rounded-xl bg-surface-secondary p-1">
                 <button
-                  onClick={() => handleBuy(opt.duration)}
-                  disabled={pendingDuration === opt.duration && (boostMutation.isPending || balanceMutation.isPending)}
-                  className="btn-primary"
+                  type="button"
+                  onClick={() => setMethods((prev) => ({ ...prev, [opt.duration]: "click" }))}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition ${
+                    method === "click" ? "bg-surface text-ink shadow-soft" : "text-hint"
+                  }`}
                 >
-                  {boostMutation.isPending && pendingDuration === opt.duration ? t("sending") : t("advertise.buy")}
+                  <CreditCard className="h-3.5 w-3.5" />
+                  Click
                 </button>
-                {me && me.balance >= (pricing?.[opt.pricingField] ?? Infinity) && (
-                  <button
-                    onClick={() => handlePayWithBalance(opt.duration)}
-                    disabled={pendingDuration === opt.duration && (boostMutation.isPending || balanceMutation.isPending)}
-                    aria-label={t("wallet.payWithBalance")}
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-brand/10 px-4 py-3 text-sm font-semibold text-brand transition active:scale-[0.98] disabled:opacity-50"
-                  >
-                    <Wallet className="h-4 w-4" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  disabled={!canUseWallet}
+                  onClick={() => setMethods((prev) => ({ ...prev, [opt.duration]: "wallet" }))}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition disabled:opacity-40 ${
+                    method === "wallet" ? "bg-surface text-ink shadow-soft" : "text-hint"
+                  }`}
+                >
+                  <Wallet className="h-3.5 w-3.5" />
+                  {t("wallet.title")}
+                  {!canUseWallet && me && ` (${t("wallet.insufficientShort")})`}
+                </button>
               </div>
+
+              {method === "wallet" && canUseWallet && (
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-brand/5 px-3 py-2 text-xs text-hint">
+                  <span className="font-semibold text-destructive">
+                    -{price.toLocaleString("uz-UZ")} {t("som")}
+                  </span>
+                  <ArrowRight className="h-3 w-3 shrink-0" />
+                  <span>
+                    {t("wallet.remainingBalance")}:{" "}
+                    <span className="font-semibold text-ink">
+                      {remaining.toLocaleString("uz-UZ")} {t("som")}
+                    </span>
+                  </span>
+                </div>
+              )}
+
+              <button
+                onClick={() => handlePay(opt.duration)}
+                disabled={isPending(opt.duration)}
+                className="btn-primary disabled:opacity-50"
+              >
+                {isPending(opt.duration) ? t("sending") : t("advertise.buy")}
+              </button>
             </div>
           );
         })}

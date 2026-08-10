@@ -1,6 +1,7 @@
 ﻿import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Rocket, ShieldCheck, Sparkles, Wallet } from "lucide-react";
+import { ArrowRight, Check, ChevronRight, CreditCard, Rocket, ShieldCheck, Sparkles, Wallet } from "lucide-react";
 import type { PlanTier, PricingConfigDto } from "@kerak/shared";
 import { PLAN_LISTINGS_LIMIT, UNLIMITED_LISTINGS, FREE_LISTINGS_LIMIT } from "@kerak/shared";
 import { fetchMe } from "../api/users";
@@ -60,6 +61,7 @@ export function Plans() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [pendingTier, setPendingTier] = useState<PlanTier | null>(null);
+  const [methods, setMethods] = useState<Partial<Record<PlanTier, "click" | "wallet">>>({});
 
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
   const { data: pricing } = useQuery({ queryKey: ["pricing"], queryFn: fetchPricing });
@@ -82,19 +84,42 @@ export function Plans() {
     onError: () => setPendingTier(null),
   });
 
-  const handleBuy = (tier: PlanTier) => {
+  const handlePay = (tier: PlanTier) => {
     setPendingTier(tier);
-    orderMutation.mutate(tier);
+    if (methods[tier] === "wallet") {
+      balanceMutation.mutate(tier);
+    } else {
+      orderMutation.mutate(tier);
+    }
   };
 
-  const handlePayWithBalance = (tier: PlanTier) => {
-    setPendingTier(tier);
-    balanceMutation.mutate(tier);
-  };
+  const isPending = (tier: PlanTier) =>
+    pendingTier === tier && (orderMutation.isPending || balanceMutation.isPending);
 
   return (
     <div className="page">
       <PageHeader title={t("plans.title")} subtitle={t("plans.subtitle")} backTo="/profile" />
+
+      {me && (
+        <Link
+          to="/wallet"
+          className="card flex items-center gap-3 bg-brand text-brand-contrast transition active:scale-[0.98]"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15">
+            <Wallet className="h-5 w-5" />
+          </div>
+          <div className="flex flex-1 flex-col">
+            <span className="text-xs opacity-80">{t("wallet.balanceLabel")}</span>
+            <span className="text-lg font-bold">
+              {me.balance.toLocaleString("uz-UZ")} {t("som")}
+            </span>
+          </div>
+          <span className="flex items-center gap-0.5 text-xs font-semibold opacity-90">
+            {t("wallet.topup")}
+            <ChevronRight className="h-3.5 w-3.5" />
+          </span>
+        </Link>
+      )}
 
       <div className="flex flex-col gap-3">
         {PLAN_CARDS.map((plan) => {
@@ -138,25 +163,65 @@ export function Plans() {
               </div>
 
               {isPurchasable && !alreadyIncluded && (
-                <div className="grid grid-cols-[1fr_auto] gap-2">
-                  <button
-                    onClick={() => handleBuy(plan.tier as PlanTier)}
-                    disabled={pendingTier === plan.tier && (orderMutation.isPending || balanceMutation.isPending)}
-                    className="btn-primary"
-                  >
-                    {orderMutation.isPending && pendingTier === plan.tier ? t("sending") : t("plans.buy")}
-                  </button>
-                  {me && me.balance >= price && (
-                    <button
-                      onClick={() => handlePayWithBalance(plan.tier as PlanTier)}
-                      disabled={pendingTier === plan.tier && (orderMutation.isPending || balanceMutation.isPending)}
-                      aria-label={t("wallet.payWithBalance")}
-                      className="flex items-center justify-center gap-1.5 rounded-xl bg-brand/10 px-4 py-3 text-sm font-semibold text-brand transition active:scale-[0.98] disabled:opacity-50"
-                    >
-                      <Wallet className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
+                <>
+                  {(() => {
+                    const tier = plan.tier as PlanTier;
+                    const canUseWallet = Boolean(me && me.balance >= price);
+                    const method = methods[tier] ?? "click";
+                    const remaining = me ? me.balance - price : 0;
+                    return (
+                      <>
+                        <div className="flex gap-1 rounded-xl bg-surface-secondary p-1">
+                          <button
+                            type="button"
+                            onClick={() => setMethods((prev) => ({ ...prev, [tier]: "click" }))}
+                            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition ${
+                              method === "click" ? "bg-surface text-ink shadow-soft" : "text-hint"
+                            }`}
+                          >
+                            <CreditCard className="h-3.5 w-3.5" />
+                            Click
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!canUseWallet}
+                            onClick={() => setMethods((prev) => ({ ...prev, [tier]: "wallet" }))}
+                            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition disabled:opacity-40 ${
+                              method === "wallet" ? "bg-surface text-ink shadow-soft" : "text-hint"
+                            }`}
+                          >
+                            <Wallet className="h-3.5 w-3.5" />
+                            {t("wallet.title")}
+                            {!canUseWallet && me && ` (${t("wallet.insufficientShort")})`}
+                          </button>
+                        </div>
+
+                        {method === "wallet" && canUseWallet && (
+                          <div className="flex items-center justify-center gap-2 rounded-xl bg-brand/5 px-3 py-2 text-xs text-hint">
+                            <span className="font-semibold text-destructive">
+                              -{price.toLocaleString("uz-UZ")} {t("som")}
+                            </span>
+                            <ArrowRight className="h-3 w-3 shrink-0" />
+                            <span>
+                              {t("wallet.remainingBalance")}:{" "}
+                              <span className="font-semibold text-ink">
+                                {remaining.toLocaleString("uz-UZ")} {t("som")}
+                              </span>
+                            </span>
+                          </div>
+                        )}
+
+                        <button
+                          onClick={() => handlePay(tier)}
+                          disabled={isPending(tier)}
+                          className="btn-primary disabled:opacity-50"
+                        >
+                          {isPending(tier) ? t("sending") : t("plans.buy")}
+                        </button>
+                      </>
+                    );
+                  })()}
+                </>
               )}
             </div>
           );

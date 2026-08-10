@@ -26,11 +26,12 @@ import {
   TrendingDown,
   TrendingUp,
   User,
+  Wallet,
   X,
   XCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { ContactEventType } from "@kerak/shared";
+import { CATEGORY_ATTRIBUTES, ContactEventType } from "@kerak/shared";
 import type { BoostDuration, ListingStatus } from "@kerak/shared";
 import {
   bumpListing,
@@ -42,6 +43,8 @@ import {
   logContactEvent,
   updateListingStatus,
 } from "../api/listings";
+import { fetchCategories } from "../api/categories";
+import { fetchPricing } from "../api/pricing";
 import { approveListing, grantBoost, rejectListing } from "../api/admin";
 import { fetchMe } from "../api/users";
 import { blockUser, checkBlockStatus, unblockUser } from "../api/blocks";
@@ -108,6 +111,11 @@ export function ListingDetail() {
     enabled: Boolean(listingId),
   });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
+  const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
+  const listingCategory = categories?.find((c) => c.id === listing?.categoryId);
+  const attributeFields = listingCategory ? (CATEGORY_ATTRIBUTES[listingCategory.nameUz] ?? []) : [];
+  const { data: pricing } = useQuery({ queryKey: ["pricing"], queryFn: fetchPricing });
+  const cheapestBoostPrice = pricing?.boostDays3 ?? 0;
   const { data: favoriteStatus } = useQuery({
     queryKey: ["favorite-status", listingId],
     queryFn: () => fetchFavoriteStatus(listingId!),
@@ -345,6 +353,24 @@ export function ListingDetail() {
         )}
       </div>
 
+      {listing.attributes && attributeFields.length > 0 && (
+        <div className="card grid grid-cols-2 gap-x-3 gap-y-2.5">
+          {attributeFields.map((field) => {
+            const value = listing.attributes?.[field.key];
+            if (!value) return null;
+            return (
+              <div key={field.key} className="flex flex-col gap-0.5">
+                <span className="text-xs text-hint">{field.label}</span>
+                <span className="text-sm font-medium text-ink">
+                  {value}
+                  {field.unit ? ` ${field.unit}` : ""}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <p className="whitespace-pre-line text-sm leading-relaxed text-ink">{listing.description}</p>
 
       {listing.addressText && (
@@ -391,6 +417,27 @@ export function ListingDetail() {
                     {t("advertise.suggestFeature2")}
                   </span>
                 </div>
+
+                {me && (
+                  <div className="flex items-center justify-between gap-2 rounded-xl bg-surface px-3 py-2.5">
+                    <span className="flex items-center gap-1.5 text-xs text-hint">
+                      <Wallet className="h-3.5 w-3.5 shrink-0" />
+                      {t("wallet.balanceLabel")}
+                    </span>
+                    <span
+                      className={`text-sm font-bold ${me.balance >= cheapestBoostPrice ? "text-success-dark" : "text-ink"}`}
+                    >
+                      {me.balance.toLocaleString("uz-UZ")} {t("som")}
+                    </span>
+                  </div>
+                )}
+                {me && me.balance >= cheapestBoostPrice && (
+                  <span className="flex items-center gap-1.5 text-[11px] text-success-dark">
+                    <Check className="h-3 w-3 shrink-0" />
+                    {t("advertise.walletReadyHint")}
+                  </span>
+                )}
+
                 <Link
                   to={`/listings/${listing.id}/advertise`}
                   onClick={() => setShowAdvertiseSuggestion(false)}
