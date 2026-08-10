@@ -62,6 +62,7 @@ export function Plans() {
   const queryClient = useQueryClient();
   const [pendingTier, setPendingTier] = useState<PlanTier | null>(null);
   const [methods, setMethods] = useState<Partial<Record<PlanTier, "click" | "wallet">>>({});
+  const [walletSuccessTier, setWalletSuccessTier] = useState<PlanTier | null>(null);
 
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
   const { data: pricing } = useQuery({ queryKey: ["pricing"], queryFn: fetchPricing });
@@ -77,9 +78,15 @@ export function Plans() {
 
   const balanceMutation = useMutation({
     mutationFn: (tier: PlanTier) => payPlanWithBalance(tier),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["me"] });
+    onSuccess: (updatedMe, tier) => {
+      // Serverdan qaytgan yangi balans/limitni to'g'ridan-to'g'ri keshga
+      // yozamiz - qayta so'rov (refetch) kutishga hojat yo'q, shu bilan
+      // tarmoqdagi kechikish tufayli "hech narsa o'zgarmadi" degan taassurot
+      // qoldirmaydi.
+      queryClient.setQueryData(["me"], updatedMe);
       setPendingTier(null);
+      setWalletSuccessTier(tier);
+      setTimeout(() => setWalletSuccessTier((t) => (t === tier ? null : t)), 4000);
     },
     onError: () => setPendingTier(null),
   });
@@ -161,6 +168,13 @@ export function Plans() {
                     </span>
                   ))}
               </div>
+
+              {walletSuccessTier === plan.tier && (
+                <div className="flex items-center gap-1.5 rounded-xl bg-success/10 px-3 py-2.5 text-xs font-semibold text-success-dark">
+                  <Check className="h-3.5 w-3.5 shrink-0" />
+                  {t("plans.walletPaidSuccess")}
+                </div>
+              )}
 
               {isPurchasable && !alreadyIncluded && (
                 <>

@@ -8,6 +8,7 @@ import { createBoostOrder } from "../api/payments";
 import { payBoostWithBalance } from "../api/wallet";
 import { fetchPricing } from "../api/pricing";
 import { fetchMe } from "../api/users";
+import type { MeDto } from "../api/users";
 import { PageHeader } from "../components/PageHeader";
 import { Spinner } from "../components/Spinner";
 import { useBackButton } from "../hooks/useBackButton";
@@ -54,6 +55,7 @@ export function Advertise() {
   const queryClient = useQueryClient();
   const [pendingDuration, setPendingDuration] = useState<BoostDuration | null>(null);
   const [methods, setMethods] = useState<Partial<Record<BoostDuration, "click" | "wallet">>>({});
+  const [walletSuccessDuration, setWalletSuccessDuration] = useState<BoostDuration | null>(null);
 
   const { data: listing, isLoading } = useQuery({
     queryKey: ["listing", listingId],
@@ -74,11 +76,20 @@ export function Advertise() {
   });
 
   const balanceMutation = useMutation({
-    mutationFn: (duration: BoostDuration) => payBoostWithBalance(listingId!, duration),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(["listing", listingId], updated);
+    mutationFn: (duration: BoostDuration) => {
+      const price = pricing?.[OPTIONS.find((o) => o.duration === duration)!.pricingField] ?? 0;
+      return payBoostWithBalance(listingId!, duration).then((listing) => ({ listing, price }));
+    },
+    onSuccess: ({ listing, price }, duration) => {
+      queryClient.setQueryData(["listing", listingId], listing);
+      // Serverdan alohida "me" so'rovini kutmasdan, hisoblangan summani
+      // darhol keshdan ayiramiz - tarmoq kechikishi tufayli "hech narsa
+      // o'zgarmadi" degan taassurot qoldirmaslik uchun.
+      queryClient.setQueryData<MeDto>(["me"], (old) => (old ? { ...old, balance: old.balance - price } : old));
       queryClient.invalidateQueries({ queryKey: ["me"] });
       setPendingDuration(null);
+      setWalletSuccessDuration(duration);
+      setTimeout(() => setWalletSuccessDuration((d) => (d === duration ? null : d)), 4000);
     },
     onError: () => setPendingDuration(null),
   });
@@ -153,6 +164,13 @@ export function Advertise() {
                   </span>
                 ))}
               </div>
+
+              {walletSuccessDuration === opt.duration && (
+                <div className="flex items-center gap-1.5 rounded-xl bg-success/10 px-3 py-2.5 text-xs font-semibold text-success-dark">
+                  <Check className="h-3.5 w-3.5 shrink-0" />
+                  {t("advertise.walletPaidSuccess")}
+                </div>
+              )}
 
               <div className="flex gap-1 rounded-xl bg-surface-secondary p-1">
                 <button

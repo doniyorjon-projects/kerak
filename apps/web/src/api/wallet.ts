@@ -7,6 +7,7 @@ import type {
   WalletTopupResultDto,
 } from "@kerak/shared";
 import { api } from "./client";
+import type { MeDto } from "./users";
 
 export function fetchWallet() {
   return api.get<WalletDto>("/wallet");
@@ -25,5 +26,5 @@ export function payBoostWithBalance(listingId: string, duration: BoostDuration) 
 }
 
 export function payPlanWithBalance(tier: PlanTier) {
-  return api.post<{ listingsLimit: number }>("/wallet/pay-plan", { tier });
+  return api.post<MeDto>("/wallet/pay-plan", { tier });
 }
