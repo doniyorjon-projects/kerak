@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BellPlus, ChevronRight, MessageSquareText, PackageSearch, Rocket } from "lucide-react";
 import type { FeedSort } from "@kerak/shared";
 import { fetchListingFeed, fetchListingsByIds } from "../api/listings";
@@ -62,15 +62,34 @@ export function Home() {
     setSort(newSort);
   };
 
-  const { data: listings, isLoading, error } = useQuery({
+  const PAGE_SIZE = 20;
+
+  const {
+    data: listingsPages,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ["listings", "all", effectiveSort, radiusKm, me?.lat, me?.lng, search, filters],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       fetchListingFeed(
         effectiveSort === "distance" && me?.lat != null && me?.lng != null
-          ? { sort: "distance", lat: me.lat, lng: me.lng, radiusKm, q: search || undefined, ...filters }
-          : { sort: "newest", q: search || undefined, ...filters },
+          ? { sort: "distance", lat: me.lat, lng: me.lng, radiusKm, q: search || undefined, ...filters, limit: PAGE_SIZE, offset: pageParam }
+          : { sort: "newest", q: search || undefined, ...filters, limit: PAGE_SIZE, offset: pageParam },
       ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length < PAGE_SIZE ? undefined : allPages.length * PAGE_SIZE,
   });
+
+  // Ko'tarilgan (boost qilingan) e'lonlar har bir sahifada qayta qaytariladi,
+  // shuning uchun sahifalarni birlashtirganda id bo'yicha takrorlarni olib
+  // tashlaymiz - "tepadagilar yo'qolmaydi", faqat yangi 20 tasi qo'shiladi.
+  const listings = listingsPages
+    ? Array.from(new Map(listingsPages.pages.flat().map((l) => [l.id, l])).values())
+    : undefined;
 
   const { data: featured } = useQuery({
     queryKey: ["listings", "featured"],
@@ -128,6 +147,16 @@ export function Home() {
               <ListingCard key={listing.id} listing={listing} />
             ))}
           </div>
+          {hasNextPage && (
+            <button
+              type="button"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              className="btn-secondary disabled:opacity-50"
+            >
+              {isFetchingNextPage ? t("loading") : t("home.loadMore")}
+            </button>
+          )}
         </>
       ) : (
         <>
@@ -142,9 +171,9 @@ export function Home() {
 
           <Link
             to="/requests"
-            className="card flex items-center gap-3 border-amber-500/30 bg-amber-500/5 transition active:scale-[0.98]"
+            className="card flex items-center gap-3 border-promo/30 bg-promo/5 transition active:scale-[0.98]"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-promo/15 text-promo-dark">
               <MessageSquareText className="h-5 w-5" />
             </div>
             <div className="flex flex-1 flex-col">
@@ -250,11 +279,23 @@ export function Home() {
                 myLocation={hasLocation ? { lat: me!.lat!, lng: me!.lng! } : null}
               />
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {listings?.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  {listings?.map((listing) => (
+                    <ListingCard key={listing.id} listing={listing} />
+                  ))}
+                </div>
+                {hasNextPage && (
+                  <button
+                    type="button"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className="btn-secondary disabled:opacity-50"
+                  >
+                    {isFetchingNextPage ? t("loading") : t("home.loadMore")}
+                  </button>
+                )}
+              </>
             )}
           </section>
         </>

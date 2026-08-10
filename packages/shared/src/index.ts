@@ -147,6 +147,8 @@ export interface FeedQuery {
   minPrice?: number;
   maxPrice?: number;
   condition?: ListingCondition;
+  limit?: number;
+  offset?: number;
 }
 
 export interface BannerDto {

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, MessageSquareText, Pencil, Trash2, XCircle } from "lucide-react";
 import type { RequestDto } from "@kerak/shared";
@@ -30,7 +30,7 @@ function RequestRow({ request }: { request: RequestDto }) {
       <Link to={`/requests/${request.id}`} className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between gap-2">
           <span className="font-medium text-ink">{request.title}</span>
-          <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${isClosed ? "text-hint" : "text-emerald-500"}`}>
+          <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${isClosed ? "text-hint" : "text-success"}`}>
             {isClosed ? <XCircle className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
             {isClosed ? t("request.statusClosed") : t("request.statusActive")}
           </span>

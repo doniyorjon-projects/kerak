@@ -61,4 +61,14 @@ export class FindFeedDto {
   @IsOptional()
   @IsEnum(ListingCondition)
   condition?: ListingCondition;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  limit?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  offset?: number;
 }

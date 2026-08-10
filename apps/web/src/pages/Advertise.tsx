@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Rocket, TrendingUp, Wallet, Zap } from "lucide-react";
@@ -99,7 +99,7 @@ export function Advertise() {
       <PageHeader title={t("advertise.title")} subtitle={listing?.title} backTo={`/listings/${listingId}`} />
 
       {listing && listing.status !== "ACTIVE" && (
-        <div className="rounded-xl bg-amber-500/10 p-3 text-xs text-amber-600">{t("advertise.pendingNote")}</div>
+        <div className="rounded-xl bg-promo/10 p-3 text-xs text-promo-dark">{t("advertise.pendingNote")}</div>
       )}
 
       <div className="flex flex-col gap-3">
@@ -119,7 +119,7 @@ export function Advertise() {
               <div className="flex flex-col gap-1.5">
                 {opt.featureKeys.map((key) => (
                   <span key={key} className="flex items-center gap-1.5 text-sm text-ink">
-                    <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                    <Check className="h-3.5 w-3.5 shrink-0 text-success" />
                     {t(key)}
                   </span>
                 ))}

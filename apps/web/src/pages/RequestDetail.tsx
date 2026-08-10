@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -84,7 +84,7 @@ export function RequestDetail() {
           request.budgetMax != null ? request.budgetMax.toLocaleString("uz-UZ") : null,
         ]
           .filter(Boolean)
-          .join(" – ") + ` ${t("som")}`
+          .join(" вЂ“ ") + ` ${t("som")}`
       : t("request.anyBudget");
 
   return (
@@ -94,7 +94,7 @@ export function RequestDetail() {
       <div className="card flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
           <h1 className="text-lg font-bold leading-snug text-ink">{request.title}</h1>
-          <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${isClosed ? "text-hint" : "text-emerald-500"}`}>
+          <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${isClosed ? "text-hint" : "text-success"}`}>
             {isClosed ? <XCircle className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
             {isClosed ? t("request.statusClosed") : t("request.statusActive")}
           </span>

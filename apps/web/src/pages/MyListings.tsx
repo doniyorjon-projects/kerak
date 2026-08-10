@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -31,8 +31,8 @@ import { useTranslation } from "../i18n/LanguageContext";
 import type { TranslationKey } from "../i18n/translations";
 
 const STATUS_INFO: Record<ListingStatus, { labelKey: TranslationKey; icon: LucideIcon; className: string }> = {
-  PENDING: { labelKey: "status.pending", icon: Clock, className: "text-amber-500" },
-  ACTIVE: { labelKey: "status.active", icon: CheckCircle2, className: "text-emerald-500" },
+  PENDING: { labelKey: "status.pending", icon: Clock, className: "text-promo" },
+  ACTIVE: { labelKey: "status.active", icon: CheckCircle2, className: "text-success" },
   PAUSED: { labelKey: "status.paused", icon: PauseCircle, className: "text-hint" },
   SOLD: { labelKey: "status.sold", icon: Tag, className: "text-link" },
   REJECTED: { labelKey: "status.rejected", icon: XCircle, className: "text-destructive" },
@@ -102,7 +102,7 @@ function ListingRow({ listing, selectMode, selected, onToggleSelect }: ListingRo
               </span>
             </div>
             {isBoosted && (
-              <span className="flex items-center gap-1 text-xs font-medium text-amber-500">
+              <span className="flex items-center gap-1 text-xs font-medium text-promo">
                 <Rocket className="h-3.5 w-3.5" />
                 {t("myListings.boostedUntil")} {new Date(listing.boostedUntil!).toLocaleDateString("uz-UZ")}{" "}
                 {t("myListings.until")}
@@ -126,7 +126,7 @@ function ListingRow({ listing, selectMode, selected, onToggleSelect }: ListingRo
               </button>
               <Link
                 to={`/listings/${listing.id}/advertise`}
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-500/10 py-2.5 text-xs font-semibold text-amber-500 transition active:scale-[0.98]"
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-promo/10 py-2.5 text-xs font-semibold text-promo transition active:scale-[0.98]"
               >
                 <Megaphone className="h-3.5 w-3.5" />
                 {t("advertise.button")}
@@ -150,7 +150,7 @@ function ListingRow({ listing, selectMode, selected, onToggleSelect }: ListingRo
                 {listing.status !== "ACTIVE" && (
                   <button
                     onClick={() => statusMutation.mutate("ACTIVE")}
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 py-2.5 text-xs font-semibold text-emerald-500 transition active:scale-[0.98]"
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-success/10 py-2.5 text-xs font-semibold text-success transition active:scale-[0.98]"
                   >
                     <PlayCircle className="h-3.5 w-3.5" />
                     {t("myListings.activate")}
@@ -285,7 +285,7 @@ export function MyListings() {
             <button
               onClick={() => bulkStatusMutation.mutate({ ids: [...selectedIds], status: "ACTIVE" })}
               disabled={isBulkPending}
-              className="flex items-center justify-center gap-1 rounded-xl bg-emerald-500/10 py-2.5 text-xs font-semibold text-emerald-500 transition active:scale-[0.98] disabled:opacity-50"
+              className="flex items-center justify-center gap-1 rounded-xl bg-success/10 py-2.5 text-xs font-semibold text-success transition active:scale-[0.98] disabled:opacity-50"
             >
               <PlayCircle className="h-3.5 w-3.5" />
               {t("myListings.activate")}

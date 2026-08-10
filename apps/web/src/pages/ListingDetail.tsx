@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -63,8 +63,8 @@ import { formatRelativeDate } from "../utils/formatRelativeDate";
 import { addRecentlyViewed } from "../utils/recentlyViewed";
 
 const STATUS_INFO: Record<ListingStatus, { labelKey: TranslationKey; icon: LucideIcon; className: string }> = {
-  PENDING: { labelKey: "status.pending", icon: Clock, className: "text-amber-500" },
-  ACTIVE: { labelKey: "status.active", icon: CheckCircle2, className: "text-emerald-500" },
+  PENDING: { labelKey: "status.pending", icon: Clock, className: "text-promo" },
+  ACTIVE: { labelKey: "status.active", icon: CheckCircle2, className: "text-success" },
   PAUSED: { labelKey: "status.paused", icon: PauseCircle, className: "text-hint" },
   SOLD: { labelKey: "status.sold", icon: Tag, className: "text-link" },
   REJECTED: { labelKey: "status.rejected", icon: XCircle, className: "text-destructive" },
@@ -281,7 +281,7 @@ export function ListingDetail() {
         <div className="absolute left-4 top-4 flex flex-col items-start gap-2">
           <BackButton fallbackTo="/" className="bg-surface/90 shadow-float backdrop-blur" />
           {isBoosted && (
-            <span className="flex items-center gap-1 rounded-full bg-amber-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-float">
+            <span className="flex items-center gap-1 rounded-full bg-promo px-2.5 py-1 text-[11px] font-semibold text-white shadow-float">
               <Rocket className="h-3.5 w-3.5" />
               {t("listing.top")}
             </span>
@@ -338,7 +338,7 @@ export function ListingDetail() {
           </span>
         </div>
         {lastOldPrice != null && listing.price != null && lastOldPrice > listing.price && (
-          <span className="flex w-fit items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600">
+          <span className="flex w-fit items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-semibold text-success-dark">
             <TrendingDown className="h-3 w-3" />
             {t("listing.priceDropped")}
           </span>
@@ -370,24 +370,24 @@ export function ListingDetail() {
             <div className="absolute inset-0 bg-black/50" onClick={() => setShowAdvertiseSuggestion(false)} />
             <div className="relative z-10 flex w-full max-w-md flex-col gap-4 rounded-t-2xl bg-app p-4 pb-6">
               <div className="flex flex-col items-center gap-2 pt-2 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10 text-success">
                   <CheckCircle2 className="h-6 w-6" />
                 </div>
                 <span className="text-base font-bold text-ink">{t("create.successMessage")}</span>
               </div>
 
-              <div className="card flex flex-col gap-3 border-amber-500/30 bg-amber-500/5">
-                <span className="flex items-center gap-2 text-sm font-semibold text-amber-600">
+              <div className="card flex flex-col gap-3 border-promo/30 bg-promo/5">
+                <span className="flex items-center gap-2 text-sm font-semibold text-promo-dark">
                   <Megaphone className="h-4 w-4" />
                   {t("advertise.suggestTitle")}
                 </span>
                 <div className="flex flex-col gap-1.5">
                   <span className="flex items-center gap-1.5 text-xs text-ink">
-                    <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                    <Check className="h-3.5 w-3.5 shrink-0 text-success" />
                     {t("advertise.suggestFeature1")}
                   </span>
                   <span className="flex items-center gap-1.5 text-xs text-ink">
-                    <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                    <Check className="h-3.5 w-3.5 shrink-0 text-success" />
                     {t("advertise.suggestFeature2")}
                   </span>
                 </div>
@@ -453,7 +453,7 @@ export function ListingDetail() {
               <button
                 onClick={() => approveMutation.mutate()}
                 disabled={approveMutation.isPending}
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 py-2.5 text-xs font-semibold text-emerald-500 transition active:scale-[0.98] disabled:opacity-50"
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-success/10 py-2.5 text-xs font-semibold text-success transition active:scale-[0.98] disabled:opacity-50"
               >
                 <Check className="h-3.5 w-3.5" />
                 {t("admin.approve")}
@@ -509,7 +509,7 @@ export function ListingDetail() {
               </button>
               <Link
                 to={`/listings/${listing.id}/advertise`}
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-500/10 py-2.5 text-xs font-semibold text-amber-500 transition active:scale-[0.98]"
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-promo/10 py-2.5 text-xs font-semibold text-promo transition active:scale-[0.98]"
               >
                 <Megaphone className="h-3.5 w-3.5" />
                 {t("advertise.button")}
@@ -534,7 +534,7 @@ export function ListingDetail() {
                 {listing.status !== "ACTIVE" && (
                   <button
                     onClick={() => statusMutation.mutate("ACTIVE")}
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 py-2.5 text-xs font-semibold text-emerald-500 transition active:scale-[0.98]"
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-success/10 py-2.5 text-xs font-semibold text-success transition active:scale-[0.98]"
                   >
                     <PlayCircle className="h-3.5 w-3.5" />
                     {t("myListings.activate")}
@@ -630,7 +630,7 @@ export function ListingDetail() {
                 type="button"
                 onClick={() => grantBoostMutation.mutate()}
                 disabled={grantBoostMutation.isPending}
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-500/10 py-2.5 text-xs font-semibold text-amber-600 transition active:scale-[0.98] disabled:opacity-50"
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-promo/10 py-2.5 text-xs font-semibold text-promo-dark transition active:scale-[0.98] disabled:opacity-50"
               >
                 <Rocket className="h-3.5 w-3.5" />
                 {t("admin.grantBoost")}
@@ -808,7 +808,7 @@ export function ListingDetail() {
               </button>
             )}
             {ratingMutation.isSuccess && (
-              <span className="text-xs text-emerald-500">{t("listing.ratingSaved")}</span>
+              <span className="text-xs text-success">{t("listing.ratingSaved")}</span>
             )}
           </div>
         </>

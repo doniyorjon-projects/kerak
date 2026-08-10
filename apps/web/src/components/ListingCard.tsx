@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Clock, Eye, Heart, ImageOff, MapPin, Rocket } from "lucide-react";
 import type { ListingDto } from "@kerak/shared";
@@ -45,7 +45,7 @@ export function ListingCard({ listing }: { listing: ListingDto }) {
     >
       <div className="relative aspect-square w-full overflow-hidden bg-surface-secondary">
         {isBoosted && (
-          <span className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-soft">
+          <span className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-full bg-promo px-2 py-0.5 text-[10px] font-semibold text-white shadow-soft">
             <Rocket className="h-3 w-3" />
             TOP
           </span>

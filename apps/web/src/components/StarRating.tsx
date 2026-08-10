@@ -1,4 +1,4 @@
-import { Star } from "lucide-react";
+﻿import { Star } from "lucide-react";
 
 interface StarRatingProps {
   value: number;
@@ -22,7 +22,7 @@ export function StarRating({ value, onChange, size = 18 }: StarRatingProps) {
           <Star
             width={size}
             height={size}
-            className={star <= Math.round(value) ? "fill-amber-400 text-amber-400" : "text-hint"}
+            className={star <= Math.round(value) ? "fill-promo text-promo" : "text-hint"}
           />
         </button>
       ))}

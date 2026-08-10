@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDownCircle, ArrowUpCircle, Copy, Share2, Star, Wallet as WalletIcon } from "lucide-react";
 import { REFERRAL_BONUS_AMOUNT } from "@kerak/shared";
@@ -92,7 +92,7 @@ export function Wallet() {
           <button
             onClick={() => starsMutation.mutate()}
             disabled={!amountValid || starsMutation.isPending}
-            className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-600 transition active:scale-[0.98] disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-promo/10 px-4 py-3 text-sm font-semibold text-promo-dark transition active:scale-[0.98] disabled:opacity-50"
           >
             <Star className="h-4 w-4" />
             {starsMutation.isPending ? t("sending") : "Stars"}
@@ -117,7 +117,7 @@ export function Wallet() {
             <Copy className="h-4 w-4 text-hint" />
           </button>
         </div>
-        {copyStatus && <span className="text-xs text-emerald-500">{copyStatus}</span>}
+        {copyStatus && <span className="text-xs text-success">{copyStatus}</span>}
         <button onClick={handleShareLink} className="btn-primary">
           <Share2 className="h-4 w-4" />
           {t("wallet.shareLink")}
@@ -131,7 +131,7 @@ export function Wallet() {
           <div key={tx.id} className="card flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div
-                className={`flex h-9 w-9 items-center justify-center rounded-full ${tx.amount >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-destructive/10 text-destructive"}`}
+                className={`flex h-9 w-9 items-center justify-center rounded-full ${tx.amount >= 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}
               >
                 {tx.amount >= 0 ? <ArrowDownCircle className="h-4 w-4" /> : <ArrowUpCircle className="h-4 w-4" />}
               </div>
@@ -140,7 +140,7 @@ export function Wallet() {
                 {tx.note && <span className="text-xs text-hint">{tx.note}</span>}
               </div>
             </div>
-            <span className={`text-sm font-semibold ${tx.amount >= 0 ? "text-emerald-500" : "text-destructive"}`}>
+            <span className={`text-sm font-semibold ${tx.amount >= 0 ? "text-success" : "text-destructive"}`}>
               {tx.amount >= 0 ? "+" : ""}
               {tx.amount.toLocaleString("uz-UZ")}
             </span>

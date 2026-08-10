@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+﻿import { NavLink } from "react-router-dom";
 import { Heart, Home, LayoutGrid, Plus, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "../i18n/LanguageContext";
@@ -66,7 +66,7 @@ export function BottomNav() {
       <NavLink to="/create" className="flex flex-1 justify-center">
         {({ isActive }) => (
           <span
-            className={`-mt-7 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500 text-white shadow-float ring-4 ring-app transition-transform ${
+            className={`-mt-7 flex h-14 w-14 items-center justify-center rounded-full bg-promo text-white shadow-float ring-4 ring-app transition-transform ${
               isActive ? "scale-105" : ""
             } active:scale-95`}
           >

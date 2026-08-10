@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Rocket, ShieldCheck, Sparkles, Wallet } from "lucide-react";
 import type { PlanTier, PricingConfigDto } from "@kerak/shared";
@@ -122,7 +122,7 @@ export function Plans() {
 
               <div className="flex flex-col gap-1.5">
                 <span className="flex items-center gap-1.5 text-sm text-ink">
-                  <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                  <Check className="h-3.5 w-3.5 shrink-0 text-success" />
                   {plan.listingsLimit >= UNLIMITED_LISTINGS
                     ? t("plans.featureUnlimitedListings")
                     : `${plan.listingsLimit} ${t("plans.listingsCountSuffix")}`}
@@ -131,7 +131,7 @@ export function Plans() {
                   .filter((k) => k !== "plans.featureUnlimitedListings")
                   .map((key) => (
                     <span key={key} className="flex items-center gap-1.5 text-sm text-ink">
-                      <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                      <Check className="h-3.5 w-3.5 shrink-0 text-success" />
                       {t(key)}
                     </span>
                   ))}

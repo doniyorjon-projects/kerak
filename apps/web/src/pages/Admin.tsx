@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -165,7 +165,7 @@ function ModerationTab() {
             <div className="flex gap-2 pt-1">
               <button
                 onClick={() => approveMutation.mutate(listing.id)}
-                className="flex-1 rounded-xl bg-emerald-500/10 py-2.5 text-sm font-semibold text-emerald-500 transition active:scale-[0.98]"
+                className="flex-1 rounded-xl bg-success/10 py-2.5 text-sm font-semibold text-success transition active:scale-[0.98]"
               >
                 {t("admin.approve")}
               </button>
@@ -220,7 +220,7 @@ function ReportsTab() {
           <div className="flex gap-2 pt-1">
             <button
               onClick={() => resolveMutation.mutate(report.id)}
-              className="flex-1 rounded-xl bg-emerald-500/10 py-2.5 text-sm font-semibold text-emerald-500 transition active:scale-[0.98]"
+              className="flex-1 rounded-xl bg-success/10 py-2.5 text-sm font-semibold text-success transition active:scale-[0.98]"
             >
               {t("admin.resolved")}
             </button>
@@ -319,10 +319,10 @@ function BannersTab() {
           <div key={banner.id} className="card flex items-center gap-3">
             <img src={banner.imageUrl} className="h-14 w-24 shrink-0 rounded-lg object-cover" />
             <div className="flex flex-1 flex-col gap-1">
-              <span className="truncate text-xs text-hint">{banner.linkUrl ?? "—"}</span>
+              <span className="truncate text-xs text-hint">{banner.linkUrl ?? "вЂ”"}</span>
               <button
                 onClick={() => toggleMutation.mutate({ id: banner.id, isActive: !banner.isActive })}
-                className={`pill w-fit ${banner.isActive ? "bg-emerald-500/10 text-emerald-500" : "bg-surface-secondary text-hint"}`}
+                className={`pill w-fit ${banner.isActive ? "bg-success/10 text-success" : "bg-surface-secondary text-hint"}`}
               >
                 {banner.isActive ? t("admin.bannerActive") : t("admin.bannerInactive")}
               </button>
@@ -501,7 +501,7 @@ function CategoriesTab() {
                     />
                     <button
                       onClick={() => updateMutation.mutate(c.id)}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success/10 text-success"
                     >
                       <Check className="h-3.5 w-3.5" />
                     </button>
@@ -651,8 +651,8 @@ function AdminsTab() {
 }
 
 const USER_LISTING_STATUS_CLASS: Record<string, string> = {
-  PENDING: "text-amber-500",
-  ACTIVE: "text-emerald-500",
+  PENDING: "text-promo",
+  ACTIVE: "text-success",
   PAUSED: "text-hint",
   SOLD: "text-link",
   REJECTED: "text-destructive",
@@ -681,7 +681,7 @@ function UserListingsPanel({ userId }: { userId: string }) {
           <div className="flex min-w-0 flex-col">
             <span className="truncate text-xs font-medium text-ink">{l.title}</span>
             <span className="text-[11px] text-hint">
-              {l.category.icon} {l.category.nameUz} ·{" "}
+              {l.category.icon} {l.category.nameUz} В·{" "}
               {l.isNegotiable || l.price == null ? t("negotiable") : `${l.price.toLocaleString("uz-UZ")} ${t("som")}`}
             </span>
           </div>
@@ -774,7 +774,7 @@ function UsersTab() {
                   {u.isBlocked && <Ban className="h-3.5 w-3.5 text-destructive" />}
                 </span>
                 <span className="text-xs text-hint">
-                  {u.username ? `@${u.username}` : u.telegramId} · {u.telegramId}
+                  {u.username ? `@${u.username}` : u.telegramId} В· {u.telegramId}
                 </span>
               </div>
             </div>
@@ -791,7 +791,7 @@ function UsersTab() {
               </span>
               {u.rating.count > 0 && (
                 <span className="flex items-center gap-1">
-                  <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                  <Star className="h-3 w-3 fill-promo text-promo" />
                   <span className="font-medium text-ink">{u.rating.avg?.toFixed(1)}</span> ({u.rating.count})
                 </span>
               )}
@@ -810,7 +810,7 @@ function UsersTab() {
               {u.isBlocked ? (
                 <button
                   onClick={() => unblockMutation.mutate(u.id)}
-                  className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 py-2.5 text-xs font-semibold text-emerald-500 transition active:scale-[0.98]"
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-success/10 py-2.5 text-xs font-semibold text-success transition active:scale-[0.98]"
                 >
                   <UserRoundCheck className="h-3.5 w-3.5" />
                   {t("admin.unblockUser")}
@@ -828,7 +828,7 @@ function UsersTab() {
 
             <button
               onClick={() => setTariffId((id) => (id === u.id ? null : u.id))}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-500/10 py-2.5 text-xs font-semibold text-amber-600 transition active:scale-[0.98]"
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-promo/10 py-2.5 text-xs font-semibold text-promo-dark transition active:scale-[0.98]"
             >
               <Award className="h-3.5 w-3.5" />
               {t("admin.manageTariff")}
@@ -988,7 +988,7 @@ function PricingTab() {
       <button type="submit" disabled={saveMutation.isPending} className="btn-primary">
         {saveMutation.isPending ? t("saving") : t("save")}
       </button>
-      {saveMutation.isSuccess && <span className="text-xs text-emerald-500">{t("admin.pricingSaved")}</span>}
+      {saveMutation.isSuccess && <span className="text-xs text-success">{t("admin.pricingSaved")}</span>}
     </form>
   );
 }
@@ -1020,7 +1020,7 @@ function AdminRequestsTab() {
             <span className="text-sm font-semibold text-ink">{r.title}</span>
             <span
               className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                r.status === "ACTIVE" ? "bg-emerald-500/10 text-emerald-500" : "bg-surface-secondary text-hint"
+                r.status === "ACTIVE" ? "bg-success/10 text-success" : "bg-surface-secondary text-hint"
               }`}
             >
               {r.status === "ACTIVE" ? t("request.statusActive") : t("request.statusClosed")}
@@ -1031,7 +1031,7 @@ function AdminRequestsTab() {
             <span className="flex items-center gap-1">
               <Wallet className="h-3 w-3" />
               {r.budgetMin != null || r.budgetMax != null
-                ? `${r.budgetMin?.toLocaleString("uz-UZ") ?? "0"} – ${r.budgetMax?.toLocaleString("uz-UZ") ?? "?"}`
+                ? `${r.budgetMin?.toLocaleString("uz-UZ") ?? "0"} вЂ“ ${r.budgetMax?.toLocaleString("uz-UZ") ?? "?"}`
                 : t("request.anyBudget")}
             </span>
             <span>{r.category.nameUz}</span>
@@ -1115,7 +1115,7 @@ function BroadcastTab() {
           {sendMutation.isPending ? t("admin.broadcastSending") : t("admin.broadcastSend")}
         </button>
         {sendMutation.isSuccess && sendMutation.data && (
-          <span className="text-xs text-emerald-500">
+          <span className="text-xs text-success">
             {t("admin.broadcastResult")
               .replace("{sent}", String(sendMutation.data.sent))
               .replace("{failed}", String(sendMutation.data.failed))}
@@ -1183,13 +1183,13 @@ function SettingsTab() {
         >
           {saveMutation.isPending ? t("saving") : t("save")}
         </button>
-        {saveMutation.isSuccess && <span className="text-xs text-emerald-500">{t("admin.channelSaved")}</span>}
+        {saveMutation.isSuccess && <span className="text-xs text-success">{t("admin.channelSaved")}</span>}
         {saveMutation.isError && <span className="text-xs text-destructive">{saveMutation.error.message}</span>}
       </div>
 
       <div className="card flex flex-col gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-600">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-promo/10 text-promo-dark">
             <Star className="h-4 w-4" />
           </div>
           <span className="text-sm font-semibold text-ink">{t("admin.starsRateTitle")}</span>
@@ -1210,13 +1210,13 @@ function SettingsTab() {
           {saveStarsRateMutation.isPending ? t("saving") : t("save")}
         </button>
         {saveStarsRateMutation.isSuccess && (
-          <span className="text-xs text-emerald-500">{t("admin.channelSaved")}</span>
+          <span className="text-xs text-success">{t("admin.channelSaved")}</span>
         )}
       </div>
 
       <div className="card flex flex-col gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success/10 text-success-dark">
             <DollarSign className="h-4 w-4" />
           </div>
           <span className="text-sm font-semibold text-ink">{t("admin.usdRateTitle")}</span>
@@ -1237,7 +1237,7 @@ function SettingsTab() {
           {saveUsdRateMutation.isPending ? t("saving") : t("save")}
         </button>
         {saveUsdRateMutation.isSuccess && (
-          <span className="text-xs text-emerald-500">{t("admin.channelSaved")}</span>
+          <span className="text-xs text-success">{t("admin.channelSaved")}</span>
         )}
       </div>
     </div>

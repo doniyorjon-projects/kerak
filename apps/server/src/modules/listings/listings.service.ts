@@ -27,6 +27,8 @@ export interface FindFeedOptions {
   minPrice?: number;
   maxPrice?: number;
   condition?: ListingCondition;
+  limit?: number;
+  offset?: number;
 }
 
 interface FeedRow {
@@ -97,6 +99,8 @@ export class ListingsService {
       minPrice,
       maxPrice,
       condition,
+      limit,
+      offset,
     } = options;
     const hasLocation = lat !== undefined && lng !== undefined;
 
@@ -137,6 +141,10 @@ export class ListingsService {
         return boosted.map((l) => ({ ...l, distanceKm: null as number | null }));
       }
 
+      // Ko'tarilgan e'lonlar har bir sahifada to'liq qaytariladi (kichik
+      // to'plam) - frontend ularni id bo'yicha birlashtirib, takrorlarni
+      // o'zi olib tashlaydi. "offset"/"limit" faqat oddiy e'lonlarga
+      // tegishli.
       const [boosted, normal] = await Promise.all([
         this.prisma.listing.findMany({
           where: { ...baseWhere, boostedUntil: { gt: now } },
@@ -147,6 +155,8 @@ export class ListingsService {
           where: { ...baseWhere, OR: [{ boostedUntil: null }, { boostedUntil: { lte: now } }] },
           include: FEED_INCLUDE,
           orderBy,
+          skip: offset ?? 0,
+          take: limit,
         }),
       ]);
 
@@ -168,9 +178,6 @@ export class ListingsService {
       const pattern = `%${q}%`;
       conditions.push(Prisma.sql`(l.title ILIKE ${pattern} OR l.description ILIKE ${pattern})`);
     }
-    if (boostedOnly) {
-      conditions.push(Prisma.sql`l."boostedUntil" IS NOT NULL AND l."boostedUntil" > NOW()`);
-    }
     if (radiusKm) {
       conditions.push(Prisma.sql`
         ST_DWithin(
@@ -190,7 +197,7 @@ export class ListingsService {
             ? Prisma.sql`GREATEST(l."bumpedAt", l."createdAt") DESC`
             : Prisma.sql`"distanceKm" ASC`;
 
-    const rows = await this.prisma.$queryRaw<FeedRow[]>`
+    const selectFrom = Prisma.sql`
       SELECT
         l.id, l."categoryId" as "categoryId", l.title, l.description, l.price,
         l."isNegotiable" as "isNegotiable", l.photos, l."addressText" as "addressText",
@@ -204,9 +211,34 @@ export class ListingsService {
         ) / 1000.0 as "distanceKm"
       FROM "Listing" l
       JOIN "User" u ON u.id = l."sellerId"
-      WHERE ${Prisma.join(conditions, " AND ")}
-      ORDER BY (l."boostedUntil" IS NOT NULL AND l."boostedUntil" > NOW()) DESC, ${secondaryOrderClause}
     `;
+
+    // Ko'tarilgan e'lonlar har bir sahifada to'liq qaytariladi (kichik
+    // to'plam) - frontend ularni id bo'yicha birlashtirib, takrorlarni o'zi
+    // olib tashlaydi. "offset"/"limit" faqat oddiy e'lonlarga tegishli.
+    const boostedCondition = Prisma.sql`l."boostedUntil" IS NOT NULL AND l."boostedUntil" > NOW()`;
+    const normalCondition = boostedOnly
+      ? boostedCondition
+      : Prisma.sql`(l."boostedUntil" IS NULL OR l."boostedUntil" <= NOW())`;
+
+    const [boostedRows, normalRows] = await Promise.all([
+      boostedOnly
+        ? Promise.resolve([])
+        : this.prisma.$queryRaw<FeedRow[]>`
+            ${selectFrom}
+            WHERE ${Prisma.join([...conditions, boostedCondition], " AND ")}
+            ORDER BY ${secondaryOrderClause}
+          `,
+      this.prisma.$queryRaw<FeedRow[]>`
+        ${selectFrom}
+        WHERE ${Prisma.join([...conditions, normalCondition], " AND ")}
+        ORDER BY ${secondaryOrderClause}
+        LIMIT ${limit ?? 1000000}
+        OFFSET ${offset ?? 0}
+      `,
+    ]);
+
+    const rows = [...boostedRows, ...normalRows];
 
     return rows.map((r) => ({
       id: r.id,

@@ -22,6 +22,14 @@ export default {
         hint: withOpacity("--tg-hint"),
         divider: "var(--tg-border)",
         destructive: withOpacity("--tg-destructive"),
+        success: {
+          DEFAULT: withOpacity("--tg-success"),
+          dark: "#059669",
+        },
+        promo: {
+          DEFAULT: "#F59E0B",
+          dark: "#D97706",
+        },
       },
       boxShadow: {
         soft: "0 1px 2px rgb(0 0 0 / 0.04), 0 6px 16px -4px rgb(0 0 0 / 0.08)",

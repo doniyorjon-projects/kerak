@@ -12,6 +12,7 @@
   --tg-button: 42 171 238;
   --tg-button-text: 255 255 255;
   --tg-destructive: 239 68 68;
+  --tg-success: 16 185 129;
   --tg-border: rgb(17 24 39 / 0.08);
   --tg-reported-top: 0px;
   --tg-safe-top: 0px;
@@ -37,6 +38,8 @@ html[data-tg-fullscreen="true"] {
     --tg-button: 82 136 193;
     --tg-button-text: 255 255 255;
     --tg-destructive: 242 114 107;
+    --tg-warning: 251 191 36;
+    --tg-success: 52 211 153;
     --tg-border: rgb(255 255 255 / 0.08);
   }
 }

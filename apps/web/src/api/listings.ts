@@ -16,6 +16,8 @@ export function fetchListingFeed(query: FeedQuery = {}) {
   if (query.minPrice !== undefined) params.set("minPrice", String(query.minPrice));
   if (query.maxPrice !== undefined) params.set("maxPrice", String(query.maxPrice));
   if (query.condition) params.set("condition", query.condition);
+  if (query.limit !== undefined) params.set("limit", String(query.limit));
+  if (query.offset !== undefined) params.set("offset", String(query.offset));
   const qs = params.toString();
   return api.get<ListingDto[]>(`/listings${qs ? `?${qs}` : ""}`);
 }
