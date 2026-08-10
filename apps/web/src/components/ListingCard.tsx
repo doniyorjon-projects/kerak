@@ -41,7 +41,7 @@ export function ListingCard({ listing }: { listing: ListingDto }) {
   return (
     <Link
       to={`/listings/${listing.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-divider bg-surface shadow-soft transition active:scale-[0.98]"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-divider bg-surface shadow-soft transition active:scale-[0.98]"
     >
       <div className="relative aspect-square w-full overflow-hidden bg-surface-secondary">
         {isBoosted && (
@@ -74,8 +74,10 @@ export function ListingCard({ listing }: { listing: ListingDto }) {
           </span>
         )}
       </div>
-      <div className="flex flex-col gap-1 p-3">
-        <span className="line-clamp-2 text-sm font-medium leading-snug text-ink">{listing.title}</span>
+      <div className="flex flex-1 flex-col gap-1 p-3">
+        <span className="line-clamp-2 min-h-[2.4rem] text-sm font-medium leading-snug text-ink">
+          {listing.title}
+        </span>
         <span className="text-sm font-semibold text-brand">
           {listing.isNegotiable || listing.price == null
             ? t("negotiable")
@@ -101,7 +103,7 @@ export function ListingCard({ listing }: { listing: ListingDto }) {
             {formatDistance(listing.distanceKm)}
           </span>
         )}
-        <span className="flex items-center gap-1 text-[11px] text-hint">
+        <span className="mt-auto flex items-center gap-1 pt-1 text-[11px] text-hint">
           <Clock className="h-3 w-3" />
           {formatRelativeDate(listing.createdAt, t, lang)}
         </span>

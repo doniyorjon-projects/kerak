@@ -43,6 +43,7 @@ export const translations = {
     "categories.title": "Toifalar",
     "categories.subtitle": "Kerakli bo'limni tanlang",
     "categories.loadError": "Toifalarni yuklab bo'lmadi",
+    "categories.searchEmpty": "Hech narsa topilmadi",
 
     // toifa lentasi
     "categoryFeed.fallbackTitle": "Toifa",
@@ -450,6 +451,7 @@ export const translations = {
     "categories.title": "Категории",
     "categories.subtitle": "Выберите нужный раздел",
     "categories.loadError": "Не удалось загрузить категории",
+    "categories.searchEmpty": "Ничего не найдено",
 
     "categoryFeed.fallbackTitle": "Категория",
     "categoryFeed.empty": "В этой категории пока нет объявлений",

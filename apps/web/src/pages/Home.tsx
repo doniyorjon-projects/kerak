@@ -156,7 +156,7 @@ export function Home() {
 
           {featured && featured.length > 0 && (
             <section className="flex flex-col gap-2">
-              <h2 className="section-title">{t("home.featuredTitle")}</h2>
+              <h2 className="section-title-lg">{t("home.featuredTitle")}</h2>
               <div ref={featuredScrollRef} className="no-scrollbar -mx-4 overflow-x-auto px-4">
                 <div className="flex gap-3">
                   {featured.map((listing) => (
@@ -171,7 +171,7 @@ export function Home() {
 
           {recentlyViewed && recentlyViewed.length > 0 && (
             <section className="flex flex-col gap-2">
-              <h2 className="section-title">{t("home.recentlyViewedTitle")}</h2>
+              <h2 className="section-title-lg">{t("home.recentlyViewedTitle")}</h2>
               <div className="no-scrollbar -mx-4 overflow-x-auto px-4">
                 <div className="flex gap-3">
                   {recentlyViewed.map((listing) => (
@@ -185,7 +185,7 @@ export function Home() {
           )}
 
           <section className="flex flex-col gap-3">
-            <h2 className="section-title">{t("home.recentTitle")}</h2>
+            <h2 className="section-title-lg">{t("home.recentTitle")}</h2>
             <div className="flex flex-wrap items-center gap-2">
               <FeedFilters value={filters} onChange={setFilters} categories={leafCategories} />
               {hasActiveSearch && (

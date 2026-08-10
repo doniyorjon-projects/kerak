@@ -2,10 +2,12 @@ import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Bot, InlineKeyboard } from "grammy";
 import { Listing, NotificationType, PaymentStatus, WalletTransactionType } from "@prisma/client";
+import { REFERRAL_BONUS_AMOUNT } from "@kerak/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { SettingsService } from "../settings/settings.service";
 import { BlocksService } from "../blocks/blocks.service";
+import { UsersService } from "../users/users.service";
 
 @Injectable()
 export class BotService implements OnModuleInit {
@@ -21,6 +23,7 @@ export class BotService implements OnModuleInit {
     private readonly notificationsService: NotificationsService,
     private readonly settingsService: SettingsService,
     private readonly blocksService: BlocksService,
+    private readonly usersService: UsersService,
   ) {
     const token = this.config.get<string>("BOT_TOKEN");
     if (!token) {
@@ -43,6 +46,19 @@ export class BotService implements OnModuleInit {
       const listingId = payload?.startsWith("listing_") ? payload.slice("listing_".length) : null;
       const requestId = payload?.startsWith("request_") ? payload.slice("request_".length) : null;
       const referralId = payload?.startsWith("ref_") ? payload.slice("ref_".length) : null;
+
+      if (ctx.from) {
+        const result = await this.usersService.upsertFromTelegram(ctx.from, referralId ?? undefined);
+        if ("referralJustCredited" in result && result.referralJustCredited) {
+          await ctx.reply(
+            `🎉 Xush kelibsiz! Taklif havolasi orqali qo'shilganingiz uchun hamyoningizga ${REFERRAL_BONUS_AMOUNT.toLocaleString("uz-UZ")} so'm qo'shildi.`,
+          );
+          await this.sendMessageTo(
+            result.referrerTelegramId,
+            `🎉 ${result.firstName} sizning taklifingiz orqali Kerak'ga qo'shildi! Hamyoningizga ${REFERRAL_BONUS_AMOUNT.toLocaleString("uz-UZ")} so'm qo'shildi.`,
+          );
+        }
+      }
 
       const params = new URLSearchParams();
       if (listingId) params.set("listing", listingId);

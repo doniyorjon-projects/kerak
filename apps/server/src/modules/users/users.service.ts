@@ -72,8 +72,24 @@ export class UsersService {
         `${newUser.firstName} sizning havolangiz orqali qo'shildi. Hamyoningizga ${REFERRAL_BONUS_AMOUNT.toLocaleString("uz-UZ")} so'm qo'shildi.`,
         "/wallet",
       );
+      await this.notificationsService.create(
+        newUser.id,
+        NotificationType.REFERRAL_BONUS,
+        "Xush kelibsiz! 🎉",
+        `Taklif havolasi orqali qo'shilganingiz uchun hamyoningizga ${REFERRAL_BONUS_AMOUNT.toLocaleString("uz-UZ")} so'm qo'shildi.`,
+        "/wallet",
+      );
 
-      return this.prisma.user.findUniqueOrThrow({ where: { id: newUser.id } });
+      const finalUser = await this.prisma.user.findUniqueOrThrow({ where: { id: newUser.id } });
+      // Bot /start handleri shu ikki maydonni o'qib, ikkala tomonga ham
+      // shaxsiy xabar yuborishi uchun - referral kreditlanishi shu yerda,
+      // ya'ni foydalanuvchi mini-app'ni umuman ochmasdan, /start bosgan
+      // zahoti sodir bo'ladi.
+      return {
+        ...finalUser,
+        referralJustCredited: true as const,
+        referrerTelegramId: referrer.telegramId,
+      };
     }
 
     return newUser;
