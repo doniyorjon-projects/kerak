@@ -53,10 +53,10 @@ import {
   rejectListing,
   removeAdmin,
   resolveReport,
+  refreshUsdRate,
   setChannel,
   setListingsLimit,
   setStarsRate,
-  setUsdRate,
   setUserPlan,
   unblockUser,
 } from "../api/admin";
@@ -1133,13 +1133,11 @@ function SettingsTab() {
   const { data: settings, isLoading } = useQuery({ queryKey: ["admin", "settings"], queryFn: fetchBotSettings });
   const [channelId, setChannelId] = useState("");
   const [starsRate, setStarsRateValue] = useState("");
-  const [usdRate, setUsdRateValue] = useState("");
 
   useEffect(() => {
     if (settings) {
       setChannelId(settings.channelId ?? "");
       setStarsRateValue(String(settings.starsRate));
-      setUsdRateValue(String(settings.usdRate));
     }
   }, [settings]);
 
@@ -1153,8 +1151,8 @@ function SettingsTab() {
     onSuccess: (updated) => queryClient.setQueryData(["admin", "settings"], updated),
   });
 
-  const saveUsdRateMutation = useMutation({
-    mutationFn: () => setUsdRate(Number(usdRate)),
+  const refreshUsdRateMutation = useMutation({
+    mutationFn: () => refreshUsdRate(),
     onSuccess: (updated) => queryClient.setQueryData(["admin", "settings"], updated),
   });
 
@@ -1221,22 +1219,21 @@ function SettingsTab() {
           </div>
           <span className="text-sm font-semibold text-ink">{t("admin.usdRateTitle")}</span>
         </div>
-        <p className="text-xs text-hint">{t("admin.usdRateHint")}</p>
-        <input
-          type="number"
-          min={1}
-          value={usdRate}
-          onChange={(e) => setUsdRateValue(e.target.value)}
-          className="input"
-        />
+        <p className="text-xs text-hint">{t("admin.usdRateAutoHint")}</p>
+        <div className="flex items-center justify-between rounded-xl bg-surface-secondary px-3.5 py-2.5">
+          <span className="text-xs text-hint">1 $</span>
+          <span className="text-base font-bold text-ink">
+            {(settings?.usdRate ?? 0).toLocaleString("uz-UZ")} {t("som")}
+          </span>
+        </div>
         <button
-          onClick={() => saveUsdRateMutation.mutate()}
-          disabled={saveUsdRateMutation.isPending}
-          className="btn-primary disabled:opacity-50"
+          onClick={() => refreshUsdRateMutation.mutate()}
+          disabled={refreshUsdRateMutation.isPending}
+          className="btn-secondary disabled:opacity-50"
         >
-          {saveUsdRateMutation.isPending ? t("saving") : t("save")}
+          {refreshUsdRateMutation.isPending ? t("saving") : t("admin.usdRateRefreshNow")}
         </button>
-        {saveUsdRateMutation.isSuccess && (
+        {refreshUsdRateMutation.isSuccess && (
           <span className="text-xs text-success">{t("admin.channelSaved")}</span>
         )}
       </div>

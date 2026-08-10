@@ -1,5 +1,6 @@
 import { List, Map as MapIcon } from "lucide-react";
 import type { FeedSort } from "@kerak/shared";
+import { useDisplayCurrency } from "../contexts/DisplayCurrencyContext";
 import { useTranslation } from "../i18n/LanguageContext";
 
 const RADIUS_OPTIONS = [5, 10, 20, 50, 100];
@@ -24,6 +25,7 @@ export function FeedControls({
   hasLocation,
 }: FeedControlsProps) {
   const { t } = useTranslation();
+  const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -58,14 +60,39 @@ export function FeedControls({
         </select>
       )}
 
-      <button
-        type="button"
-        onClick={() => onViewChange(view === "list" ? "map" : "list")}
-        className="pill ml-auto flex items-center gap-1 border border-divider bg-surface text-hint shadow-soft"
-      >
-        {view === "list" ? <MapIcon className="h-3.5 w-3.5" /> : <List className="h-3.5 w-3.5" />}
-        {view === "list" ? t("feed.map") : t("feed.list")}
-      </button>
+      <div className="ml-auto flex items-center gap-2">
+        <div className="flex overflow-hidden rounded-full border border-divider bg-surface p-0.5 shadow-soft">
+          <button
+            type="button"
+            onClick={() => setDisplayCurrency(displayCurrency === "UZS" ? "NATIVE" : "UZS")}
+            aria-label={t("feed.currencySom")}
+            className={`rounded-full px-2.5 py-1.5 text-xs font-semibold transition ${
+              displayCurrency === "UZS" ? "bg-brand text-brand-contrast" : "text-hint"
+            }`}
+          >
+            {t("feed.currencySom")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setDisplayCurrency(displayCurrency === "USD" ? "NATIVE" : "USD")}
+            aria-label={t("feed.currencyUsd")}
+            className={`rounded-full px-2.5 py-1.5 text-xs font-semibold transition ${
+              displayCurrency === "USD" ? "bg-brand text-brand-contrast" : "text-hint"
+            }`}
+          >
+            $
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onViewChange(view === "list" ? "map" : "list")}
+          className="pill flex items-center gap-1 border border-divider bg-surface text-hint shadow-soft"
+        >
+          {view === "list" ? <MapIcon className="h-3.5 w-3.5" /> : <List className="h-3.5 w-3.5" />}
+          {view === "list" ? t("feed.map") : t("feed.list")}
+        </button>
+      </div>
     </div>
   );
 }

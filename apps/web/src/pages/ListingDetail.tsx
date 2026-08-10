@@ -45,6 +45,9 @@ import {
 } from "../api/listings";
 import { fetchCategories } from "../api/categories";
 import { fetchPricing } from "../api/pricing";
+import { fetchPublicSettings } from "../api/settings";
+import { useDisplayCurrency } from "../contexts/DisplayCurrencyContext";
+import { formatListingPrice } from "../utils/formatListingPrice";
 import { approveListing, grantBoost, rejectListing } from "../api/admin";
 import { fetchMe } from "../api/users";
 import { blockUser, checkBlockStatus, unblockUser } from "../api/blocks";
@@ -84,10 +87,6 @@ export function ListingDetail() {
     Boolean((location.state as { justCreated?: boolean } | null)?.justCreated),
   );
 
-  const formatPrice = (price: number | null, isNegotiable: boolean): string => {
-    if (isNegotiable || price == null) return t("negotiable");
-    return `${price.toLocaleString("uz-UZ")} ${t("som")}`;
-  };
 
   const [phoneRevealed, setPhoneRevealed] = useState(false);
   const [messageText, setMessageText] = useState("");
@@ -116,6 +115,8 @@ export function ListingDetail() {
   const attributeFields = listingCategory ? (CATEGORY_ATTRIBUTES[listingCategory.nameUz] ?? []) : [];
   const { data: pricing } = useQuery({ queryKey: ["pricing"], queryFn: fetchPricing });
   const cheapestBoostPrice = pricing?.boostDays3 ?? 0;
+  const { data: publicSettings } = useQuery({ queryKey: ["public-settings"], queryFn: fetchPublicSettings });
+  const { displayCurrency } = useDisplayCurrency();
   const { data: favoriteStatus } = useQuery({
     queryKey: ["favorite-status", listingId],
     queryFn: () => fetchFavoriteStatus(listingId!),
@@ -332,7 +333,13 @@ export function ListingDetail() {
         <div className="flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold text-brand">
-              {formatPrice(listing.price, listing.isNegotiable)}
+              {formatListingPrice(
+                listing,
+                publicSettings?.usdRate ?? 12700,
+                displayCurrency,
+                t("negotiable"),
+                t("som"),
+              )}
             </span>
             {lastOldPrice != null && listing.price != null && lastOldPrice > listing.price && (
               <span className="flex items-center gap-1 text-xs text-hint line-through">

@@ -53,6 +53,11 @@ export class UpdateListingDto {
   price?: number;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  priceUsd?: number;
+
+  @IsOptional()
   @IsBoolean()
   isNegotiable?: boolean;
 

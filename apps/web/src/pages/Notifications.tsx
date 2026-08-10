@@ -41,12 +41,14 @@ export function Notifications() {
 
   return (
     <div className="page">
-      <div className="flex items-center justify-between">
-        <PageHeader title={t("notifications.title")} backTo="/" />
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <PageHeader title={t("notifications.title")} backTo="/" />
+        </div>
         {notifications && notifications.length > 0 && (
           <button
             onClick={() => readAllMutation.mutate()}
-            className="flex items-center gap-1 text-xs text-brand"
+            className="pill flex shrink-0 items-center gap-1 whitespace-nowrap bg-brand/10 text-brand"
           >
             <CheckCheck className="h-3.5 w-3.5" />
             {t("notifications.markAllRead")}

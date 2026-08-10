@@ -51,6 +51,7 @@ export function EditListing() {
           brand: listing.brand,
           attributes: listing.attributes,
           price: listing.price,
+          priceUsd: listing.priceUsd,
           isNegotiable: listing.isNegotiable,
           phone: listing.phone,
           photos: listing.photos,

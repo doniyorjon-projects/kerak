@@ -147,6 +147,7 @@ model Listing {
   brand           String?
   attributes      Json?
   price           Float?
+  priceUsd        Float?
   isNegotiable    Boolean           @default(false)
   photos          String[]
   addressText     String?

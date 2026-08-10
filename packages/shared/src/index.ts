@@ -57,6 +57,7 @@ export interface ListingDto {
   brand?: string | null;
   attributes?: Record<string, string> | null;
   price: number | null;
+  priceUsd?: number | null;
   isNegotiable: boolean;
   photos: string[];
   addressText: string | null;
@@ -191,6 +192,7 @@ export interface CreateListingInput {
   brand?: string | null;
   attributes?: Record<string, string> | null;
   price: number | null;
+  priceUsd?: number | null;
   isNegotiable: boolean;
   photos: string[];
   addressText: string | null;

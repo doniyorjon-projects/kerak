@@ -1,12 +1,15 @@
 ﻿import { Link } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Clock, Eye, Heart, ImageOff, MapPin, Rocket } from "lucide-react";
 import type { ListingDto } from "@kerak/shared";
 import { addFavorite, removeFavorite } from "../api/favorites";
+import { fetchPublicSettings } from "../api/settings";
 import { REGIONS } from "../data/uzbekistanRegions";
 import { useFavoriteIds } from "../hooks/useFavoriteIds";
+import { useDisplayCurrency } from "../contexts/DisplayCurrencyContext";
 import { useTranslation } from "../i18n/LanguageContext";
 import { formatRelativeDate } from "../utils/formatRelativeDate";
+import { formatListingPrice } from "../utils/formatListingPrice";
 
 function formatDistance(distanceKm: number): string {
   if (distanceKm < 1) return `${Math.round(distanceKm * 1000)} m`;
@@ -23,6 +26,8 @@ export function ListingCard({ listing }: { listing: ListingDto }) {
   const { t, lang } = useTranslation();
   const queryClient = useQueryClient();
   const { data: favoriteIds } = useFavoriteIds();
+  const { displayCurrency } = useDisplayCurrency();
+  const { data: publicSettings } = useQuery({ queryKey: ["public-settings"], queryFn: fetchPublicSettings });
   const isFavorite = favoriteIds?.has(listing.id) ?? false;
   const isBoosted = Boolean(listing.boostedUntil && new Date(listing.boostedUntil) > new Date());
   const districtName = getDistrictName(listing.regionId, listing.districtId);
@@ -79,9 +84,7 @@ export function ListingCard({ listing }: { listing: ListingDto }) {
           {listing.title}
         </span>
         <span className="text-sm font-semibold text-brand">
-          {listing.isNegotiable || listing.price == null
-            ? t("negotiable")
-            : `${listing.price.toLocaleString("uz-UZ")} ${t("som")}`}
+          {formatListingPrice(listing, publicSettings?.usdRate ?? 12700, displayCurrency, t("negotiable"), t("som"))}
         </span>
         <div className="flex items-center justify-between gap-2 text-xs text-hint">
           {districtName ? (

@@ -34,6 +34,7 @@ export interface ListingFormInitialValues {
   brand?: string | null;
   attributes?: Record<string, string> | null;
   price: number | null;
+  priceUsd?: number | null;
   isNegotiable: boolean;
   phone: string;
   photos: string[];
@@ -98,8 +99,8 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
     onSuccess: (result) => setDescription(result.description.slice(0, 2000)),
   });
   const [price, setPrice] = useState(initial?.price != null ? String(initial.price) : "");
-  const [priceCurrency, setPriceCurrency] = useState<"UZS" | "USD">("UZS");
-  const [usdPrice, setUsdPrice] = useState("");
+  const [priceCurrency, setPriceCurrency] = useState<"UZS" | "USD">(initial?.priceUsd != null ? "USD" : "UZS");
+  const [usdPrice, setUsdPrice] = useState(initial?.priceUsd != null ? String(initial.priceUsd) : "");
   const [isNegotiable, setIsNegotiable] = useState(initial?.isNegotiable ?? false);
   const [phone, setPhone] = useState(initial?.phone ?? "");
   const [place, setPlace] = useState<PlaceValue | null>(null);
@@ -144,6 +145,7 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
       brand: isProduct && brand.trim() ? brand.trim() : null,
       attributes: Object.keys(filledAttributes).length > 0 ? filledAttributes : null,
       price: isNegotiable || !price ? null : Number(price),
+      priceUsd: isNegotiable || priceCurrency !== "USD" || !usdPrice ? null : Number(usdPrice),
       isNegotiable,
       photos,
       addressText: place.addressText,

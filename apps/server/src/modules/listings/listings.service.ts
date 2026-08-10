@@ -37,6 +37,7 @@ interface FeedRow {
   title: string;
   description: string;
   price: number | null;
+  priceUsd: number | null;
   isNegotiable: boolean;
   photos: string[];
   addressText: string | null;
@@ -199,7 +200,7 @@ export class ListingsService {
 
     const selectFrom = Prisma.sql`
       SELECT
-        l.id, l."categoryId" as "categoryId", l.title, l.description, l.price,
+        l.id, l."categoryId" as "categoryId", l.title, l.description, l.price, l."priceUsd" as "priceUsd",
         l."isNegotiable" as "isNegotiable", l.photos, l."addressText" as "addressText",
         l."regionId" as "regionId", l."districtId" as "districtId",
         l.lat, l.lng, l.phone, l.condition, l.status, l."viewsCount" as "viewsCount", l."createdAt" as "createdAt",
@@ -246,6 +247,7 @@ export class ListingsService {
       title: r.title,
       description: r.description,
       price: r.price,
+      priceUsd: r.priceUsd,
       isNegotiable: r.isNegotiable,
       photos: r.photos,
       addressText: r.addressText,

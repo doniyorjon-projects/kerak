@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { initTelegramApp } from "./telegram";
 import { wakeUpServer } from "./api/client";
 import { LanguageProvider } from "./i18n/LanguageContext";
+import { DisplayCurrencyProvider } from "./contexts/DisplayCurrencyContext";
 import App from "./App";
 import "leaflet/dist/leaflet.css";
 import "./index.css";
@@ -18,9 +19,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <LanguageProvider>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <DisplayCurrencyProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </DisplayCurrencyProvider>
       </QueryClientProvider>
     </LanguageProvider>
   </React.StrictMode>,

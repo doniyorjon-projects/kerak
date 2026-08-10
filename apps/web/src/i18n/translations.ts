@@ -52,6 +52,8 @@ export const translations = {
 
     // filtr
     "feed.nearest": "Eng yaqin",
+    "feed.currencySom": "so'm",
+    "feed.currencyUsd": "dollar",
     "feed.newest": "Eng yangi",
     "feed.withinKm": "km ichida",
     "feed.map": "Xarita",
@@ -352,7 +354,8 @@ export const translations = {
     "admin.starsRateTitle": "Stars kursi",
     "admin.starsRateHint": "1 ta Telegram Star nechi so'mga teng ekanligini belgilang. Hamyonni Stars orqali to'ldirishda shu kurs bo'yicha hisoblanadi.",
     "admin.usdRateTitle": "Dollar kursi",
-    "admin.usdRateHint": "1 dollar nechi so'mga teng ekanligini belgilang. E'lon joylashda narxni dollarda kiritish shu kurs bo'yicha so'mga o'giriladi.",
+    "admin.usdRateAutoHint": "Kurs O'zbekiston Respublikasi Markaziy banki saytidan avtomatik olinadi va har 6 soatda yangilanadi.",
+    "admin.usdRateRefreshNow": "Hozir yangilash",
 
     // so'rovlar (talab qilaman)
     "request.pageTitle": "So'rovlar",
@@ -466,6 +469,8 @@ export const translations = {
     "categoryFeed.empty": "В этой категории пока нет объявлений",
 
     "feed.nearest": "Ближайшие",
+    "feed.currencySom": "сум",
+    "feed.currencyUsd": "доллар",
     "feed.newest": "Новые",
     "feed.withinKm": "км",
     "feed.map": "Карта",
@@ -756,7 +761,8 @@ export const translations = {
     "admin.starsRateTitle": "Курс Stars",
     "admin.starsRateHint": "Укажите, сколько сум стоит 1 Telegram Star. По этому курсу считается пополнение через Stars.",
     "admin.usdRateTitle": "Курс доллара",
-    "admin.usdRateHint": "Укажите, сколько сум стоит 1 доллар. По этому курсу цена в долларах при публикации объявления переводится в сумы.",
+    "admin.usdRateAutoHint": "Курс автоматически берётся с сайта Центрального банка Узбекистана и обновляется каждые 6 часов.",
+    "admin.usdRateRefreshNow": "Обновить сейчас",
 
     // запросы (куплю/ищу)
     "request.pageTitle": "Запросы",

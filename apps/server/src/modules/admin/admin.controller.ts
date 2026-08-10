@@ -24,7 +24,6 @@ import { SetChannelDto } from "./dto/set-channel.dto";
 import { SettingsService } from "../settings/settings.service";
 import { RequestsService } from "../requests/requests.service";
 import { SetStarsRateDto } from "./dto/set-stars-rate.dto";
-import { SetUsdRateDto } from "./dto/set-usd-rate.dto";
 import { BroadcastDto } from "./dto/broadcast.dto";
 import type { User } from "@prisma/client";
 import { NotificationType } from "@prisma/client";
@@ -60,9 +59,10 @@ export class AdminController {
     return this.settingsService.updateStarsRate(dto.starsRate);
   }
 
-  @Patch("settings/usd-rate")
-  setUsdRate(@Body() dto: SetUsdRateDto) {
-    return this.settingsService.updateUsdRate(dto.usdRate);
+  @Post("settings/usd-rate/refresh")
+  async refreshUsdRate() {
+    await this.settingsService.refreshUsdRateFromCbu();
+    return this.settingsService.get();
   }
 
   @Get("requests")
