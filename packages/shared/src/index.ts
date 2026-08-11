@@ -368,3 +368,7 @@ export interface SellerProfileDto {
 export interface AiDescriptionResultDto {
   description: string;
 }
+
+export interface AiCategorySuggestionResultDto {
+  categoryId: string | null;
+}

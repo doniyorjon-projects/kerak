@@ -1,10 +1,11 @@
 import { Body, Controller, Post, UseGuards } from "@nestjs/common";
 import { User } from "@prisma/client";
-import type { AiDescriptionResultDto } from "@kerak/shared";
+import type { AiCategorySuggestionResultDto, AiDescriptionResultDto } from "@kerak/shared";
 import { TelegramAuthGuard } from "../../common/telegram-auth.guard";
 import { CurrentUser } from "../../common/current-user.decorator";
 import { AiService } from "./ai.service";
 import { GenerateDescriptionDto } from "./dto/generate-description.dto";
+import { SuggestCategoryDto } from "./dto/suggest-category.dto";
 
 @Controller("ai")
 @UseGuards(TelegramAuthGuard)
@@ -18,5 +19,11 @@ export class AiController {
   ): Promise<AiDescriptionResultDto> {
     const description = await this.aiService.generateDescription(user, dto.title, dto.categoryName, dto.draft);
     return { description };
+  }
+
+  @Post("suggest-category")
+  async suggestCategory(@Body() dto: SuggestCategoryDto): Promise<AiCategorySuggestionResultDto> {
+    const categoryId = await this.aiService.suggestCategory(dto.title);
+    return { categoryId };
   }
 }

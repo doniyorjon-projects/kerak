@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -23,7 +23,7 @@ import type { CreateListingInput, ListingCondition } from "@kerak/shared";
 import { fetchCategories } from "../api/categories";
 import { uploadPhoto } from "../api/listings";
 import { fetchPublicSettings } from "../api/settings";
-import { generateAiDescription } from "../api/ai";
+import { generateAiDescription, suggestCategory } from "../api/ai";
 import { fetchMe } from "../api/users";
 import { RegionDistrictPicker, type PlaceValue } from "./RegionDistrictPicker";
 import { PhoneInput, phoneToDigits } from "./PhoneInput";
@@ -97,6 +97,21 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
     const allowedKeys = new Set(newFields.map((f) => f.key));
     setAttributes((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => allowedKeys.has(key))));
   };
+
+  const [dismissedSuggestionFor, setDismissedSuggestionFor] = useState<string | null>(null);
+  const categorySuggestionMutation = useMutation({ mutationFn: (t: string) => suggestCategory(t) });
+
+  useEffect(() => {
+    if (categoryId || title.trim().length < 3 || dismissedSuggestionFor === title) return;
+    const handle = setTimeout(() => categorySuggestionMutation.mutate(title), 800);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, categoryId]);
+
+  const suggestedCategory =
+    !categoryId && categorySuggestionMutation.data?.categoryId
+      ? leafCategories.find((c) => c.id === categorySuggestionMutation.data!.categoryId)
+      : undefined;
 
   const aiDescriptionMutation = useMutation({
     mutationFn: () => {
@@ -294,6 +309,33 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
           className="input"
           placeholder={t("create.titlePlaceholder")}
         />
+        {suggestedCategory && (
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-brand/10 px-3 py-2">
+            <span className="flex min-w-0 items-center gap-1.5 truncate text-xs font-medium text-brand">
+              <Sparkles className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">
+                {t("create.categorySuggestion")}: {suggestedCategory.icon} {suggestedCategory.nameUz}
+              </span>
+            </span>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => handleCategoryChange(suggestedCategory.id)}
+                className="rounded-full bg-brand px-2.5 py-1 text-xs font-semibold text-brand-contrast active:scale-[0.98]"
+              >
+                {t("create.applySuggestion")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDismissedSuggestionFor(title)}
+                aria-label={t("cancel")}
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-brand"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="h-px bg-divider" />
 
