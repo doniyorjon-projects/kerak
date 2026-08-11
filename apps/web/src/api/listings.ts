@@ -22,6 +22,15 @@ export function fetchListingFeed(query: FeedQuery = {}) {
   if (query.attributes && Object.keys(query.attributes).length > 0) {
     params.set("attributes", JSON.stringify(query.attributes));
   }
+  if (query.attributesAny && Object.keys(query.attributesAny).length > 0) {
+    params.set("attributesAny", JSON.stringify(query.attributesAny));
+  }
+  if (query.attributesMin && Object.keys(query.attributesMin).length > 0) {
+    params.set("attributesMin", JSON.stringify(query.attributesMin));
+  }
+  if (query.attributesMax && Object.keys(query.attributesMax).length > 0) {
+    params.set("attributesMax", JSON.stringify(query.attributesMax));
+  }
   if (query.limit !== undefined) params.set("limit", String(query.limit));
   if (query.offset !== undefined) params.set("offset", String(query.offset));
   const qs = params.toString();

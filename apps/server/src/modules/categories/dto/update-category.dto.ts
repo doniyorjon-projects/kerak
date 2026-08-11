@@ -10,12 +10,21 @@ export class UpdateCategoryDto {
   nameUz?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  nameRu?: string;
+
+  @IsOptional()
   @IsEnum(CategoryType)
   type?: CategoryType;
 
   @IsOptional()
   @IsString()
   icon?: string;
+
+  @IsOptional()
+  @IsString()
+  parentId?: string;
 
   @IsOptional()
   @Type(() => Number)

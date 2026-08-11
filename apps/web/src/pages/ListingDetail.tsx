@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -34,7 +34,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { CATEGORY_ATTRIBUTES, CategoryType, ContactEventType } from "@kerak/shared";
+import { CategoryType, ContactEventType, resolveCategoryFields } from "@kerak/shared";
 import type { BoostDuration, ListingStatus } from "@kerak/shared";
 import {
   bumpListing,
@@ -118,8 +118,12 @@ export function ListingDetail() {
   });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
+  const categoriesById = useMemo(() => new Map((categories ?? []).map((c) => [c.id, c] as const)), [categories]);
   const listingCategory = categories?.find((c) => c.id === listing?.categoryId);
-  const attributeFields = listingCategory ? (CATEGORY_ATTRIBUTES[listingCategory.nameUz] ?? []) : [];
+  const attributeFields = useMemo(
+    () => resolveCategoryFields(listing?.categoryId, categoriesById).filter((f) => f.key !== "condition" && f.key !== "brand"),
+    [listing?.categoryId, categoriesById],
+  );
   const { data: pricing } = useQuery({ queryKey: ["pricing"], queryFn: fetchPricing });
   const cheapestBoostPrice = pricing?.boostDays3 ?? 0;
   const { data: publicSettings } = useQuery({ queryKey: ["public-settings"], queryFn: fetchPublicSettings });
@@ -368,7 +372,7 @@ export function ListingDetail() {
             {listing.brand}
           </span>
         )}
-        {(listing.isUrgent || listing.hasDelivery) && (
+        {(listing.isUrgent || listing.hasDelivery || listing.sellerType === "BUSINESS") && (
           <div className="flex flex-wrap items-center gap-1.5">
             {listing.isUrgent && (
               <span className="flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-brand-contrast">
@@ -380,6 +384,11 @@ export function ListingDetail() {
               <span className="flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold text-brand">
                 <Truck className="h-3 w-3" />
                 {t("listing.hasDeliveryBadge")}
+              </span>
+            )}
+            {listing.sellerType === "BUSINESS" && (
+              <span className="flex items-center gap-1 rounded-full bg-surface-secondary px-2 py-0.5 text-[11px] font-semibold text-hint">
+                {t("create.sellerTypeBusiness")}
               </span>
             )}
           </div>
@@ -419,12 +428,40 @@ export function ListingDetail() {
         <div className="card grid grid-cols-2 gap-x-3 gap-y-2.5">
           {attributeFields.map((field) => {
             const value = listing.attributes?.[field.key];
-            if (!value) return null;
+            if (value === undefined || value === null || value === "") return null;
+
+            if (field.type === "boolean") {
+              if (!value) return null;
+              return (
+                <div key={field.key} className="col-span-2 flex items-center gap-1.5">
+                  <Check className="h-4 w-4 shrink-0 text-success-dark" />
+                  <span className="text-sm font-medium text-ink">{field.label}</span>
+                </div>
+              );
+            }
+
+            let display: string;
+            if (Array.isArray(value)) {
+              if (value.length === 0) return null;
+              display = value.join(", ");
+            } else if (field.type === "range") {
+              const [min, max] = String(value).split("-");
+              display = min && max ? `${min} - ${max}` : min ? `${min}+` : max ? `${max} gacha` : "";
+              if (!display) return null;
+            } else if (typeof value === "number") {
+              display = value.toLocaleString("uz-UZ");
+            } else {
+              display = String(value);
+            }
+
             return (
-              <div key={field.key} className="flex flex-col gap-0.5">
+              <div
+                key={field.key}
+                className={field.type === "multiselect" ? "col-span-2 flex flex-col gap-0.5" : "flex flex-col gap-0.5"}
+              >
                 <span className="text-xs text-hint">{field.label}</span>
                 <span className="text-sm font-medium text-ink">
-                  {value}
+                  {display}
                   {field.unit ? ` ${field.unit}` : ""}
                 </span>
               </div>
@@ -941,7 +978,7 @@ export function ListingDetail() {
           {reportStatus && <div className="text-xs text-hint">{reportStatus}</div>}
 
           <div className="flex flex-col gap-2">
-            {listing.seller.username && (
+            {listing.seller.username && listing.contactTelegram && (
               <button
                 type="button"
                 onClick={() => {

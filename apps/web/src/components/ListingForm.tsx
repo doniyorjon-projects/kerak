@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -9,8 +9,10 @@ import {
   Gift,
   ListChecks,
   MapPin,
+  MessageCircle,
   Phone,
   Sparkles,
+  Store,
   Tag,
   Truck,
   Type,
@@ -18,8 +20,9 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { CATEGORIES_WITHOUT_CONDITION, CATEGORY_ATTRIBUTES, CategoryType, UNLIMITED_LISTINGS } from "@kerak/shared";
-import type { CreateListingInput, ListingCondition } from "@kerak/shared";
+import { UNLIMITED_LISTINGS, resolveCategoryFields } from "@kerak/shared";
+import type { AttributeValue, CategoryDto, CreateListingInput, ListingCondition, SellerType } from "@kerak/shared";
+import { CategoryPicker } from "./CategoryPicker";
 import { fetchCategories } from "../api/categories";
 import { uploadPhoto } from "../api/listings";
 import { fetchPublicSettings } from "../api/settings";
@@ -35,13 +38,15 @@ export interface ListingFormInitialValues {
   title: string;
   description: string;
   brand?: string | null;
-  attributes?: Record<string, string> | null;
+  attributes?: Record<string, AttributeValue> | null;
   price: number | null;
   priceUsd?: number | null;
   isNegotiable: boolean;
   isFree?: boolean;
   isUrgent?: boolean;
   hasDelivery?: boolean;
+  sellerType?: SellerType | null;
+  contactTelegram?: boolean;
   phone: string;
   photos: string[];
   addressText: string | null;
@@ -70,10 +75,28 @@ function SectionHeader({ icon: Icon, title, hint }: { icon: LucideIcon; title: s
   );
 }
 
+function attributesToFormValues(attributes: Record<string, AttributeValue> | null | undefined): Record<string, string> {
+  const result: Record<string, string> = {};
+  if (!attributes) return result;
+  for (const [key, value] of Object.entries(attributes)) {
+    if (!Array.isArray(value)) result[key] = String(value);
+  }
+  return result;
+}
+
+function attributesToMultiselectValues(attributes: Record<string, AttributeValue> | null | undefined): Record<string, string[]> {
+  const result: Record<string, string[]> = {};
+  if (!attributes) return result;
+  for (const [key, value] of Object.entries(attributes)) {
+    if (Array.isArray(value)) result[key] = value;
+  }
+  return result;
+}
+
 export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, submitError }: ListingFormProps) {
   const { t } = useTranslation();
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
-  const leafCategories = (categories ?? []).filter((c) => c.parentId);
+  const categoriesById = useMemo(() => new Map((categories ?? []).map((c) => [c.id, c] as const)), [categories]);
   const { data: publicSettings } = useQuery({ queryKey: ["public-settings"], queryFn: fetchPublicSettings });
   const usdRate = publicSettings?.usdRate ?? 12700;
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
@@ -81,21 +104,34 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
 
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [condition, setCondition] = useState<ListingCondition | null>(initial?.condition ?? null);
-  const selectedCategory = leafCategories.find((c) => c.id === categoryId);
-  const isProduct = selectedCategory?.type === CategoryType.PRODUCT;
-  const showCondition = isProduct && !CATEGORIES_WITHOUT_CONDITION.has(selectedCategory?.nameUz ?? "");
-  const attributeFields = selectedCategory ? (CATEGORY_ATTRIBUTES[selectedCategory.nameUz] ?? []) : [];
+  const selectedCategory: CategoryDto | undefined = categoriesById.get(categoryId);
+  const resolvedFields = useMemo(() => resolveCategoryFields(categoryId || undefined, categoriesById), [categoryId, categoriesById]);
+  const showCondition = resolvedFields.some((f) => f.key === "condition");
+  const brandField = resolvedFields.find((f) => f.key === "brand");
+  const attributeFields = resolvedFields.filter((f) => f.key !== "condition" && f.key !== "brand");
   const [title, setTitle] = useState(initial?.title ?? "");
   const [brand, setBrand] = useState(initial?.brand ?? "");
-  const [attributes, setAttributes] = useState<Record<string, string>>(initial?.attributes ?? {});
+  const [attributes, setAttributes] = useState<Record<string, string>>(attributesToFormValues(initial?.attributes));
+  const [multiselectAttributes, setMultiselectAttributes] = useState<Record<string, string[]>>(
+    attributesToMultiselectValues(initial?.attributes),
+  );
   const [description, setDescription] = useState(initial?.description ?? "");
 
   const handleCategoryChange = (newCategoryId: string) => {
     setCategoryId(newCategoryId);
-    const newCategory = leafCategories.find((c) => c.id === newCategoryId);
-    const newFields = newCategory ? (CATEGORY_ATTRIBUTES[newCategory.nameUz] ?? []) : [];
+    const newFields = resolveCategoryFields(newCategoryId, categoriesById);
     const allowedKeys = new Set(newFields.map((f) => f.key));
     setAttributes((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => allowedKeys.has(key))));
+    setMultiselectAttributes((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => allowedKeys.has(key))));
+    if (!allowedKeys.has("brand")) setBrand("");
+  };
+
+  const toggleMultiselectOption = (key: string, option: string) => {
+    setMultiselectAttributes((prev) => {
+      const current = prev[key] ?? [];
+      const next = current.includes(option) ? current.filter((o) => o !== option) : [...current, option];
+      return { ...prev, [key]: next };
+    });
   };
 
   const [dismissedSuggestionFor, setDismissedSuggestionFor] = useState<string | null>(null);
@@ -110,14 +146,11 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
 
   const suggestedCategory =
     !categoryId && categorySuggestionMutation.data?.categoryId
-      ? leafCategories.find((c) => c.id === categorySuggestionMutation.data!.categoryId)
+      ? categoriesById.get(categorySuggestionMutation.data.categoryId)
       : undefined;
 
   const aiDescriptionMutation = useMutation({
-    mutationFn: () => {
-      const categoryName = leafCategories.find((c) => c.id === categoryId)?.nameUz;
-      return generateAiDescription(title, categoryName, description || undefined);
-    },
+    mutationFn: () => generateAiDescription(title, selectedCategory?.nameUz, description || undefined),
     onSuccess: (result) => setDescription(result.description.slice(0, 2000)),
   });
   const [price, setPrice] = useState(initial?.price != null ? String(initial.price) : "");
@@ -127,6 +160,8 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
   const [isFree, setIsFree] = useState(initial?.isFree ?? false);
   const [isUrgent, setIsUrgent] = useState(initial?.isUrgent ?? false);
   const [hasDelivery, setHasDelivery] = useState(initial?.hasDelivery ?? false);
+  const [sellerType, setSellerType] = useState<SellerType | null>(initial?.sellerType ?? null);
+  const [contactTelegram, setContactTelegram] = useState(initial?.contactTelegram ?? true);
   const [phone, setPhone] = useState(initial?.phone ?? "");
   const [place, setPlace] = useState<PlaceValue | null>(null);
   const [photos, setPhotos] = useState<string[]>(initial?.photos ?? []);
@@ -159,22 +194,39 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
     if (!phone) return setFormError(t("create.errPhone"));
     if (phoneToDigits(phone).length !== 9) return setFormError(t("create.errPhoneIncomplete"));
 
-    const filledAttributes = Object.fromEntries(
-      Object.entries(attributes).filter(([, value]) => value.trim().length > 0),
-    );
+    const finalAttributes: Record<string, AttributeValue> = {};
+    for (const field of attributeFields) {
+      if (field.type === "multiselect") {
+        const values = multiselectAttributes[field.key];
+        if (values && values.length > 0) finalAttributes[field.key] = values;
+        continue;
+      }
+      const raw = attributes[field.key];
+      if (raw === undefined || raw === "") continue;
+      if (field.type === "boolean") {
+        if (raw === "true") finalAttributes[field.key] = true;
+      } else if (field.type === "number" || field.type === "decimal") {
+        const num = Number(raw);
+        if (Number.isFinite(num)) finalAttributes[field.key] = num;
+      } else {
+        finalAttributes[field.key] = raw;
+      }
+    }
 
     onSubmit({
       categoryId,
       title,
       description,
-      brand: isProduct && brand.trim() ? brand.trim() : null,
-      attributes: Object.keys(filledAttributes).length > 0 ? filledAttributes : null,
+      brand: brandField && brand.trim() ? brand.trim() : null,
+      attributes: Object.keys(finalAttributes).length > 0 ? finalAttributes : null,
       price: isFree || isNegotiable || !price ? null : Number(price),
       priceUsd: isFree || isNegotiable || priceCurrency !== "USD" || !usdPrice ? null : Number(usdPrice),
       isNegotiable: isFree ? false : isNegotiable,
       isFree,
       isUrgent,
       hasDelivery,
+      sellerType,
+      contactTelegram,
       photos,
       addressText: place.addressText,
       regionId: place.regionId,
@@ -190,29 +242,7 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="card flex flex-col gap-4">
         <SectionHeader icon={Tag} title={t("create.category")} />
-        <div className="relative">
-          <select
-            value={categoryId}
-            onChange={(e) => handleCategoryChange(e.target.value)}
-            className="input appearance-none pr-9"
-          >
-            <option value="">{t("create.selectCategory")}</option>
-            {(categories ?? [])
-              .filter((c) => !c.parentId)
-              .map((root) => (
-                <optgroup key={root.id} label={`${root.icon ?? ""} ${root.nameUz}`}>
-                  {(categories ?? [])
-                    .filter((c) => c.parentId === root.id)
-                    .map((child) => (
-                      <option key={child.id} value={child.id}>
-                        {child.icon} {child.nameUz}
-                      </option>
-                    ))}
-                </optgroup>
-              ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
-        </div>
+        <CategoryPicker categories={categories ?? []} value={categoryId} onChange={handleCategoryChange} />
 
         {showCondition && (
           <div className="grid grid-cols-2 gap-2">
@@ -237,65 +267,157 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
           </div>
         )}
 
-        {isProduct && (
-          <input
-            value={brand}
-            onChange={(e) => setBrand(e.target.value.slice(0, 60))}
-            className="input"
-            placeholder={t("create.brandPlaceholder")}
-          />
-        )}
+        {brandField &&
+          (brandField.type === "select" ? (
+            <div className="relative">
+              <select
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+                className="input appearance-none pr-9"
+              >
+                <option value="">{brandField.label}</option>
+                {brandField.options?.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
+            </div>
+          ) : (
+            <input
+              value={brand}
+              onChange={(e) => setBrand(e.target.value.slice(0, 60))}
+              className="input"
+              placeholder={t("create.brandPlaceholder")}
+            />
+          ))}
 
         {attributeFields.length > 0 && (
           <>
             <div className="h-px bg-divider" />
             <SectionHeader icon={ListChecks} title={t("create.attributes")} />
             <div className="grid grid-cols-2 gap-2">
-              {attributeFields.map((field) => (
-                <div
-                  key={field.key}
-                  className={field.type === "text" ? "col-span-2 flex flex-col gap-1" : "flex flex-col gap-1"}
-                >
-                  <span className="text-xs text-hint">{field.label}</span>
-                  {field.type === "select" ? (
-                    <div className="relative">
-                      <select
-                        value={attributes[field.key] ?? ""}
-                        onChange={(e) =>
-                          setAttributes((prev) => ({ ...prev, [field.key]: e.target.value }))
-                        }
-                        className="input appearance-none pr-9"
+              {attributeFields.map((field) => {
+                const fullWidth = field.type === "text" || field.type === "multiselect" || field.type === "range" || field.type === "boolean";
+                if (field.type === "boolean") {
+                  const checked = attributes[field.key] === "true";
+                  return (
+                    <label
+                      key={field.key}
+                      className="col-span-2 flex cursor-pointer items-center justify-between rounded-xl bg-surface-secondary px-3.5 py-2.5"
+                    >
+                      <span className="text-sm text-ink">{field.label}</span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={checked}
+                        onClick={() => setAttributes((prev) => ({ ...prev, [field.key]: checked ? "false" : "true" }))}
+                        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? "bg-brand" : "bg-divider"}`}
                       >
-                        <option value="">—</option>
-                        {field.options?.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
+                        <span
+                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-soft transition-all ${checked ? "left-[22px]" : "left-0.5"}`}
+                        />
+                      </button>
+                    </label>
+                  );
+                }
+                if (field.type === "multiselect") {
+                  const selectedValues = multiselectAttributes[field.key] ?? [];
+                  return (
+                    <div key={field.key} className="col-span-2 flex flex-col gap-1">
+                      <span className="text-xs text-hint">{field.label}</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {field.options?.map((opt) => {
+                          const active = selectedValues.includes(opt);
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => toggleMultiselectOption(field.key, opt)}
+                              className={`rounded-full px-3 py-1.5 text-xs font-medium transition active:scale-[0.98] ${
+                                active ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="relative">
-                      <input
-                        type={field.type === "number" ? "number" : "text"}
-                        inputMode={field.type === "number" ? "numeric" : undefined}
-                        value={attributes[field.key] ?? ""}
-                        onChange={(e) =>
-                          setAttributes((prev) => ({ ...prev, [field.key]: e.target.value }))
-                        }
-                        className={field.unit ? "input pr-12" : "input"}
-                        placeholder={field.placeholder}
-                      />
-                      {field.unit && (
-                        <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-hint">
-                          {field.unit}
-                        </span>
-                      )}
+                  );
+                }
+                if (field.type === "range") {
+                  const [rangeMin, rangeMax] = (attributes[field.key] ?? "-").split("-");
+                  const setRange = (min: string, max: string) =>
+                    setAttributes((prev) => ({ ...prev, [field.key]: min || max ? `${min}-${max}` : "" }));
+                  return (
+                    <div key={field.key} className="col-span-2 flex flex-col gap-1">
+                      <span className="text-xs text-hint">
+                        {field.label}
+                        {field.unit ? ` (${field.unit})` : ""}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          value={rangeMin ?? ""}
+                          onChange={(e) => setRange(e.target.value, rangeMax ?? "")}
+                          className="input"
+                          placeholder={t("create.rangeMin")}
+                        />
+                        <span className="shrink-0 text-xs text-hint">{t("create.rangeTo")}</span>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          value={rangeMax ?? ""}
+                          onChange={(e) => setRange(rangeMin ?? "", e.target.value)}
+                          className="input"
+                          placeholder={t("create.rangeMax")}
+                        />
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                  );
+                }
+                return (
+                  <div key={field.key} className={fullWidth ? "col-span-2 flex flex-col gap-1" : "flex flex-col gap-1"}>
+                    <span className="text-xs text-hint">{field.label}</span>
+                    {field.type === "select" ? (
+                      <div className="relative">
+                        <select
+                          value={attributes[field.key] ?? ""}
+                          onChange={(e) => setAttributes((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                          className="input appearance-none pr-9"
+                        >
+                          <option value="">—</option>
+                          {field.options?.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <input
+                          type={field.type === "number" || field.type === "decimal" ? "number" : "text"}
+                          inputMode={field.type === "number" ? "numeric" : field.type === "decimal" ? "decimal" : undefined}
+                          value={attributes[field.key] ?? ""}
+                          onChange={(e) => setAttributes((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                          className={field.unit ? "input pr-12" : "input"}
+                          placeholder={field.placeholder}
+                        />
+                        {field.unit && (
+                          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-hint">
+                            {field.unit}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </>
         )}
@@ -493,6 +615,53 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
       <div className="card flex flex-col gap-3">
         <SectionHeader icon={Phone} title={t("create.phone")} />
         <PhoneInput value={phone} onChange={setPhone} />
+
+        <div className="h-px bg-divider" />
+
+        <div className="flex flex-col gap-1.5">
+          <span className="flex items-center gap-1.5 text-sm text-ink">
+            <Store className="h-4 w-4 text-hint" />
+            {t("create.sellerType")}
+          </span>
+          <div className="flex gap-1 rounded-full bg-surface-secondary p-0.5">
+            <button
+              type="button"
+              onClick={() => setSellerType("PRIVATE")}
+              className={`flex-1 rounded-full py-1.5 text-xs font-medium transition ${
+                sellerType === "PRIVATE" ? "bg-brand text-brand-contrast" : "text-hint"
+              }`}
+            >
+              {t("create.sellerTypePrivate")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSellerType("BUSINESS")}
+              className={`flex-1 rounded-full py-1.5 text-xs font-medium transition ${
+                sellerType === "BUSINESS" ? "bg-brand text-brand-contrast" : "text-hint"
+              }`}
+            >
+              {t("create.sellerTypeBusiness")}
+            </button>
+          </div>
+        </div>
+
+        <label className="flex cursor-pointer items-center justify-between rounded-xl bg-surface-secondary px-3.5 py-2.5">
+          <span className="flex items-center gap-1.5 text-sm text-ink">
+            <MessageCircle className="h-4 w-4 text-hint" />
+            {t("create.contactTelegram")}
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={contactTelegram}
+            onClick={() => setContactTelegram((v) => !v)}
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${contactTelegram ? "bg-brand" : "bg-divider"}`}
+          >
+            <span
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-soft transition-all ${contactTelegram ? "left-[22px]" : "left-0.5"}`}
+            />
+          </button>
+        </label>
       </div>
 
       <div className="card flex flex-col gap-3">

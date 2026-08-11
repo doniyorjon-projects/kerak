@@ -5,6 +5,16 @@ import { FeedSort } from "../listings.service";
 
 const SORT_VALUES: FeedSort[] = ["distance", "newest", "price_asc", "price_desc"];
 
+function parseAttributesParam(value: unknown): Record<string, string> | undefined {
+  if (typeof value !== "string") return undefined;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export class FindFeedDto {
   @IsOptional()
   @IsString()
@@ -78,16 +88,22 @@ export class FindFeedDto {
   hasDelivery?: boolean;
 
   @IsOptional()
-  @Transform(({ value }) => {
-    if (typeof value !== "string") return undefined;
-    try {
-      const parsed = JSON.parse(value);
-      return parsed && typeof parsed === "object" ? parsed : undefined;
-    } catch {
-      return undefined;
-    }
-  })
+  @Transform(({ value }) => parseAttributesParam(value))
   attributes?: Record<string, string>;
+
+  /** Multiselect - qiymat massiv ichida bormi (masalan {"amenities":"Lift"}). */
+  @IsOptional()
+  @Transform(({ value }) => parseAttributesParam(value))
+  attributesAny?: Record<string, string>;
+
+  /** Number/decimal maydonlar uchun oraliq filtri. */
+  @IsOptional()
+  @Transform(({ value }) => parseAttributesParam(value))
+  attributesMin?: Record<string, string>;
+
+  @IsOptional()
+  @Transform(({ value }) => parseAttributesParam(value))
+  attributesMax?: Record<string, string>;
 
   @IsOptional()
   @Type(() => Number)

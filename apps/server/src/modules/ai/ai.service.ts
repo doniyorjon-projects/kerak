@@ -80,7 +80,7 @@ export class AiService {
     if (!apiKey) return null;
 
     const leafCategories = await this.prisma.category.findMany({
-      where: { parentId: { not: null } },
+      where: { children: { none: {} } },
       select: { id: true, nameUz: true },
     });
     if (leafCategories.length === 0) return null;

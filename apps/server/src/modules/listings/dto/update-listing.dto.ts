@@ -13,7 +13,7 @@ import {
   MaxLength,
   MinLength,
 } from "class-validator";
-import { ListingCondition } from "@prisma/client";
+import { ListingCondition, SellerType } from "@prisma/client";
 
 export const SELLER_SETTABLE_STATUSES = ["ACTIVE", "PAUSED", "SOLD"] as const;
 
@@ -45,7 +45,7 @@ export class UpdateListingDto {
 
   @IsOptional()
   @IsObject()
-  attributes?: Record<string, string>;
+  attributes?: Record<string, string | number | boolean | string[]>;
 
   @IsOptional()
   @Type(() => Number)
@@ -72,6 +72,14 @@ export class UpdateListingDto {
   @IsOptional()
   @IsBoolean()
   hasDelivery?: boolean;
+
+  @IsOptional()
+  @IsEnum(SellerType)
+  sellerType?: SellerType;
+
+  @IsOptional()
+  @IsBoolean()
+  contactTelegram?: boolean;
 
   @IsOptional()
   @IsArray()

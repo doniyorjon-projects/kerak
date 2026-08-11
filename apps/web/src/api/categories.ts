@@ -6,7 +6,9 @@ export function fetchCategories() {
 }
 
 export function createCategory(data: {
+  id: string;
   nameUz: string;
+  nameRu?: string;
   type: CategoryType;
   icon?: string;
   parentId?: string;
@@ -17,7 +19,7 @@ export function createCategory(data: {
 
 export function updateCategory(
   id: string,
-  data: Partial<{ nameUz: string; type: CategoryType; icon: string; sortOrder: number }>,
+  data: Partial<{ nameUz: string; nameRu: string; type: CategoryType; icon: string; parentId: string; sortOrder: number }>,
 ) {
   return api.patch<CategoryDto>(`/admin/categories/${id}`, data);
 }

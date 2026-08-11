@@ -30,7 +30,7 @@ export function Home() {
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
   const hasLocation = me?.lat != null && me?.lng != null;
-  const leafCategories = (categories ?? []).filter((c) => c.parentId);
+  const rootCategories = (categories ?? []).filter((c) => !c.parentId).sort((a, b) => a.sortOrder - b.sortOrder);
 
   const [sort, setSort] = useState<FeedSort>("newest");
   const [radiusKm, setRadiusKm] = useState(20);
@@ -218,10 +218,10 @@ export function Home() {
         <>
           <BannerCarousel />
 
-          {leafCategories.length > 0 && (
+          {rootCategories.length > 0 && (
             <section className="flex flex-col gap-2">
               <h2 className="section-title">{t("home.categoriesTitle")}</h2>
-              <CategoryScroller categories={leafCategories} />
+              <CategoryScroller categories={rootCategories} />
             </section>
           )}
 

@@ -20,17 +20,51 @@ export class CategoriesService {
   }
 
   async create(dto: CreateCategoryDto) {
+    let level = 1;
     if (dto.parentId) {
       const parent = await this.prisma.category.findUnique({ where: { id: dto.parentId } });
       if (!parent) throw new NotFoundException("Ota toifa topilmadi");
+      level = parent.level + 1;
     }
-    return this.prisma.category.create({ data: dto });
+    const existing = await this.prisma.category.findUnique({ where: { id: dto.id } });
+    if (existing) throw new BadRequestException("Shu id bilan toifa allaqachon mavjud");
+    return this.prisma.category.create({ data: { ...dto, level } });
   }
 
   async update(id: string, dto: UpdateCategoryDto) {
     const category = await this.prisma.category.findUnique({ where: { id } });
     if (!category) throw new NotFoundException("Toifa topilmadi");
-    return this.prisma.category.update({ where: { id }, data: dto });
+
+    let level: number | undefined;
+    if (dto.parentId !== undefined && dto.parentId !== category.parentId) {
+      if (dto.parentId === id) throw new BadRequestException("Toifa o'zining ota toifasi bo'la olmaydi");
+      if (dto.parentId) {
+        const parent = await this.prisma.category.findUnique({ where: { id: dto.parentId } });
+        if (!parent) throw new NotFoundException("Ota toifa topilmadi");
+        level = parent.level + 1;
+      } else {
+        level = 1;
+      }
+    }
+
+    const updated = await this.prisma.category.update({
+      where: { id },
+      data: level !== undefined ? { ...dto, level } : dto,
+    });
+
+    if (level !== undefined) {
+      await this.updateDescendantLevels(id, level);
+    }
+    return updated;
+  }
+
+  private async updateDescendantLevels(parentId: string, parentLevel: number) {
+    const children = await this.prisma.category.findMany({ where: { parentId }, select: { id: true } });
+    for (const child of children) {
+      const childLevel = parentLevel + 1;
+      await this.prisma.category.update({ where: { id: child.id }, data: { level: childLevel } });
+      await this.updateDescendantLevels(child.id, childLevel);
+    }
   }
 
   async remove(id: string) {

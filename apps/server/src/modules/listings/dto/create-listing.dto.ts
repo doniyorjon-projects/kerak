@@ -12,7 +12,7 @@ import {
   MaxLength,
   MinLength,
 } from "class-validator";
-import { ListingCondition } from "@prisma/client";
+import { ListingCondition, SellerType } from "@prisma/client";
 
 export class CreateListingDto {
   @IsString()
@@ -35,7 +35,7 @@ export class CreateListingDto {
 
   @IsOptional()
   @IsObject()
-  attributes?: Record<string, string>;
+  attributes?: Record<string, string | number | boolean | string[]>;
 
   @IsOptional()
   @Type(() => Number)
@@ -62,6 +62,14 @@ export class CreateListingDto {
   @IsOptional()
   @IsBoolean()
   hasDelivery?: boolean;
+
+  @IsOptional()
+  @IsEnum(SellerType)
+  sellerType?: SellerType;
+
+  @IsOptional()
+  @IsBoolean()
+  contactTelegram?: boolean;
 
   @IsArray()
   @ArrayMaxSize(8)

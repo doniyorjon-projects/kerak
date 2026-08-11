@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, Gift, SlidersHorizontal, Truck, Zap, X } from "lucide-react";
-import { CATEGORY_ATTRIBUTES } from "@kerak/shared";
+import { resolveCategoryFields } from "@kerak/shared";
 import type { CategoryDto, ListingCondition } from "@kerak/shared";
 import { REGIONS } from "../data/uzbekistanRegions";
 import { CategoryPicker } from "./CategoryPicker";
@@ -18,6 +18,9 @@ export interface FeedFilterValue {
   isUrgent?: boolean;
   hasDelivery?: boolean;
   attributes?: Record<string, string>;
+  attributesAny?: Record<string, string>;
+  attributesMin?: Record<string, string>;
+  attributesMax?: Record<string, string>;
 }
 
 interface FeedFiltersProps {
@@ -45,22 +48,28 @@ export function FeedFilters({ value, onChange, categories }: FeedFiltersProps) {
   }, [open]);
 
   const region = REGIONS.find((r) => r.id === draft.regionId);
-  const selectedCategory = categories?.find((c) => c.id === draft.categoryId);
-  const attributeFilterFields = selectedCategory
-    ? (CATEGORY_ATTRIBUTES[selectedCategory.nameUz] ?? []).filter((f) => f.type === "select")
-    : [];
+  const categoriesById = useMemo(() => new Map((categories ?? []).map((c) => [c.id, c] as const)), [categories]);
+  const attributeFilterFields = useMemo(
+    () => resolveCategoryFields(draft.categoryId, categoriesById).filter((f) => f.filterable),
+    [draft.categoryId, categoriesById],
+  );
 
-  const activeCount = [
-    value.categoryId,
-    value.regionId,
-    value.districtId,
-    value.minPrice,
-    value.maxPrice,
-    value.condition,
-    value.isFree ? true : undefined,
-    value.isUrgent ? true : undefined,
-    value.hasDelivery ? true : undefined,
-  ].filter((v) => v !== undefined).length + Object.keys(value.attributes ?? {}).length;
+  const activeCount =
+    [
+      value.categoryId,
+      value.regionId,
+      value.districtId,
+      value.minPrice,
+      value.maxPrice,
+      value.condition,
+      value.isFree ? true : undefined,
+      value.isUrgent ? true : undefined,
+      value.hasDelivery ? true : undefined,
+    ].filter((v) => v !== undefined).length +
+    Object.keys(value.attributes ?? {}).length +
+    Object.keys(value.attributesAny ?? {}).length +
+    Object.keys(value.attributesMin ?? {}).length +
+    Object.keys(value.attributesMax ?? {}).length;
 
   const handleApply = () => {
     onChange(draft);
@@ -82,8 +91,33 @@ export function FeedFilters({ value, onChange, categories }: FeedFiltersProps) {
     });
   };
 
+  const setAttributeAny = (key: string, val: string) => {
+    setDraft((d) => {
+      const next = { ...(d.attributesAny ?? {}) };
+      if (val && next[key] !== val) next[key] = val;
+      else delete next[key];
+      return { ...d, attributesAny: Object.keys(next).length > 0 ? next : undefined };
+    });
+  };
+
+  const setAttributeRange = (mapKey: "attributesMin" | "attributesMax", key: string, val: string) => {
+    setDraft((d) => {
+      const next = { ...(d[mapKey] ?? {}) };
+      if (val) next[key] = val;
+      else delete next[key];
+      return { ...d, [mapKey]: Object.keys(next).length > 0 ? next : undefined };
+    });
+  };
+
   const handleCategoryChange = (id: string) => {
-    setDraft((d) => ({ ...d, categoryId: id || undefined, attributes: undefined }));
+    setDraft((d) => ({
+      ...d,
+      categoryId: id || undefined,
+      attributes: undefined,
+      attributesAny: undefined,
+      attributesMin: undefined,
+      attributesMax: undefined,
+    }));
   };
 
   return (
@@ -136,26 +170,96 @@ export function FeedFilters({ value, onChange, categories }: FeedFiltersProps) {
                 </div>
               )}
 
-              {attributeFilterFields.map((field) => (
-                <div key={field.key} className="flex flex-col gap-1.5">
-                  <span className="text-sm font-medium text-ink">{field.label}</span>
-                  <div className="relative">
-                    <select
-                      value={draft.attributes?.[field.key] ?? ""}
-                      onChange={(e) => setAttribute(field.key, e.target.value)}
-                      className="input appearance-none pr-9"
+              {attributeFilterFields.map((field) => {
+                if (field.type === "boolean") {
+                  const active = draft.attributes?.[field.key] === "true";
+                  return (
+                    <button
+                      key={field.key}
+                      type="button"
+                      onClick={() => setAttribute(field.key, active ? "" : "true")}
+                      className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium transition ${
+                        active ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"
+                      }`}
                     >
-                      <option value="">{t("filters.any")}</option>
-                      {field.options?.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
+                      {field.label}
+                    </button>
+                  );
+                }
+                if (field.type === "multiselect") {
+                  return (
+                    <div key={field.key} className="flex flex-col gap-1.5">
+                      <span className="text-sm font-medium text-ink">{field.label}</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {field.options?.map((opt) => {
+                          const active = draft.attributesAny?.[field.key] === opt;
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => setAttributeAny(field.key, active ? "" : opt)}
+                              className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                                active ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+                if (field.type === "number" || field.type === "decimal") {
+                  return (
+                    <div key={field.key} className="flex flex-col gap-1.5">
+                      <span className="text-sm font-medium text-ink">
+                        {field.label}
+                        {field.unit ? ` (${field.unit})` : ""}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          placeholder={t("filters.priceFrom")}
+                          value={draft.attributesMin?.[field.key] ?? ""}
+                          onChange={(e) => setAttributeRange("attributesMin", field.key, e.target.value)}
+                          className="input"
+                        />
+                        <span className="text-hint">—</span>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          placeholder={t("filters.priceTo")}
+                          value={draft.attributesMax?.[field.key] ?? ""}
+                          onChange={(e) => setAttributeRange("attributesMax", field.key, e.target.value)}
+                          className="input"
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={field.key} className="flex flex-col gap-1.5">
+                    <span className="text-sm font-medium text-ink">{field.label}</span>
+                    <div className="relative">
+                      <select
+                        value={draft.attributes?.[field.key] ?? ""}
+                        onChange={(e) => setAttribute(field.key, e.target.value)}
+                        className="input appearance-none pr-9"
+                      >
+                        <option value="">{t("filters.any")}</option>
+                        {field.options?.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               <div className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium text-ink">{t("filters.region")}</span>

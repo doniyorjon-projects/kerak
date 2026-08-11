@@ -8,6 +8,7 @@ import {
   Banknote,
   Check,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   DollarSign,
   Flag,
@@ -36,7 +37,7 @@ import {
   X,
 } from "lucide-react";
 import { CategoryType, UNLIMITED_LISTINGS } from "@kerak/shared";
-import type { PricingConfigDto } from "@kerak/shared";
+import type { CategoryDto, PricingConfigDto } from "@kerak/shared";
 import {
   addAdmin,
   approveListing,
@@ -346,35 +347,185 @@ function BannersTab() {
   );
 }
 
+interface CategoryNodeProps {
+  category: CategoryDto;
+  depth: number;
+  childrenOf: (id: string) => CategoryDto[];
+  expanded: Set<string>;
+  toggleExpanded: (id: string) => void;
+  editingId: string | null;
+  editName: string;
+  editNameRu: string;
+  editIcon: string;
+  setEditName: (v: string) => void;
+  setEditNameRu: (v: string) => void;
+  setEditIcon: (v: string) => void;
+  startEdit: (c: CategoryDto) => void;
+  cancelEdit: () => void;
+  saveEdit: (id: string) => void;
+  deleteCategory: (id: string) => void;
+}
+
+function CategoryNode({
+  category,
+  depth,
+  childrenOf,
+  expanded,
+  toggleExpanded,
+  editingId,
+  editName,
+  editNameRu,
+  editIcon,
+  setEditName,
+  setEditNameRu,
+  setEditIcon,
+  startEdit,
+  cancelEdit,
+  saveEdit,
+  deleteCategory,
+}: CategoryNodeProps) {
+  const { t } = useTranslation();
+  const kids = childrenOf(category.id);
+  const isOpen = expanded.has(category.id);
+  const isRoot = category.level === 1;
+  const isEditing = editingId === category.id;
+
+  return (
+    <div className="flex flex-col gap-1.5" style={{ paddingLeft: depth > 0 ? 14 : 0 }}>
+      {isEditing ? (
+        <div className="flex items-center gap-1.5">
+          {isRoot && (
+            <input value={editIcon} onChange={(e) => setEditIcon(e.target.value)} className="input w-14 px-2 text-center" />
+          )}
+          <div className="flex flex-1 flex-col gap-1">
+            <input value={editName} onChange={(e) => setEditName(e.target.value)} className="input" placeholder={t("admin.categoryName")} />
+            <input value={editNameRu} onChange={(e) => setEditNameRu(e.target.value)} className="input" placeholder={t("admin.categoryNameRu")} />
+          </div>
+          <button
+            onClick={() => saveEdit(category.id)}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success/10 text-success"
+          >
+            <Check className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={cancelEdit}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-hint"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ) : (
+        <div className={`flex items-center justify-between gap-2 ${isRoot ? "card" : ""}`}>
+          <button
+            type="button"
+            onClick={() => kids.length > 0 && toggleExpanded(category.id)}
+            className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+          >
+            {kids.length > 0 ? (
+              isOpen ? (
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-hint" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-hint" />
+              )
+            ) : (
+              <span className="w-3.5 shrink-0" />
+            )}
+            {isRoot && category.icon && <span className="shrink-0 text-lg">{category.icon}</span>}
+            <span className={`truncate ${isRoot ? "font-semibold text-ink" : "text-sm text-ink"}`}>{category.nameUz}</span>
+            <span className="shrink-0 text-xs text-hint">({category.listingsCount})</span>
+          </button>
+          <div className="flex shrink-0 gap-1">
+            <button
+              onClick={() => startEdit(category)}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-hint"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+            <button
+              onClick={() => deleteCategory(category.id)}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+      )}
+      {isOpen && kids.length > 0 && (
+        <div className="flex flex-col gap-1.5 border-l-2 border-divider pl-2">
+          {kids.map((c) => (
+            <CategoryNode
+              key={c.id}
+              category={c}
+              depth={depth + 1}
+              childrenOf={childrenOf}
+              expanded={expanded}
+              toggleExpanded={toggleExpanded}
+              editingId={editingId}
+              editName={editName}
+              editNameRu={editNameRu}
+              editIcon={editIcon}
+              setEditName={setEditName}
+              setEditNameRu={setEditNameRu}
+              setEditIcon={setEditIcon}
+              startEdit={startEdit}
+              cancelEdit={cancelEdit}
+              saveEdit={saveEdit}
+              deleteCategory={deleteCategory}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CategoriesTab() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: categories, isLoading } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
+  const [id, setId] = useState("");
   const [parentId, setParentId] = useState("");
   const [nameUz, setNameUz] = useState("");
+  const [nameRu, setNameRu] = useState("");
   const [icon, setIcon] = useState("");
   const [type, setType] = useState<CategoryType>(CategoryType.SERVICE);
   const [formError, setFormError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [editNameRu, setEditNameRu] = useState("");
   const [editIcon, setEditIcon] = useState("");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-  const roots = (categories ?? []).filter((c) => !c.parentId);
-  const childrenOf = (id: string) => (categories ?? []).filter((c) => c.parentId === id);
+  const roots = (categories ?? []).filter((c) => !c.parentId).sort((a, b) => a.sortOrder - b.sortOrder);
+  const childrenOf = (parentId: string) =>
+    (categories ?? []).filter((c) => c.parentId === parentId).sort((a, b) => a.sortOrder - b.sortOrder);
+  const categoriesById = new Map((categories ?? []).map((c) => [c.id, c] as const));
+
+  const toggleExpanded = (catId: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(catId)) next.delete(catId);
+      else next.add(catId);
+      return next;
+    });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["categories"] });
 
   const createMutation = useMutation({
     mutationFn: () =>
       createCategory({
+        id,
         nameUz,
-        type: parentId ? (roots.find((r) => r.id === parentId)?.type ?? type) : type,
-        icon: icon || undefined,
+        nameRu: nameRu || undefined,
+        type: parentId ? (categoriesById.get(parentId)?.type ?? type) : type,
+        icon: !parentId && icon ? icon : undefined,
         parentId: parentId || undefined,
       }),
     onSuccess: () => {
+      setId("");
       setNameUz("");
+      setNameRu("");
       setIcon("");
       invalidate();
     },
@@ -382,7 +533,8 @@ function CategoriesTab() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (id: string) => updateCategory(id, { nameUz: editName, icon: editIcon || undefined }),
+    mutationFn: (catId: string) =>
+      updateCategory(catId, { nameUz: editName, nameRu: editNameRu || undefined, icon: editIcon || undefined }),
     onSuccess: () => {
       setEditingId(null);
       invalidate();
@@ -394,10 +546,11 @@ function CategoriesTab() {
     onSuccess: invalidate,
   });
 
-  const startEdit = (id: string, nameUz: string, icon: string | null) => {
-    setEditingId(id);
-    setEditName(nameUz);
-    setEditIcon(icon ?? "");
+  const startEdit = (c: CategoryDto) => {
+    setEditingId(c.id);
+    setEditName(c.nameUz);
+    setEditNameRu(c.nameRu ?? "");
+    setEditIcon(c.icon ?? "");
   };
 
   return (
@@ -411,13 +564,22 @@ function CategoriesTab() {
         className="card flex flex-col gap-3"
       >
         <span className="section-title">{t("admin.addCategory")}</span>
+        <input
+          value={id}
+          onChange={(e) => setId(e.target.value.toLowerCase())}
+          placeholder={t("admin.categoryId")}
+          className="input"
+        />
         <select value={parentId} onChange={(e) => setParentId(e.target.value)} className="input">
           <option value="">{t("admin.newRootCategory")}</option>
-          {roots.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.icon} {r.nameUz}
-            </option>
-          ))}
+          {(categories ?? [])
+            .slice()
+            .sort((a, b) => a.nameUz.localeCompare(b.nameUz))
+            .map((c) => (
+              <option key={c.id} value={c.id}>
+                {"—".repeat(c.level - 1)} {c.nameUz}
+              </option>
+            ))}
         </select>
         {!parentId && (
           <div className="flex overflow-hidden rounded-full border border-divider bg-app p-0.5">
@@ -443,31 +605,39 @@ function CategoriesTab() {
           placeholder={t("admin.categoryName")}
           className="input"
         />
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-hint">{t("admin.categoryIcon")}</span>
-          <div className="grid grid-cols-8 gap-1.5 rounded-xl bg-app p-2">
-            {CATEGORY_ICONS.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                onClick={() => setIcon(emoji)}
-                className={`flex h-8 w-8 items-center justify-center rounded-lg text-lg transition active:scale-90 ${icon === emoji ? "bg-brand/20 ring-2 ring-brand" : "bg-surface"}`}
-              >
-                {emoji}
-              </button>
-            ))}
+        <input
+          value={nameRu}
+          onChange={(e) => setNameRu(e.target.value)}
+          placeholder={t("admin.categoryNameRu")}
+          className="input"
+        />
+        {!parentId && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-hint">{t("admin.categoryIcon")}</span>
+            <div className="grid grid-cols-8 gap-1.5 rounded-xl bg-app p-2">
+              {CATEGORY_ICONS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => setIcon(emoji)}
+                  className={`flex h-8 w-8 items-center justify-center rounded-lg text-lg transition active:scale-90 ${icon === emoji ? "bg-brand/20 ring-2 ring-brand" : "bg-surface"}`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+            <input
+              value={icon}
+              onChange={(e) => setIcon(e.target.value)}
+              placeholder={t("admin.categoryIconCustom")}
+              className="input"
+            />
           </div>
-          <input
-            value={icon}
-            onChange={(e) => setIcon(e.target.value)}
-            placeholder={t("admin.categoryIconCustom")}
-            className="input"
-          />
-        </div>
+        )}
         {formError && <span className="text-xs text-destructive">{formError}</span>}
         <button
           type="submit"
-          disabled={nameUz.trim().length < 2 || createMutation.isPending}
+          disabled={id.trim().length < 2 || nameUz.trim().length < 2 || createMutation.isPending}
           className="btn-primary"
         >
           <Plus className="h-4 w-4" />
@@ -477,71 +647,27 @@ function CategoriesTab() {
 
       {isLoading && <Spinner label={t("loading")} />}
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         {roots.map((root) => (
-          <div key={root.id} className="card flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-semibold text-ink">
-                {root.icon} {root.nameUz}
-              </span>
-              <button
-                onClick={() => deleteMutation.mutate(root.id)}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <div className="flex flex-col gap-1.5 border-l-2 border-divider pl-3">
-              {childrenOf(root.id).map((c) =>
-                editingId === c.id ? (
-                  <div key={c.id} className="flex items-center gap-1.5">
-                    <input
-                      value={editIcon}
-                      onChange={(e) => setEditIcon(e.target.value)}
-                      className="input w-14 px-2 text-center"
-                    />
-                    <input
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="input flex-1"
-                    />
-                    <button
-                      onClick={() => updateMutation.mutate(c.id)}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success/10 text-success"
-                    >
-                      <Check className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setEditingId(null)}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-hint"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <div key={c.id} className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-ink">
-                      {c.icon} {c.nameUz}
-                    </span>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => startEdit(c.id, c.nameUz, c.icon)}
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-hint"
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </button>
-                      <button
-                        onClick={() => deleteMutation.mutate(c.id)}
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  </div>
-                ),
-              )}
-            </div>
-          </div>
+          <CategoryNode
+            key={root.id}
+            category={root}
+            depth={0}
+            childrenOf={childrenOf}
+            expanded={expanded}
+            toggleExpanded={toggleExpanded}
+            editingId={editingId}
+            editName={editName}
+            editNameRu={editNameRu}
+            editIcon={editIcon}
+            setEditName={setEditName}
+            setEditNameRu={setEditNameRu}
+            setEditIcon={setEditIcon}
+            startEdit={startEdit}
+            cancelEdit={() => setEditingId(null)}
+            saveEdit={(catId) => updateMutation.mutate(catId)}
+            deleteCategory={(catId) => deleteMutation.mutate(catId)}
+          />
         ))}
       </div>
       {deleteMutation.error && (

@@ -12,6 +12,11 @@ enum CategoryType {
   SERVICE
 }
 
+enum SellerType {
+  PRIVATE
+  BUSINESS
+}
+
 enum ListingStatus {
   PENDING
   ACTIVE
@@ -128,13 +133,15 @@ model User {
 }
 
 model Category {
-  id        String       @id @default(cuid())
+  id        String       @id
   parentId  String?
   parent    Category?    @relation("CategoryTree", fields: [parentId], references: [id])
   children  Category[]   @relation("CategoryTree")
   nameUz    String
+  nameRu    String?
   type      CategoryType
   icon      String?
+  level     Int          @default(1)
   sortOrder Int          @default(0)
 
   listings Listing[]
@@ -158,6 +165,8 @@ model Listing {
   isFree          Boolean           @default(false)
   isUrgent        Boolean           @default(false)
   hasDelivery     Boolean           @default(false)
+  sellerType      SellerType?
+  contactTelegram Boolean           @default(true)
   photos          String[]
   addressText     String?
   regionId        Int?

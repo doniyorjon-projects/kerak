@@ -24,10 +24,18 @@ export interface CategoryDto {
   id: string;
   parentId: string | null;
   nameUz: string;
+  nameRu: string | null;
   type: CategoryType;
   icon: string | null;
+  level: number;
+  sortOrder: number;
   listingsCount: number;
 }
+
+export type SellerType = "PRIVATE" | "BUSINESS";
+
+/** Toifaga xos xususiyat qiymati - turiga qarab string/son/mantiqiy/massiv bo'lishi mumkin. */
+export type AttributeValue = string | number | boolean | string[];
 
 export interface UserSummaryDto {
   id: string;
@@ -55,7 +63,7 @@ export interface ListingDto {
   title: string;
   description: string;
   brand?: string | null;
-  attributes?: Record<string, string> | null;
+  attributes?: Record<string, AttributeValue> | null;
   price: number | null;
   previousPrice?: number | null;
   priceUsd?: number | null;
@@ -63,6 +71,8 @@ export interface ListingDto {
   isFree: boolean;
   isUrgent: boolean;
   hasDelivery: boolean;
+  sellerType?: SellerType | null;
+  contactTelegram: boolean;
   photos: string[];
   addressText: string | null;
   regionId: number | null;
@@ -158,8 +168,13 @@ export interface FeedQuery {
   isFree?: boolean;
   isUrgent?: boolean;
   hasDelivery?: boolean;
-  /** Toifaga xos xususiyatlar bo'yicha filtr (masalan { rooms: "3" }). Amalda JSON satr sifatida yuboriladi. */
+  /** Aniq moslik (select/text/boolean) - masalan { rooms: "3" }. */
   attributes?: Record<string, string>;
+  /** Multiselect - qiymat massiv ichida bormi (masalan { amenities: "Lift" }). */
+  attributesAny?: Record<string, string>;
+  /** Number/decimal maydonlar uchun oraliq filtri (masalan { mileage: "10000" }). */
+  attributesMin?: Record<string, string>;
+  attributesMax?: Record<string, string>;
   limit?: number;
   offset?: number;
 }
@@ -201,13 +216,15 @@ export interface CreateListingInput {
   title: string;
   description: string;
   brand?: string | null;
-  attributes?: Record<string, string> | null;
+  attributes?: Record<string, AttributeValue> | null;
   price: number | null;
   priceUsd?: number | null;
   isNegotiable: boolean;
   isFree?: boolean;
   isUrgent?: boolean;
   hasDelivery?: boolean;
+  sellerType?: SellerType | null;
+  contactTelegram?: boolean;
   photos: string[];
   addressText: string | null;
   regionId: number | null;

@@ -31,6 +31,9 @@ export interface FindFeedOptions {
   isUrgent?: boolean;
   hasDelivery?: boolean;
   attributes?: Record<string, string>;
+  attributesAny?: Record<string, string>;
+  attributesMin?: Record<string, string>;
+  attributesMax?: Record<string, string>;
   limit?: number;
   offset?: number;
 }
@@ -99,6 +102,19 @@ export class ListingsService {
     return listing;
   }
 
+  /** Berilgan kategoriya id'si + uning barcha bola (istalgan chuqurlikdagi) id'larini qaytaradi. */
+  private async resolveCategoryDescendantIds(categoryId: string): Promise<string[]> {
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+      WITH RECURSIVE descendants AS (
+        SELECT id FROM "Category" WHERE id = ${categoryId}
+        UNION ALL
+        SELECT c.id FROM "Category" c JOIN descendants d ON c."parentId" = d.id
+      )
+      SELECT id FROM descendants
+    `;
+    return rows.map((r) => r.id);
+  }
+
   async findFeed(options: FindFeedOptions) {
     const {
       categoryId,
@@ -117,10 +133,19 @@ export class ListingsService {
       isUrgent,
       hasDelivery,
       attributes,
+      attributesAny,
+      attributesMin,
+      attributesMax,
       limit,
       offset,
     } = options;
     const hasLocation = lat !== undefined && lng !== undefined;
+
+    // Kategoriya endi 3 darajali - agar berilgan id "leaf" bo'lmasa (ya'ni
+    // asosiy yoki subkategoriya bo'lsa), o'sha kategoriyaga bevosita e'lon
+    // bog'lanmagan bo'ladi. Shuning uchun berilgan id + uning barcha bola
+    // (descendant) id'lari bo'yicha filtrlaymiz.
+    const categoryIds = categoryId ? await this.resolveCategoryDescendantIds(categoryId) : undefined;
 
     if (!hasLocation) {
       const orderBy: Prisma.ListingOrderByWithRelationInput[] =
@@ -131,9 +156,25 @@ export class ListingsService {
             : [{ bumpedAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }];
 
       const now = new Date();
+
+      const attributeConditions: Prisma.ListingWhereInput[] = [
+        ...Object.entries(attributes ?? {}).map(
+          ([key, value]): Prisma.ListingWhereInput => ({ attributes: { path: [key], equals: value } }),
+        ),
+        ...Object.entries(attributesAny ?? {}).map(
+          ([key, value]): Prisma.ListingWhereInput => ({ attributes: { path: [key], array_contains: value } }),
+        ),
+        ...Object.entries(attributesMin ?? {})
+          .filter(([, value]) => Number.isFinite(Number(value)))
+          .map(([key, value]): Prisma.ListingWhereInput => ({ attributes: { path: [key], gte: Number(value) } })),
+        ...Object.entries(attributesMax ?? {})
+          .filter(([, value]) => Number.isFinite(Number(value)))
+          .map(([key, value]): Prisma.ListingWhereInput => ({ attributes: { path: [key], lte: Number(value) } })),
+      ];
+
       const baseWhere: Prisma.ListingWhereInput = {
         status: ListingStatus.ACTIVE,
-        ...(categoryId ? { categoryId } : {}),
+        ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
         ...(regionId ? { regionId } : {}),
         ...(districtId ? { districtId } : {}),
         ...(condition ? { condition } : {}),
@@ -151,13 +192,7 @@ export class ListingsService {
               ],
             }
           : {}),
-        ...(attributes && Object.keys(attributes).length > 0
-          ? {
-              AND: Object.entries(attributes).map(([key, value]) => ({
-                attributes: { path: [key], equals: value },
-              })),
-            }
-          : {}),
+        ...(attributeConditions.length > 0 ? { AND: attributeConditions } : {}),
       };
 
       if (boostedOnly) {
@@ -196,7 +231,7 @@ export class ListingsService {
       Prisma.sql`l.lat IS NOT NULL`,
       Prisma.sql`l.lng IS NOT NULL`,
     ];
-    if (categoryId) conditions.push(Prisma.sql`l."categoryId" = ${categoryId}`);
+    if (categoryIds) conditions.push(Prisma.sql`l."categoryId" = ANY(${categoryIds})`);
     if (regionId) conditions.push(Prisma.sql`l."regionId" = ${regionId}`);
     if (districtId) conditions.push(Prisma.sql`l."districtId" = ${districtId}`);
     if (condition) conditions.push(Prisma.sql`l.condition = ${condition}::"ListingCondition"`);
@@ -212,6 +247,23 @@ export class ListingsService {
     if (attributes) {
       for (const [key, value] of Object.entries(attributes)) {
         conditions.push(Prisma.sql`l.attributes ->> ${key} = ${value}`);
+      }
+    }
+    if (attributesAny) {
+      for (const [key, value] of Object.entries(attributesAny)) {
+        conditions.push(Prisma.sql`l.attributes -> ${key} @> to_jsonb(${value}::text)`);
+      }
+    }
+    if (attributesMin) {
+      for (const [key, value] of Object.entries(attributesMin)) {
+        const num = Number(value);
+        if (Number.isFinite(num)) conditions.push(Prisma.sql`(l.attributes ->> ${key})::numeric >= ${num}`);
+      }
+    }
+    if (attributesMax) {
+      for (const [key, value] of Object.entries(attributesMax)) {
+        const num = Number(value);
+        if (Number.isFinite(num)) conditions.push(Prisma.sql`(l.attributes ->> ${key})::numeric <= ${num}`);
       }
     }
     if (radiusKm) {
