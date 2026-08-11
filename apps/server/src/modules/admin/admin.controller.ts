@@ -26,6 +26,8 @@ import { RequestsService } from "../requests/requests.service";
 import { SetStarsRateDto } from "./dto/set-stars-rate.dto";
 import { SetTelegramChannelUrlDto } from "./dto/set-telegram-channel-url.dto";
 import { SetSupportUrlDto } from "./dto/set-support-url.dto";
+import { SetAnthropicApiKeyDto } from "./dto/set-anthropic-api-key.dto";
+import type { BotSettings } from "@prisma/client";
 import { BroadcastDto } from "./dto/broadcast.dto";
 import type { User } from "@prisma/client";
 import { NotificationType } from "@prisma/client";
@@ -46,35 +48,47 @@ export class AdminController {
     private readonly requestsService: RequestsService,
   ) {}
 
+  // anthropicApiKey hech qachon xom holda frontendga qaytarilmaydi (write-only) -
+  // faqat "o'rnatilganmi yo'qmi" degan bool sifatida.
+  private sanitizeSettings(settings: BotSettings) {
+    const { anthropicApiKey, ...rest } = settings;
+    return { ...rest, anthropicApiKeySet: Boolean(anthropicApiKey) };
+  }
+
   @Get("settings")
-  getSettings() {
-    return this.settingsService.get();
+  async getSettings() {
+    return this.sanitizeSettings(await this.settingsService.get());
   }
 
   @Patch("settings/channel")
-  setChannel(@Body() dto: SetChannelDto) {
-    return this.settingsService.updateChannel(dto.channelId ?? null);
+  async setChannel(@Body() dto: SetChannelDto) {
+    return this.sanitizeSettings(await this.settingsService.updateChannel(dto.channelId ?? null));
   }
 
   @Patch("settings/stars-rate")
-  setStarsRate(@Body() dto: SetStarsRateDto) {
-    return this.settingsService.updateStarsRate(dto.starsRate);
+  async setStarsRate(@Body() dto: SetStarsRateDto) {
+    return this.sanitizeSettings(await this.settingsService.updateStarsRate(dto.starsRate));
   }
 
   @Post("settings/usd-rate/refresh")
   async refreshUsdRate() {
     await this.settingsService.refreshUsdRateFromCbu();
-    return this.settingsService.get();
+    return this.sanitizeSettings(await this.settingsService.get());
   }
 
   @Patch("settings/telegram-channel-url")
-  setTelegramChannelUrl(@Body() dto: SetTelegramChannelUrlDto) {
-    return this.settingsService.updateTelegramChannelUrl(dto.telegramChannelUrl ?? null);
+  async setTelegramChannelUrl(@Body() dto: SetTelegramChannelUrlDto) {
+    return this.sanitizeSettings(await this.settingsService.updateTelegramChannelUrl(dto.telegramChannelUrl ?? null));
   }
 
   @Patch("settings/support-url")
-  setSupportUrl(@Body() dto: SetSupportUrlDto) {
-    return this.settingsService.updateSupportUrl(dto.supportUrl ?? null);
+  async setSupportUrl(@Body() dto: SetSupportUrlDto) {
+    return this.sanitizeSettings(await this.settingsService.updateSupportUrl(dto.supportUrl ?? null));
+  }
+
+  @Patch("settings/anthropic-api-key")
+  async setAnthropicApiKey(@Body() dto: SetAnthropicApiKeyDto) {
+    return this.sanitizeSettings(await this.settingsService.updateAnthropicApiKey(dto.apiKey));
   }
 
   @Get("requests")

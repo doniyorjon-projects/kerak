@@ -379,6 +379,7 @@ model BotSettings {
   usdRate            Int      @default(12700)
   telegramChannelUrl String?
   supportUrl         String?
+  anthropicApiKey    String?
   updatedAt          DateTime @updatedAt
 }
 

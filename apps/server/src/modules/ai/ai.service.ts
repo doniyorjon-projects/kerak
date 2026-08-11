@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { User } from "@prisma/client";
 import { UNLIMITED_LISTINGS } from "@kerak/shared";
 import { PrismaService } from "../../prisma/prisma.service";
+import { SettingsService } from "../settings/settings.service";
 
 const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
 
@@ -13,14 +14,22 @@ export class AiService {
   constructor(
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly settingsService: SettingsService,
   ) {}
+
+  // Admin panelda saqlangan kalit ustunroq - shunda deploy qilmasdan
+  // Renderdagi ANTHROPIC_API_KEY o'zgaruvchisiz ham yoqish/o'chirish mumkin.
+  private async getApiKey(): Promise<string | undefined> {
+    const dbKey = await this.settingsService.getAnthropicApiKey();
+    return dbKey || this.config.get<string>("ANTHROPIC_API_KEY");
+  }
 
   async generateDescription(user: User, title: string, categoryName?: string, draft?: string): Promise<string> {
     if (user.listingsLimit < UNLIMITED_LISTINGS) {
       throw new ForbiddenException("Bu funksiya faqat Biznes tarif egalari uchun mavjud");
     }
 
-    const apiKey = this.config.get<string>("ANTHROPIC_API_KEY");
+    const apiKey = await this.getApiKey();
     if (!apiKey) {
       this.logger.warn("ANTHROPIC_API_KEY sozlanmagan - AI tavsif xizmati ishlamaydi");
       throw new ServiceUnavailableException("AI xizmati hozircha sozlanmagan");
@@ -67,7 +76,7 @@ export class AiService {
   }
 
   async suggestCategory(title: string): Promise<string | null> {
-    const apiKey = this.config.get<string>("ANTHROPIC_API_KEY");
+    const apiKey = await this.getApiKey();
     if (!apiKey) return null;
 
     const leafCategories = await this.prisma.category.findMany({

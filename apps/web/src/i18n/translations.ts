@@ -405,6 +405,9 @@ export const translations = {
     "admin.telegramChannelUrlHint": "Profil sahifasida foydalanuvchilarga ko'rsatiladigan Telegram kanal havolasi.",
     "admin.supportUrlTitle": "Yordam havolasi",
     "admin.supportUrlHint": "Profil sahifasida foydalanuvchilarga ko'rsatiladigan yordam/qo'llab-quvvatlash havolasi.",
+    "admin.anthropicApiKeyTitle": "Anthropic API kaliti",
+    "admin.anthropicApiKeyHint": "AI bilan tavsif yozish va kategoriya tavsiyasi shu kalit orqali ishlaydi. Kiritilgandan so'ng darhol, deploy qilmasdan ishga tushadi.",
+    "admin.anthropicApiKeySet": "O'rnatilgan",
 
     // so'rovlar (talab qilaman)
     "request.pageTitle": "So'rovlar",
@@ -861,6 +864,9 @@ export const translations = {
     "admin.telegramChannelUrlHint": "Ссылка на Telegram канал, показываемая пользователям на странице профиля.",
     "admin.supportUrlTitle": "Ссылка поддержки",
     "admin.supportUrlHint": "Ссылка поддержки, показываемая пользователям на странице профиля.",
+    "admin.anthropicApiKeyTitle": "Ключ Anthropic API",
+    "admin.anthropicApiKeyHint": "Написание описаний и рекомендация категорий с ИИ работают через этот ключ. Заработает сразу после ввода, без деплоя.",
+    "admin.anthropicApiKeySet": "Установлен",
 
     // запросы (куплю/ищу)
     "request.pageTitle": "Запросы",

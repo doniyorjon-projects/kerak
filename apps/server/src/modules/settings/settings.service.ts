@@ -55,6 +55,19 @@ export class SettingsService implements OnModuleInit {
     });
   }
 
+  async updateAnthropicApiKey(apiKey: string) {
+    const settings = await this.get();
+    return this.prisma.botSettings.update({
+      where: { id: settings.id },
+      data: { anthropicApiKey: apiKey.trim() },
+    });
+  }
+
+  async getAnthropicApiKey(): Promise<string | null> {
+    const settings = await this.get();
+    return settings.anthropicApiKey;
+  }
+
   onModuleInit() {
     // Ataylab kutilmaydi (await qilinmaydi) - CBU sayti sekin yoki
     // ishlamay qolsa ham, server shu tufayli ishga tushmay qolmasligi kerak.

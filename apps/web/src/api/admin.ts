@@ -169,6 +169,10 @@ export function setSupportUrl(supportUrl: string | null) {
   return api.patch<BotSettingsDto>("/admin/settings/support-url", { supportUrl });
 }
 
+export function setAnthropicApiKey(apiKey: string) {
+  return api.patch<BotSettingsDto>("/admin/settings/anthropic-api-key", { apiKey });
+}
+
 export interface AdminRequest {
   id: string;
   title: string;

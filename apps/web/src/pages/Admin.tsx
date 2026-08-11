@@ -16,6 +16,7 @@ import {
   Inbox,
   Images,
   Infinity as InfinityIcon,
+  KeyRound,
   Link2,
   Megaphone,
   MessageSquareText,
@@ -56,6 +57,7 @@ import {
   removeAdmin,
   resolveReport,
   refreshUsdRate,
+  setAnthropicApiKey,
   setChannel,
   setListingsLimit,
   setStarsRate,
@@ -1139,6 +1141,7 @@ function SettingsTab() {
   const [starsRate, setStarsRateValue] = useState("");
   const [telegramChannelUrl, setTelegramChannelUrlValue] = useState("");
   const [supportUrl, setSupportUrlValue] = useState("");
+  const [anthropicApiKey, setAnthropicApiKeyValue] = useState("");
 
   useEffect(() => {
     if (settings) {
@@ -1172,6 +1175,14 @@ function SettingsTab() {
   const saveSupportUrlMutation = useMutation({
     mutationFn: () => setSupportUrl(supportUrl.trim() || null),
     onSuccess: (updated) => queryClient.setQueryData(["admin", "settings"], updated),
+  });
+
+  const saveAnthropicApiKeyMutation = useMutation({
+    mutationFn: () => setAnthropicApiKey(anthropicApiKey.trim()),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["admin", "settings"], updated);
+      setAnthropicApiKeyValue("");
+    },
   });
 
   if (isLoading) return <Spinner label={t("loading")} />;
@@ -1305,6 +1316,42 @@ function SettingsTab() {
         </button>
         {saveSupportUrlMutation.isSuccess && (
           <span className="text-xs text-success">{t("admin.channelSaved")}</span>
+        )}
+      </div>
+
+      <div className="card flex flex-col gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
+            <KeyRound className="h-4 w-4" />
+          </div>
+          <span className="text-sm font-semibold text-ink">{t("admin.anthropicApiKeyTitle")}</span>
+          {settings?.anthropicApiKeySet && (
+            <span className="ml-auto rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success-dark">
+              {t("admin.anthropicApiKeySet")}
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-hint">{t("admin.anthropicApiKeyHint")}</p>
+        <input
+          type="password"
+          value={anthropicApiKey}
+          onChange={(e) => setAnthropicApiKeyValue(e.target.value)}
+          placeholder="sk-ant-api03-..."
+          className="input"
+          autoComplete="off"
+        />
+        <button
+          onClick={() => saveAnthropicApiKeyMutation.mutate()}
+          disabled={saveAnthropicApiKeyMutation.isPending || anthropicApiKey.trim().length < 20}
+          className="btn-primary disabled:opacity-50"
+        >
+          {saveAnthropicApiKeyMutation.isPending ? t("saving") : t("save")}
+        </button>
+        {saveAnthropicApiKeyMutation.isSuccess && (
+          <span className="text-xs text-success">{t("admin.channelSaved")}</span>
+        )}
+        {saveAnthropicApiKeyMutation.isError && (
+          <span className="text-xs text-destructive">{saveAnthropicApiKeyMutation.error.message}</span>
         )}
       </div>
     </div>

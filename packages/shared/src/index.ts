@@ -261,6 +261,7 @@ export interface BotSettingsDto {
   usdRate: number;
   telegramChannelUrl: string | null;
   supportUrl: string | null;
+  anthropicApiKeySet: boolean;
 }
 
 export interface PublicSettingsDto {
