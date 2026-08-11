@@ -82,8 +82,11 @@ export function FeedFilters({ value, onChange, categories }: FeedFiltersProps) {
       {open &&
         createPortal(
           <div className="fixed inset-0 z-[100] flex items-end justify-center">
-            <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-            <div className="relative z-10 flex max-h-[85vh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-t-2xl bg-app p-4 pb-6 isolate">
+            <div
+              className="absolute inset-0 bg-black/50 motion-safe:animate-[backdrop-fade-in_0.2s_ease-out]"
+              onClick={() => setOpen(false)}
+            />
+            <div className="relative z-10 flex max-h-[85vh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-t-2xl bg-app p-4 pb-6 isolate motion-safe:animate-[sheet-slide-up_0.28s_cubic-bezier(0.16,1,0.3,1)]">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold text-ink">{t("filters.title")}</h2>
                 <button

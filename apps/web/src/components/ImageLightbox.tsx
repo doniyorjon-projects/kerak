@@ -118,7 +118,7 @@ export function ImageLightbox({ photos, initialIndex, onClose }: ImageLightboxPr
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[200] flex flex-col bg-black">
+    <div className="fixed inset-0 z-[200] flex flex-col bg-black motion-safe:animate-[fade-in_0.18s_ease-out]">
       <div className="flex items-center justify-between p-4">
         <span className="text-sm font-medium text-white/80">
           {photos.length > 1 ? `${index + 1}/${photos.length}` : ""}

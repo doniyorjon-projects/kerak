@@ -400,8 +400,11 @@ export function ListingDetail() {
         isOwner &&
         createPortal(
           <div className="fixed inset-0 z-[100] flex items-end justify-center">
-            <div className="absolute inset-0 bg-black/50" onClick={() => setShowAdvertiseSuggestion(false)} />
-            <div className="relative z-10 flex w-full max-w-md flex-col gap-4 rounded-t-2xl bg-app p-4 pb-6">
+            <div
+              className="absolute inset-0 bg-black/50 motion-safe:animate-[backdrop-fade-in_0.2s_ease-out]"
+              onClick={() => setShowAdvertiseSuggestion(false)}
+            />
+            <div className="relative z-10 flex w-full max-w-md flex-col gap-4 rounded-t-2xl bg-app p-4 pb-6 motion-safe:animate-[sheet-slide-up_0.28s_cubic-bezier(0.16,1,0.3,1)]">
               <div className="flex flex-col items-center gap-2 pt-2 text-center">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10 text-success">
                   <CheckCircle2 className="h-6 w-6" />

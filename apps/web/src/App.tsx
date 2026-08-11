@@ -46,34 +46,37 @@ function useSharedListingRedirect() {
 export default function App() {
   useSharedListingRedirect();
   const [showSplash, setShowSplash] = useState(true);
+  const location = useLocation();
 
   return (
     <div className="min-h-screen bg-app pb-28 text-ink" style={{ paddingTop: "var(--tg-safe-top)" }}>
       {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/categories" element={<Categories />} />
-        <Route path="/categories/:categoryId" element={<CategoryFeed />} />
-        <Route path="/listings/:listingId" element={<ListingDetail />} />
-        <Route path="/listings/:listingId/edit" element={<EditListing />} />
-        <Route path="/create" element={<CreateListing />} />
-        <Route path="/favorites" element={<Favorites />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/my-listings" element={<MyListings />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/plans" element={<Plans />} />
-        <Route path="/listings/:listingId/advertise" element={<Advertise />} />
-        <Route path="/requests" element={<Requests />} />
-        <Route path="/requests/new" element={<CreateRequest />} />
-        <Route path="/requests/:requestId" element={<RequestDetail />} />
-        <Route path="/requests/:requestId/edit" element={<EditRequest />} />
-        <Route path="/my-requests" element={<MyRequests />} />
-        <Route path="/blocked-users" element={<BlockedUsers />} />
-        <Route path="/wallet" element={<Wallet />} />
-        <Route path="/saved-searches" element={<SavedSearches />} />
-        <Route path="/sellers/:sellerId" element={<SellerProfile />} />
-      </Routes>
+      <div key={location.key} className="motion-safe:animate-[page-fade-in_0.22s_ease-out]">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/categories/:categoryId" element={<CategoryFeed />} />
+          <Route path="/listings/:listingId" element={<ListingDetail />} />
+          <Route path="/listings/:listingId/edit" element={<EditListing />} />
+          <Route path="/create" element={<CreateListing />} />
+          <Route path="/favorites" element={<Favorites />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/my-listings" element={<MyListings />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/plans" element={<Plans />} />
+          <Route path="/listings/:listingId/advertise" element={<Advertise />} />
+          <Route path="/requests" element={<Requests />} />
+          <Route path="/requests/new" element={<CreateRequest />} />
+          <Route path="/requests/:requestId" element={<RequestDetail />} />
+          <Route path="/requests/:requestId/edit" element={<EditRequest />} />
+          <Route path="/my-requests" element={<MyRequests />} />
+          <Route path="/blocked-users" element={<BlockedUsers />} />
+          <Route path="/wallet" element={<Wallet />} />
+          <Route path="/saved-searches" element={<SavedSearches />} />
+          <Route path="/sellers/:sellerId" element={<SellerProfile />} />
+        </Routes>
+      </div>
       <BottomNav />
     </div>
   );
