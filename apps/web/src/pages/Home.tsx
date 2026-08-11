@@ -182,7 +182,7 @@ export function Home() {
         style={{ paddingTop: "calc(var(--tg-safe-top) + 1rem)" }}
       >
         <div className="flex items-center justify-between gap-2 pb-2.5">
-          <img src="/kerak-logo.png" alt="Kerak" className="h-7 w-auto shrink-0 dark:invert" />
+          <img src="/kerak-logo.png" alt="Kerak" className="ml-2 h-9 w-auto shrink-0 dark:invert" />
           <RegionBannerTrigger onClick={() => setRegionPickerOpen(true)} />
         </div>
         <div className="flex items-center gap-2">
