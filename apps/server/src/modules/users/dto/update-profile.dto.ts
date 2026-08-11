@@ -19,4 +19,12 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsNumber()
   lng?: number | null;
+
+  @IsOptional()
+  @IsNumber()
+  regionId?: number | null;
+
+  @IsOptional()
+  @IsNumber()
+  districtId?: number | null;
 }

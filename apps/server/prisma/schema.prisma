@@ -97,6 +97,8 @@ model User {
   phone         String?
   lat           Float?
   lng           Float?
+  regionId      Int?
+  districtId    Int?
   isAdmin       Boolean  @default(false)
   isBlocked     Boolean  @default(false)
   listingsLimit Int      @default(1)

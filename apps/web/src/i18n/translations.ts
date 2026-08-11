@@ -37,6 +37,7 @@ export const translations = {
     "home.loadError": "Elonlarni yuklab bo'lmadi",
     "home.empty": "Hozircha elonlar yo'q",
     "home.emptyHint": "Birinchi bo'lib e'lon joylang",
+    "home.showAllRegions": "Barcha hududlardagi e'lonlarni ko'rish",
     "home.searchEmpty": "Hech narsa topilmadi",
     "home.seeAll": "Barchasi",
 
@@ -503,6 +504,7 @@ export const translations = {
     "home.loadError": "Не удалось загрузить объявления",
     "home.empty": "Пока нет объявлений",
     "home.emptyHint": "Будьте первым, разместите объявление",
+    "home.showAllRegions": "Показать объявления из всех регионов",
     "home.searchEmpty": "Ничего не найдено",
     "home.seeAll": "Все",
 

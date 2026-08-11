@@ -24,7 +24,7 @@ export class UsersController {
       await this.usersService.updateFirstName(user.id, dto.firstName);
     }
     if (dto.lat !== undefined && dto.lng !== undefined) {
-      await this.usersService.updateLocation(user.id, dto.lat, dto.lng);
+      await this.usersService.updateLocation(user.id, dto.lat, dto.lng, dto.regionId, dto.districtId);
     }
     return this.usersService.findById(user.id);
   }

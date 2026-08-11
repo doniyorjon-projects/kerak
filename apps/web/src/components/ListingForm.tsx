@@ -423,22 +423,22 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
           <button
             type="button"
             onClick={() => setIsUrgent((v) => !v)}
-            className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-semibold transition active:scale-[0.98] ${
+            className={`flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-3 text-center text-sm font-semibold leading-tight transition active:scale-[0.98] ${
               isUrgent ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"
             }`}
           >
-            <Zap className="h-4 w-4" />
-            {t("create.isUrgent")}
+            <Zap className="h-4 w-4 shrink-0" />
+            <span>{t("create.isUrgent")}</span>
           </button>
           <button
             type="button"
             onClick={() => setHasDelivery((v) => !v)}
-            className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-semibold transition active:scale-[0.98] ${
+            className={`flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-3 text-center text-sm font-semibold leading-tight transition active:scale-[0.98] ${
               hasDelivery ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"
             }`}
           >
-            <Truck className="h-4 w-4" />
-            {t("create.hasDelivery")}
+            <Truck className="h-4 w-4 shrink-0" />
+            <span>{t("create.hasDelivery")}</span>
           </button>
         </div>
       </div>

@@ -8,6 +8,8 @@ export interface MeDto {
   phone: string | null;
   lat: number | null;
   lng: number | null;
+  regionId: number | null;
+  districtId: number | null;
   isAdmin: boolean;
   listingsLimit: number;
   balance: number;
@@ -21,6 +23,11 @@ export function updateProfile(data: { firstName?: string; phone?: string }) {
   return api.patch<MeDto>("/users/me", data);
 }
 
-export function updateLocation(lat: number | null, lng: number | null) {
-  return api.patch<MeDto>("/users/me", { lat, lng });
+export function updateLocation(
+  lat: number | null,
+  lng: number | null,
+  regionId?: number | null,
+  districtId?: number | null,
+) {
+  return api.patch<MeDto>("/users/me", { lat, lng, regionId, districtId });
 }

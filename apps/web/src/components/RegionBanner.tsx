@@ -9,12 +9,20 @@ import { useTranslation } from "../i18n/LanguageContext";
 
 type Selection = "ALL" | { regionId: number; districtId: number | null };
 
-function resolveLatLng(selection: Selection): { lat: number | null; lng: number | null } {
-  if (selection === "ALL") return { lat: null, lng: null };
+interface ResolvedLocation {
+  lat: number | null;
+  lng: number | null;
+  regionId: number | null;
+  districtId: number | null;
+}
+
+function resolveSelection(selection: Selection): ResolvedLocation {
+  if (selection === "ALL") return { lat: null, lng: null, regionId: null, districtId: null };
   const region = REGIONS.find((r) => r.id === selection.regionId);
-  if (!region) return { lat: null, lng: null };
+  if (!region) return { lat: null, lng: null, regionId: null, districtId: null };
   const district = selection.districtId != null ? region.districts.find((d) => d.id === selection.districtId) : null;
-  return district ? { lat: district.lat, lng: district.lng } : { lat: region.lat, lng: region.lng };
+  const coords = district ?? region;
+  return { lat: coords.lat, lng: coords.lng, regionId: region.id, districtId: district?.id ?? null };
 }
 
 function RadioRow({ label, checked, onClick }: { label: string; checked: boolean; onClick: () => void }) {
@@ -46,6 +54,9 @@ interface RegionBannerProps {
  * (search + ro'yxat + ichiga kirish), lekin bizning dizayn kodimizga
  * (pastdan chiqadigan panel, radio qatorlar, brand rangi) moslashtirilgan.
  * Profil sahifasidagi alohida joylashuv bo'limi endi shu yerga birlashtirildi.
+ * Tanlangan hudud (regionId/districtId) foydalanuvchida aniq saqlanadi -
+ * lat/lng'dan "eng yaqinini" taxmin qilish o'rniga - shunda Asosiy sahifa
+ * shu hudud bo'yicha e'lonlarni ishonchli filtrlashi mumkin.
  */
 export function RegionBanner({ open, onOpenChange }: RegionBannerProps) {
   const { t } = useTranslation();
@@ -59,7 +70,8 @@ export function RegionBanner({ open, onOpenChange }: RegionBannerProps) {
   const [geoError, setGeoError] = useState<string | null>(null);
 
   const updateMutation = useMutation({
-    mutationFn: ({ lat, lng }: { lat: number | null; lng: number | null }) => updateLocation(lat, lng),
+    mutationFn: (location: ResolvedLocation) =>
+      updateLocation(location.lat, location.lng, location.regionId, location.districtId),
     onSuccess: (updated) => {
       queryClient.setQueryData(["me"], updated);
       onOpenChange(false);
@@ -71,12 +83,7 @@ export function RegionBanner({ open, onOpenChange }: RegionBannerProps) {
     setSearch("");
     setActiveRegion(null);
     setGeoError(null);
-    if (me?.lat != null && me?.lng != null) {
-      const place = findNearestPlace(me.lat, me.lng);
-      setPending(place ? { regionId: place.region.id, districtId: place.district?.id ?? null } : "ALL");
-    } else {
-      setPending("ALL");
-    }
+    setPending(me?.regionId != null ? { regionId: me.regionId, districtId: me.districtId } : "ALL");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -90,7 +97,14 @@ export function RegionBanner({ open, onOpenChange }: RegionBannerProps) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setLocating(false);
-        updateMutation.mutate({ lat: position.coords.latitude, lng: position.coords.longitude });
+        const { latitude, longitude } = position.coords;
+        const place = findNearestPlace(latitude, longitude);
+        updateMutation.mutate({
+          lat: latitude,
+          lng: longitude,
+          regionId: place?.region.id ?? null,
+          districtId: place?.district?.id ?? null,
+        });
       },
       () => {
         setLocating(false);
@@ -120,7 +134,7 @@ export function RegionBanner({ open, onOpenChange }: RegionBannerProps) {
       : null;
 
   const handleApply = () => {
-    updateMutation.mutate(resolveLatLng(pending));
+    updateMutation.mutate(resolveSelection(pending));
   };
 
   if (!open) return null;
@@ -196,7 +210,7 @@ export function RegionBanner({ open, onOpenChange }: RegionBannerProps) {
                     key={item.label}
                     type="button"
                     onClick={() => {
-                      updateMutation.mutate(resolveLatLng(item.selection));
+                      updateMutation.mutate(resolveSelection(item.selection));
                     }}
                     className="flex items-center gap-2 py-3 text-left text-sm text-ink active:opacity-70"
                   >
@@ -263,8 +277,9 @@ export function RegionBanner({ open, onOpenChange }: RegionBannerProps) {
 export function RegionBannerTrigger({ onClick }: { onClick: () => void }) {
   const { t } = useTranslation();
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
-  const place = me?.lat != null && me?.lng != null ? findNearestPlace(me.lat, me.lng) : null;
-  const label = place ? (place.district?.nameUz ?? place.region.nameUz) : null;
+  const region = me?.regionId != null ? REGIONS.find((r) => r.id === me.regionId) : null;
+  const district = region && me?.districtId != null ? region.districts.find((d) => d.id === me.districtId) : null;
+  const label = region ? (district?.nameUz ?? region.nameUz) : null;
 
   return (
     <button type="button" onClick={onClick} className="flex w-fit items-center gap-1 text-xs text-hint transition active:opacity-70">

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, LocateFixed } from "lucide-react";
 import { REGIONS } from "../data/uzbekistanRegions";
 import { LocationMapPicker } from "./map/LocationMapPicker";
+import { findNearestPlace } from "../utils/nearestRegion";
 import { useTranslation } from "../i18n/LanguageContext";
 
 export interface PlaceValue {
@@ -31,6 +32,8 @@ export function RegionDistrictPicker({ onChange, initialAddressText }: RegionDis
   const [regionId, setRegionId] = useState<number | "">("");
   const [districtId, setDistrictId] = useState<number | "">("");
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initialAddressText) return;
@@ -93,6 +96,47 @@ export function RegionDistrictPicker({ onChange, initialAddressText }: RegionDis
     });
   };
 
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      setGeoError(t("profile.geoUnsupported"));
+      return;
+    }
+    setLocating(true);
+    setGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocating(false);
+        const { latitude, longitude } = position.coords;
+        setPin({ lat: latitude, lng: longitude });
+        const place = findNearestPlace(latitude, longitude);
+        if (place) {
+          setRegionId(place.region.id);
+          setDistrictId(place.district?.id ?? "");
+          onChange({
+            addressText: place.district ? `${place.district.nameUz}, ${place.region.nameUz}` : place.region.nameUz,
+            regionId: place.region.id,
+            districtId: place.district?.id ?? null,
+            lat: latitude,
+            lng: longitude,
+          });
+        } else if (region) {
+          const existingDistrict = region.districts.find((d) => d.id === districtId);
+          onChange({
+            addressText: existingDistrict ? `${existingDistrict.nameUz}, ${region.nameUz}` : region.nameUz,
+            regionId: region.id,
+            districtId: existingDistrict ? existingDistrict.id : null,
+            lat: latitude,
+            lng: longitude,
+          });
+        }
+      },
+      () => {
+        setLocating(false);
+        setGeoError(t("profile.geoFailed"));
+      },
+    );
+  };
+
   const handlePinChange = (position: { lat: number; lng: number }) => {
     if (!region) return;
     setPin(position);
@@ -143,6 +187,16 @@ export function RegionDistrictPicker({ onChange, initialAddressText }: RegionDis
         <div className="flex flex-col gap-1.5">
           <span className="text-xs text-hint">{t("create.fineTuneLocation")}</span>
           <LocationMapPicker lat={pin.lat} lng={pin.lng} onChange={handlePinChange} />
+          <button
+            type="button"
+            onClick={detectLocation}
+            disabled={locating}
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-surface-secondary py-2.5 text-xs font-semibold text-brand transition active:scale-[0.98] disabled:opacity-50"
+          >
+            <LocateFixed className="h-3.5 w-3.5" />
+            {locating ? t("profile.detecting") : t("region.enableGeo")}
+          </button>
+          {geoError && <span className="text-xs text-destructive">{geoError}</span>}
         </div>
       )}
     </div>

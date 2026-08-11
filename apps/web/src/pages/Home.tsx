@@ -5,7 +5,7 @@ import { BellPlus, ChevronRight, MessageSquareText, PackageSearch, Rocket } from
 import type { FeedSort } from "@kerak/shared";
 import { fetchListingFeed, fetchListingsByIds } from "../api/listings";
 import { fetchCategories } from "../api/categories";
-import { fetchMe } from "../api/users";
+import { fetchMe, updateLocation } from "../api/users";
 import { createSavedSearch } from "../api/savedSearches";
 import { ListingCard } from "../components/ListingCard";
 import { FeedControls } from "../components/FeedControls";
@@ -38,6 +38,16 @@ export function Home() {
   const [filters, setFilters] = useState<FeedFilterValue>({});
   const [saveSearchOpen, setSaveSearchOpen] = useState(false);
   const [searchLabel, setSearchLabel] = useState("");
+
+  // FeedFilters'dan aniq tanlangan hudud ustunroq, aks holda Asosiydagi
+  // hudud banneri orqali tanlangan hudud qo'llaniladi.
+  const effectiveRegionId = filters.regionId ?? me?.regionId ?? undefined;
+  const effectiveDistrictId = filters.districtId ?? me?.districtId ?? undefined;
+
+  const clearRegionMutation = useMutation({
+    mutationFn: () => updateLocation(null, null, null, null),
+    onSuccess: (updated) => queryClient.setQueryData(["me"], updated),
+  });
 
   const hasActiveSearch = Boolean(
     search ||
@@ -83,12 +93,42 @@ export function Home() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["listings", "all", effectiveSort, radiusKm, me?.lat, me?.lng, search, filters],
+    queryKey: [
+      "listings",
+      "all",
+      effectiveSort,
+      radiusKm,
+      me?.lat,
+      me?.lng,
+      effectiveRegionId,
+      effectiveDistrictId,
+      search,
+      filters,
+    ],
     queryFn: ({ pageParam }) =>
       fetchListingFeed(
         effectiveSort === "distance" && me?.lat != null && me?.lng != null
-          ? { sort: "distance", lat: me.lat, lng: me.lng, radiusKm, q: search || undefined, ...filters, limit: PAGE_SIZE, offset: pageParam }
-          : { sort: "newest", q: search || undefined, ...filters, limit: PAGE_SIZE, offset: pageParam },
+          ? {
+              sort: "distance",
+              lat: me.lat,
+              lng: me.lng,
+              radiusKm,
+              q: search || undefined,
+              ...filters,
+              regionId: effectiveRegionId,
+              districtId: effectiveDistrictId,
+              limit: PAGE_SIZE,
+              offset: pageParam,
+            }
+          : {
+              sort: "newest",
+              q: search || undefined,
+              ...filters,
+              regionId: effectiveRegionId,
+              districtId: effectiveDistrictId,
+              limit: PAGE_SIZE,
+              offset: pageParam,
+            },
       ),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) =>
@@ -286,7 +326,23 @@ export function Home() {
               <EmptyState icon={PackageSearch} title={t("home.loadError")} description={t("tryAgain")} />
             )}
             {listings?.length === 0 && (
-              <EmptyState icon={PackageSearch} title={t("home.empty")} description={t("home.emptyHint")} />
+              <EmptyState
+                icon={PackageSearch}
+                title={t("home.empty")}
+                description={t("home.emptyHint")}
+                action={
+                  me?.regionId != null ? (
+                    <button
+                      type="button"
+                      onClick={() => clearRegionMutation.mutate()}
+                      disabled={clearRegionMutation.isPending}
+                      className="btn-secondary disabled:opacity-50"
+                    >
+                      {clearRegionMutation.isPending ? t("loading") : t("home.showAllRegions")}
+                    </button>
+                  ) : undefined
+                }
+              />
             )}
 
             {view === "map" && listings ? (

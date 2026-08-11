@@ -95,8 +95,17 @@ export class UsersService {
     return newUser;
   }
 
-  async updateLocation(userId: string, lat: number | null, lng: number | null) {
-    return this.prisma.user.update({ where: { id: userId }, data: { lat, lng } });
+  async updateLocation(
+    userId: string,
+    lat: number | null,
+    lng: number | null,
+    regionId?: number | null,
+    districtId?: number | null,
+  ) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { lat, lng, regionId: regionId ?? null, districtId: districtId ?? null },
+    });
   }
 
   async updatePhone(userId: string, phone: string) {
