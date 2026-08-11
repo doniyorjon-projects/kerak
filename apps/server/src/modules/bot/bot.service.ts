@@ -68,14 +68,19 @@ export class BotService implements OnModuleInit {
       const appUrl = qs ? `${this.miniAppUrl}?${qs}` : this.miniAppUrl;
 
       const keyboard = new InlineKeyboard().webApp(
-        listingId || requestId ? "🚀 Ko'rish" : "🚀 Kerak'ni ochish",
+        listingId || requestId ? "🚀 Ko'rish" : "🚀 Hoziroq boshlash",
         appUrl,
       );
       await ctx.reply(
         listingId || requestId
           ? "Ulashilgan e'lonni ko'rish uchun tugmani bosing 👇"
-          : "Kerak'ga xush kelibsiz!\n\nBu yerda xizmat va mahsulotlarni topishingiz yoki o'zingiznikini joylashingiz mumkin.",
-        { reply_markup: keyboard },
+          : "👋 Assalomu alaykum!\n\n" +
+            "<b>Kerak</b>ga xush kelibsiz — O'zbekistondagi mahsulot va xizmatlar uchun qulay onlayn bozor.\n\n" +
+            "🛍 Kerakli mahsulot yoki ustani soniyalarda toping\n" +
+            "📢 O'zingiznikini bepul e'lon qilib soting\n" +
+            "⭐️ Sharh va reyting orqali ishonchli tanlov qiling\n\n" +
+            "Minglab foydalanuvchi Kerak orqali xarid qilmoqda va daromad topmoqda. Endi navbat sizda — pastdagi tugmani bosing 👇",
+        { reply_markup: keyboard, parse_mode: "HTML" },
       );
     });
 

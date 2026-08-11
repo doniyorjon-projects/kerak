@@ -150,6 +150,21 @@ export function openTelegramLink(url: string): void {
   }
 }
 
+const TELEGRAM_LINK_PATTERN = /^(https?:\/\/)?(t\.me|telegram\.me|telegram\.dog)\//i;
+
+/**
+ * t.me/telegram.me havolalarini Telegram ichida (chat/kanal sifatida)
+ * ochadi, qolganlarini esa tashqi brauzerda - shunda admin panel yoki
+ * bannerga qo'yilgan har qanday havola o'zi mos joyda ochiladi.
+ */
+export function openSmartLink(url: string): void {
+  if (TELEGRAM_LINK_PATTERN.test(url.trim())) {
+    openTelegramLink(url);
+  } else {
+    openExternalLink(url);
+  }
+}
+
 const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME ?? "";
 
 export function buildListingShareLink(listingId: string): string {

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Image as ImageIcon } from "lucide-react";
 import { fetchBanners } from "../api/banners";
 import { fetchAdvertiseContact } from "../api/meta";
-import { openExternalLink } from "../telegram";
+import { openSmartLink, openTelegramLink } from "../telegram";
 import { useTranslation } from "../i18n/LanguageContext";
 
 const ROTATE_MS = 4000;
@@ -23,13 +23,13 @@ export function BannerCarousel() {
   const current = banners?.[index];
 
   const handleAdvertiseClick = () => {
-    if (contact?.username) openExternalLink(`https://t.me/${contact.username}`);
+    if (contact?.username) openTelegramLink(`https://t.me/${contact.username}`);
   };
 
   return (
     <div className="flex flex-col gap-1.5">
       <div
-        onClick={() => current?.linkUrl && openExternalLink(current.linkUrl)}
+        onClick={() => current?.linkUrl && openSmartLink(current.linkUrl)}
         className={`relative aspect-[21/9] w-full overflow-hidden rounded-2xl bg-surface-secondary shadow-soft ${current?.linkUrl ? "cursor-pointer" : ""}`}
       >
         {current ? (
