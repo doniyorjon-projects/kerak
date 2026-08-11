@@ -10,6 +10,7 @@ import {
   Clock,
   Eye,
   Flag,
+  HandCoins,
   Heart,
   MapPin,
   Megaphone,
@@ -23,15 +24,17 @@ import {
   Share2,
   Tag,
   Trash2,
+  Truck,
   TrendingDown,
   TrendingUp,
   User,
   Wallet,
   X,
   XCircle,
+  Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { CATEGORY_ATTRIBUTES, ContactEventType } from "@kerak/shared";
+import { CATEGORY_ATTRIBUTES, CategoryType, ContactEventType } from "@kerak/shared";
 import type { BoostDuration, ListingStatus } from "@kerak/shared";
 import {
   bumpListing,
@@ -43,6 +46,8 @@ import {
   logContactEvent,
   updateListingStatus,
 } from "../api/listings";
+import { createPriceOffer, fetchListingOffers, fetchMyOffer, resolvePriceOffer } from "../api/priceOffers";
+import { PriceInput } from "../components/PriceInput";
 import { fetchCategories } from "../api/categories";
 import { fetchPricing } from "../api/pricing";
 import { fetchPublicSettings } from "../api/settings";
@@ -103,6 +108,8 @@ export function ListingDetail() {
   const [rejectReason, setRejectReason] = useState("");
   const [boostDuration, setBoostDuration] = useState<BoostDuration>("DAYS_7");
   const [boostStatus, setBoostStatus] = useState<string | null>(null);
+  const [offerAmount, setOfferAmount] = useState("");
+  const [offerStatus, setOfferStatus] = useState<string | null>(null);
 
   const { data: listing, isLoading, error } = useQuery({
     queryKey: ["listing", listingId],
@@ -268,6 +275,37 @@ export function ListingDetail() {
     onSuccess: (result) => queryClient.setQueryData(["block-status", listing?.seller.id], result),
   });
 
+  const isOwnerForOffers = Boolean(me && listing && me.id === listing.seller.id);
+
+  const { data: myOffer } = useQuery({
+    queryKey: ["my-offer", listingId],
+    queryFn: () => fetchMyOffer(listingId!),
+    enabled: Boolean(listingId && me && !isOwnerForOffers && listing?.price != null),
+  });
+
+  const { data: listingOffers } = useQuery({
+    queryKey: ["listing-offers", listingId],
+    queryFn: () => fetchListingOffers(listingId!),
+    enabled: Boolean(listingId && isOwnerForOffers),
+  });
+
+  const createOfferMutation = useMutation({
+    mutationFn: (amount: number) => createPriceOffer(listingId!, amount),
+    onSuccess: (offer) => {
+      queryClient.setQueryData(["my-offer", listingId], offer);
+      setOfferAmount("");
+      setOfferStatus(t("listing.offerSent"));
+    },
+    onError: (err: Error) => setOfferStatus(err.message),
+  });
+
+  const resolveOfferMutation = useMutation({
+    mutationFn: ({ offerId, accept }: { offerId: string; accept: boolean }) => resolvePriceOffer(offerId, accept),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["listing-offers", listingId] });
+    },
+  });
+
   if (isLoading) return <Spinner label={t("loading")} />;
   if (error || !listing) return <div className="p-4 text-center text-destructive">{t("listing.notFound")}</div>;
 
@@ -330,6 +368,22 @@ export function ListingDetail() {
             {listing.brand}
           </span>
         )}
+        {(listing.isUrgent || listing.hasDelivery) && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {listing.isUrgent && (
+              <span className="flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-brand-contrast">
+                <Zap className="h-3 w-3" />
+                {t("listing.isUrgentBadge")}
+              </span>
+            )}
+            {listing.hasDelivery && (
+              <span className="flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold text-brand">
+                <Truck className="h-3 w-3" />
+                {t("listing.hasDeliveryBadge")}
+              </span>
+            )}
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold text-brand">
@@ -339,6 +393,7 @@ export function ListingDetail() {
                 displayCurrency,
                 t("negotiable"),
                 t("som"),
+                t("listing.freePrice"),
               )}
             </span>
             {lastOldPrice != null && listing.price != null && lastOldPrice > listing.price && (
@@ -524,6 +579,59 @@ export function ListingDetail() {
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {isOwner && listingOffers && listingOffers.length > 0 && (
+        <div className="card flex flex-col gap-3">
+          <span className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+            <HandCoins className="h-4 w-4 text-brand" />
+            {t("listing.offersTitle")} ({listingOffers.length})
+          </span>
+          <div className="flex flex-col gap-2">
+            {listingOffers.map((offer) => (
+              <div key={offer.id} className="flex items-center justify-between gap-2 rounded-xl bg-surface-secondary px-3.5 py-2.5">
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold text-ink">
+                    {offer.amount.toLocaleString("uz-UZ")} {t("som")}
+                  </span>
+                  <span className="text-xs text-hint">
+                    {offer.buyer.username ? `@${offer.buyer.username}` : offer.buyer.firstName}
+                  </span>
+                </div>
+                {offer.status === "PENDING" ? (
+                  <div className="flex shrink-0 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => resolveOfferMutation.mutate({ offerId: offer.id, accept: false })}
+                      disabled={resolveOfferMutation.isPending}
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive disabled:opacity-50"
+                      aria-label={t("listing.offerReject")}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => resolveOfferMutation.mutate({ offerId: offer.id, accept: true })}
+                      disabled={resolveOfferMutation.isPending}
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-success/10 text-success-dark disabled:opacity-50"
+                      aria-label={t("listing.offerAcceptAction")}
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <span
+                    className={`shrink-0 text-xs font-semibold ${
+                      offer.status === "ACCEPTED" ? "text-success-dark" : "text-destructive"
+                    }`}
+                  >
+                    {offer.status === "ACCEPTED" ? t("listing.offerAccepted") : t("listing.offerRejected")}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -739,6 +847,80 @@ export function ListingDetail() {
             </div>
           </div>
 
+          {listing.price != null && !listing.isFree && (
+            <div className="card flex flex-col gap-3">
+              <span className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+                <HandCoins className="h-4 w-4 text-brand" />
+                {t("listing.makeOfferTitle")}
+              </span>
+              {myOffer ? (
+                <div
+                  className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 ${
+                    myOffer.status === "ACCEPTED"
+                      ? "bg-success/10"
+                      : myOffer.status === "REJECTED"
+                        ? "bg-destructive/10"
+                        : "bg-surface-secondary"
+                  }`}
+                >
+                  <span className="text-sm font-medium text-ink">
+                    {myOffer.amount.toLocaleString("uz-UZ")} {t("som")}
+                  </span>
+                  <span
+                    className={`text-xs font-semibold ${
+                      myOffer.status === "ACCEPTED"
+                        ? "text-success-dark"
+                        : myOffer.status === "REJECTED"
+                          ? "text-destructive"
+                          : "text-hint"
+                    }`}
+                  >
+                    {myOffer.status === "ACCEPTED"
+                      ? t("listing.offerAccepted")
+                      : myOffer.status === "REJECTED"
+                        ? t("listing.offerRejected")
+                        : t("listing.offerPending")}
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[3, 5, 10].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => setOfferAmount(String(Math.round((listing.price! * (100 - pct)) / 100)))}
+                        className="rounded-xl bg-surface-secondary py-2 text-xs font-semibold text-ink transition active:scale-[0.98]"
+                      >
+                        -{pct}%
+                      </button>
+                    ))}
+                  </div>
+                  <div className="relative">
+                    <PriceInput
+                      value={offerAmount}
+                      onChange={setOfferAmount}
+                      className="input pr-14 text-base font-semibold"
+                      placeholder="0"
+                    />
+                    <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-hint">
+                      {t("som")}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => createOfferMutation.mutate(Number(offerAmount))}
+                    disabled={!offerAmount || createOfferMutation.isPending}
+                    className="btn-primary disabled:opacity-50"
+                  >
+                    {createOfferMutation.isPending ? t("sending") : t("listing.sendOffer")}
+                  </button>
+                  {offerStatus && <span className="text-xs text-hint">{offerStatus}</span>}
+                </>
+              )}
+            </div>
+          )}
+
           {reportOpen && (
             <div className="card flex flex-col gap-2">
               <textarea
@@ -818,6 +1000,31 @@ export function ListingDetail() {
                 })}
               </div>
             )}
+            <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5">
+              {(listingCategory?.type === CategoryType.SERVICE
+                ? [
+                    t("listing.quickQService1"),
+                    t("listing.quickQService2"),
+                    t("listing.quickQService3"),
+                    t("listing.quickQService4"),
+                  ]
+                : [
+                    t("listing.quickQProduct1"),
+                    t("listing.quickQProduct2"),
+                    t("listing.quickQProduct3"),
+                    t("listing.quickQProduct4"),
+                  ]
+              ).map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => setMessageText(q)}
+                  className="shrink-0 rounded-full border border-divider bg-surface-secondary px-3 py-1.5 text-xs font-medium text-hint transition active:scale-[0.98]"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
             <textarea
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}

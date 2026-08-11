@@ -9,6 +9,10 @@ export class SettingsController {
   @Get("public")
   async getPublic(): Promise<PublicSettingsDto> {
     const settings = await this.settingsService.get();
-    return { usdRate: settings.usdRate };
+    return {
+      usdRate: settings.usdRate,
+      telegramChannelUrl: settings.telegramChannelUrl,
+      supportUrl: settings.supportUrl,
+    };
   }
 }

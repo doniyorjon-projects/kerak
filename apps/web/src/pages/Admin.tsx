@@ -11,10 +11,12 @@ import {
   ChevronUp,
   DollarSign,
   Flag,
+  HeadphonesIcon,
   ImageIcon,
   Inbox,
   Images,
   Infinity as InfinityIcon,
+  Link2,
   Megaphone,
   MessageSquareText,
   Pencil,
@@ -57,6 +59,8 @@ import {
   setChannel,
   setListingsLimit,
   setStarsRate,
+  setSupportUrl,
+  setTelegramChannelUrl,
   setUserPlan,
   unblockUser,
 } from "../api/admin";
@@ -1133,11 +1137,15 @@ function SettingsTab() {
   const { data: settings, isLoading } = useQuery({ queryKey: ["admin", "settings"], queryFn: fetchBotSettings });
   const [channelId, setChannelId] = useState("");
   const [starsRate, setStarsRateValue] = useState("");
+  const [telegramChannelUrl, setTelegramChannelUrlValue] = useState("");
+  const [supportUrl, setSupportUrlValue] = useState("");
 
   useEffect(() => {
     if (settings) {
       setChannelId(settings.channelId ?? "");
       setStarsRateValue(String(settings.starsRate));
+      setTelegramChannelUrlValue(settings.telegramChannelUrl ?? "");
+      setSupportUrlValue(settings.supportUrl ?? "");
     }
   }, [settings]);
 
@@ -1153,6 +1161,16 @@ function SettingsTab() {
 
   const refreshUsdRateMutation = useMutation({
     mutationFn: () => refreshUsdRate(),
+    onSuccess: (updated) => queryClient.setQueryData(["admin", "settings"], updated),
+  });
+
+  const saveTelegramChannelUrlMutation = useMutation({
+    mutationFn: () => setTelegramChannelUrl(telegramChannelUrl.trim() || null),
+    onSuccess: (updated) => queryClient.setQueryData(["admin", "settings"], updated),
+  });
+
+  const saveSupportUrlMutation = useMutation({
+    mutationFn: () => setSupportUrl(supportUrl.trim() || null),
     onSuccess: (updated) => queryClient.setQueryData(["admin", "settings"], updated),
   });
 
@@ -1234,6 +1252,58 @@ function SettingsTab() {
           {refreshUsdRateMutation.isPending ? t("saving") : t("admin.usdRateRefreshNow")}
         </button>
         {refreshUsdRateMutation.isSuccess && (
+          <span className="text-xs text-success">{t("admin.channelSaved")}</span>
+        )}
+      </div>
+
+      <div className="card flex flex-col gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
+            <Link2 className="h-4 w-4" />
+          </div>
+          <span className="text-sm font-semibold text-ink">{t("admin.telegramChannelUrlTitle")}</span>
+        </div>
+        <p className="text-xs text-hint">{t("admin.telegramChannelUrlHint")}</p>
+        <input
+          value={telegramChannelUrl}
+          onChange={(e) => setTelegramChannelUrlValue(e.target.value)}
+          placeholder="https://t.me/mening_kanalim"
+          className="input"
+        />
+        <button
+          onClick={() => saveTelegramChannelUrlMutation.mutate()}
+          disabled={saveTelegramChannelUrlMutation.isPending}
+          className="btn-primary disabled:opacity-50"
+        >
+          {saveTelegramChannelUrlMutation.isPending ? t("saving") : t("save")}
+        </button>
+        {saveTelegramChannelUrlMutation.isSuccess && (
+          <span className="text-xs text-success">{t("admin.channelSaved")}</span>
+        )}
+      </div>
+
+      <div className="card flex flex-col gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
+            <HeadphonesIcon className="h-4 w-4" />
+          </div>
+          <span className="text-sm font-semibold text-ink">{t("admin.supportUrlTitle")}</span>
+        </div>
+        <p className="text-xs text-hint">{t("admin.supportUrlHint")}</p>
+        <input
+          value={supportUrl}
+          onChange={(e) => setSupportUrlValue(e.target.value)}
+          placeholder="https://t.me/mening_yordamchim"
+          className="input"
+        />
+        <button
+          onClick={() => saveSupportUrlMutation.mutate()}
+          disabled={saveSupportUrlMutation.isPending}
+          className="btn-primary disabled:opacity-50"
+        >
+          {saveSupportUrlMutation.isPending ? t("saving") : t("save")}
+        </button>
+        {saveSupportUrlMutation.isSuccess && (
           <span className="text-xs text-success">{t("admin.channelSaved")}</span>
         )}
       </div>

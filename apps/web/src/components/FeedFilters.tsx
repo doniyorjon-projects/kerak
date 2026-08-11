@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, Gift, SlidersHorizontal, Truck, Zap, X } from "lucide-react";
+import { CATEGORY_ATTRIBUTES } from "@kerak/shared";
 import type { CategoryDto, ListingCondition } from "@kerak/shared";
 import { REGIONS } from "../data/uzbekistanRegions";
 import { CategoryPicker } from "./CategoryPicker";
@@ -13,6 +14,10 @@ export interface FeedFilterValue {
   minPrice?: number;
   maxPrice?: number;
   condition?: ListingCondition;
+  isFree?: boolean;
+  isUrgent?: boolean;
+  hasDelivery?: boolean;
+  attributes?: Record<string, string>;
 }
 
 interface FeedFiltersProps {
@@ -40,6 +45,10 @@ export function FeedFilters({ value, onChange, categories }: FeedFiltersProps) {
   }, [open]);
 
   const region = REGIONS.find((r) => r.id === draft.regionId);
+  const selectedCategory = categories?.find((c) => c.id === draft.categoryId);
+  const attributeFilterFields = selectedCategory
+    ? (CATEGORY_ATTRIBUTES[selectedCategory.nameUz] ?? []).filter((f) => f.type === "select")
+    : [];
 
   const activeCount = [
     value.categoryId,
@@ -48,7 +57,10 @@ export function FeedFilters({ value, onChange, categories }: FeedFiltersProps) {
     value.minPrice,
     value.maxPrice,
     value.condition,
-  ].filter((v) => v !== undefined).length;
+    value.isFree ? true : undefined,
+    value.isUrgent ? true : undefined,
+    value.hasDelivery ? true : undefined,
+  ].filter((v) => v !== undefined).length + Object.keys(value.attributes ?? {}).length;
 
   const handleApply = () => {
     onChange(draft);
@@ -59,6 +71,19 @@ export function FeedFilters({ value, onChange, categories }: FeedFiltersProps) {
     setDraft({});
     onChange({});
     setOpen(false);
+  };
+
+  const setAttribute = (key: string, val: string) => {
+    setDraft((d) => {
+      const next = { ...(d.attributes ?? {}) };
+      if (val) next[key] = val;
+      else delete next[key];
+      return { ...d, attributes: Object.keys(next).length > 0 ? next : undefined };
+    });
+  };
+
+  const handleCategoryChange = (id: string) => {
+    setDraft((d) => ({ ...d, categoryId: id || undefined, attributes: undefined }));
   };
 
   return (
@@ -105,11 +130,32 @@ export function FeedFilters({ value, onChange, categories }: FeedFiltersProps) {
                   <CategoryPicker
                     categories={categories}
                     value={draft.categoryId ?? ""}
-                    onChange={(id) => setDraft((d) => ({ ...d, categoryId: id || undefined }))}
+                    onChange={handleCategoryChange}
                     allowClear
                   />
                 </div>
               )}
+
+              {attributeFilterFields.map((field) => (
+                <div key={field.key} className="flex flex-col gap-1.5">
+                  <span className="text-sm font-medium text-ink">{field.label}</span>
+                  <div className="relative">
+                    <select
+                      value={draft.attributes?.[field.key] ?? ""}
+                      onChange={(e) => setAttribute(field.key, e.target.value)}
+                      className="input appearance-none pr-9"
+                    >
+                      <option value="">{t("filters.any")}</option>
+                      {field.options?.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
+                  </div>
+                </div>
+              ))}
 
               <div className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium text-ink">{t("filters.region")}</span>
@@ -205,6 +251,42 @@ export function FeedFilters({ value, onChange, categories }: FeedFiltersProps) {
                     className={`rounded-xl py-2 text-xs font-semibold transition ${draft.condition === "USED" ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"}`}
                   >
                     {t("create.conditionUsed")}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium text-ink">{t("filters.extra")}</span>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDraft((d) => ({ ...d, isFree: !d.isFree || undefined }))}
+                    className={`flex items-center justify-center gap-1 rounded-xl py-2 text-xs font-semibold transition ${
+                      draft.isFree ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"
+                    }`}
+                  >
+                    <Gift className="h-3.5 w-3.5" />
+                    {t("listing.isFreeBadge")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDraft((d) => ({ ...d, isUrgent: !d.isUrgent || undefined }))}
+                    className={`flex items-center justify-center gap-1 rounded-xl py-2 text-xs font-semibold transition ${
+                      draft.isUrgent ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"
+                    }`}
+                  >
+                    <Zap className="h-3.5 w-3.5" />
+                    {t("listing.isUrgentBadge")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDraft((d) => ({ ...d, hasDelivery: !d.hasDelivery || undefined }))}
+                    className={`flex items-center justify-center gap-1 rounded-xl py-2 text-xs font-semibold transition ${
+                      draft.hasDelivery ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"
+                    }`}
+                  >
+                    <Truck className="h-3.5 w-3.5" />
+                    {t("listing.hasDeliveryBadge")}
                   </button>
                 </div>
               </div>

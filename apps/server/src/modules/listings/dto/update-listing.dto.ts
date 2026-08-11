@@ -62,6 +62,18 @@ export class UpdateListingDto {
   isNegotiable?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  isFree?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isUrgent?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  hasDelivery?: boolean;
+
+  @IsOptional()
   @IsArray()
   @ArrayMaxSize(8)
   @IsString({ each: true })

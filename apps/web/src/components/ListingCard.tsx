@@ -1,6 +1,6 @@
 ﻿import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Clock, Eye, Heart, ImageOff, MapPin, Rocket } from "lucide-react";
+import { Clock, Eye, Gift, Heart, ImageOff, MapPin, Rocket, Zap } from "lucide-react";
 import type { ListingDto } from "@kerak/shared";
 import { addFavorite, removeFavorite } from "../api/favorites";
 import { fetchPublicSettings } from "../api/settings";
@@ -31,6 +31,22 @@ export function ListingCard({ listing }: { listing: ListingDto }) {
   const isFavorite = favoriteIds?.has(listing.id) ?? false;
   const isBoosted = Boolean(listing.boostedUntil && new Date(listing.boostedUntil) > new Date());
   const districtName = getDistrictName(listing.regionId, listing.districtId);
+  const usdRate = publicSettings?.usdRate ?? 12700;
+
+  const hasPriceDrop =
+    listing.previousPrice != null && listing.price != null && listing.previousPrice > listing.price;
+  const discountPct = hasPriceDrop
+    ? Math.round((1 - listing.price! / listing.previousPrice!) * 100)
+    : null;
+  const oldPriceText = hasPriceDrop
+    ? formatListingPrice(
+        { price: listing.previousPrice ?? null, priceUsd: null, isNegotiable: false },
+        usdRate,
+        displayCurrency,
+        "",
+        t("som"),
+      )
+    : null;
 
   const favoriteMutation = useMutation({
     mutationFn: () => (isFavorite ? removeFavorite(listing.id) : addFavorite(listing.id)),
@@ -49,12 +65,26 @@ export function ListingCard({ listing }: { listing: ListingDto }) {
       className="group flex h-full flex-col overflow-hidden rounded-2xl border border-divider bg-surface shadow-soft transition active:scale-[0.98]"
     >
       <div className="relative aspect-square w-full overflow-hidden bg-surface-secondary">
-        {isBoosted && (
-          <span className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-full bg-promo px-2 py-0.5 text-[10px] font-semibold text-white shadow-soft">
-            <Rocket className="h-3 w-3" />
-            TOP
-          </span>
-        )}
+        <div className="absolute left-2 top-2 z-10 flex flex-col items-start gap-1">
+          {isBoosted && (
+            <span className="flex items-center gap-1 rounded-full bg-promo px-2 py-0.5 text-[10px] font-semibold text-white shadow-soft">
+              <Rocket className="h-3 w-3" />
+              TOP
+            </span>
+          )}
+          {listing.isFree && (
+            <span className="flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[10px] font-semibold text-brand-contrast shadow-soft">
+              <Gift className="h-3 w-3" />
+              {t("listing.isFreeBadge")}
+            </span>
+          )}
+          {listing.isUrgent && (
+            <span className="flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[10px] font-semibold text-brand-contrast shadow-soft">
+              <Zap className="h-3 w-3" />
+              {t("listing.isUrgentBadge")}
+            </span>
+          )}
+        </div>
         <button
           onClick={handleFavoriteClick}
           aria-label={t("listing.addToFavorites")}
@@ -83,8 +113,16 @@ export function ListingCard({ listing }: { listing: ListingDto }) {
         <span className="line-clamp-2 min-h-[2.4rem] text-sm font-medium leading-snug text-ink">
           {listing.title}
         </span>
+        {hasPriceDrop && (
+          <span className="flex items-center gap-1">
+            <span className="text-xs text-hint line-through">{oldPriceText}</span>
+            <span className="rounded bg-destructive/10 px-1 py-0.5 text-[10px] font-semibold text-destructive">
+              -{discountPct}%
+            </span>
+          </span>
+        )}
         <span className="text-sm font-semibold text-brand">
-          {formatListingPrice(listing, publicSettings?.usdRate ?? 12700, displayCurrency, t("negotiable"), t("som"))}
+          {formatListingPrice(listing, usdRate, displayCurrency, t("negotiable"), t("som"), t("listing.freePrice"))}
         </span>
         <div className="flex items-center justify-between gap-2 text-xs text-hint">
           {districtName ? (

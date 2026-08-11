@@ -63,6 +63,33 @@ export class FindFeedDto {
   condition?: ListingCondition;
 
   @IsOptional()
+  @Transform(({ value }) => value === "true" || value === true)
+  @IsBoolean()
+  isFree?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => value === "true" || value === true)
+  @IsBoolean()
+  isUrgent?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => value === "true" || value === true)
+  @IsBoolean()
+  hasDelivery?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value !== "string") return undefined;
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === "object" ? parsed : undefined;
+    } catch {
+      return undefined;
+    }
+  })
+  attributes?: Record<string, string>;
+
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
   limit?: number;

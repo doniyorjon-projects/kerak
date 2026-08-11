@@ -1,7 +1,7 @@
 import type { ListingDto } from "@kerak/shared";
 import type { DisplayCurrency } from "../contexts/DisplayCurrencyContext";
 
-type PriceFields = Pick<ListingDto, "price" | "priceUsd" | "isNegotiable">;
+type PriceFields = Pick<ListingDto, "price" | "priceUsd" | "isNegotiable"> & { isFree?: boolean };
 
 /**
  * "NATIVE" rejimida har bir e'lon o'zi joylashtirilgan valyutada
@@ -14,7 +14,9 @@ export function formatListingPrice(
   displayCurrency: DisplayCurrency,
   negotiableLabel: string,
   somLabel: string,
+  freeLabel?: string,
 ): string {
+  if (listing.isFree) return freeLabel ?? negotiableLabel;
   if (listing.isNegotiable || listing.price == null) return negotiableLabel;
 
   const isNativeUsd = listing.priceUsd != null;

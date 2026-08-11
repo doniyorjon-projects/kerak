@@ -39,6 +39,22 @@ export class SettingsService implements OnModuleInit {
     return this.prisma.botSettings.update({ where: { id: settings.id }, data: { starsRate } });
   }
 
+  async updateTelegramChannelUrl(telegramChannelUrl: string | null) {
+    const settings = await this.get();
+    return this.prisma.botSettings.update({
+      where: { id: settings.id },
+      data: { telegramChannelUrl: telegramChannelUrl?.trim() || null },
+    });
+  }
+
+  async updateSupportUrl(supportUrl: string | null) {
+    const settings = await this.get();
+    return this.prisma.botSettings.update({
+      where: { id: settings.id },
+      data: { supportUrl: supportUrl?.trim() || null },
+    });
+  }
+
   onModuleInit() {
     // Ataylab kutilmaydi (await qilinmaydi) - CBU sayti sekin yoki
     // ishlamay qolsa ham, server shu tufayli ishga tushmay qolmasligi kerak.

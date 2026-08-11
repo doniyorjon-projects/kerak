@@ -161,6 +161,14 @@ export function refreshUsdRate() {
   return api.post<BotSettingsDto>("/admin/settings/usd-rate/refresh");
 }
 
+export function setTelegramChannelUrl(telegramChannelUrl: string | null) {
+  return api.patch<BotSettingsDto>("/admin/settings/telegram-channel-url", { telegramChannelUrl });
+}
+
+export function setSupportUrl(supportUrl: string | null) {
+  return api.patch<BotSettingsDto>("/admin/settings/support-url", { supportUrl });
+}
+
 export interface AdminRequest {
   id: string;
   title: string;

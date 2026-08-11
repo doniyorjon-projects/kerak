@@ -27,6 +27,10 @@ export interface FindFeedOptions {
   minPrice?: number;
   maxPrice?: number;
   condition?: ListingCondition;
+  isFree?: boolean;
+  isUrgent?: boolean;
+  hasDelivery?: boolean;
+  attributes?: Record<string, string>;
   limit?: number;
   offset?: number;
 }
@@ -37,8 +41,12 @@ interface FeedRow {
   title: string;
   description: string;
   price: number | null;
+  previousPrice: number | null;
   priceUsd: number | null;
   isNegotiable: boolean;
+  isFree: boolean;
+  isUrgent: boolean;
+  hasDelivery: boolean;
   photos: string[];
   addressText: string | null;
   regionId: number | null;
@@ -79,7 +87,12 @@ export class ListingsService {
     }
 
     const listing = await this.prisma.listing.create({
-      data: { ...dto, sellerId, status: ListingStatus.PENDING },
+      data: {
+        ...dto,
+        ...(dto.isFree ? { price: null, priceUsd: null, isNegotiable: false } : {}),
+        sellerId,
+        status: ListingStatus.PENDING,
+      },
       include: FEED_INCLUDE,
     });
     await this.botService.notifyAdminNewListing(listing);
@@ -100,6 +113,10 @@ export class ListingsService {
       minPrice,
       maxPrice,
       condition,
+      isFree,
+      isUrgent,
+      hasDelivery,
+      attributes,
       limit,
       offset,
     } = options;
@@ -123,12 +140,22 @@ export class ListingsService {
         ...((minPrice !== undefined || maxPrice !== undefined)
           ? { price: { ...(minPrice !== undefined ? { gte: minPrice } : {}), ...(maxPrice !== undefined ? { lte: maxPrice } : {}) } }
           : {}),
+        ...(isFree ? { isFree: true } : {}),
+        ...(isUrgent ? { isUrgent: true } : {}),
+        ...(hasDelivery ? { hasDelivery: true } : {}),
         ...(q
           ? {
               OR: [
                 { title: { contains: q, mode: "insensitive" } },
                 { description: { contains: q, mode: "insensitive" } },
               ],
+            }
+          : {}),
+        ...(attributes && Object.keys(attributes).length > 0
+          ? {
+              AND: Object.entries(attributes).map(([key, value]) => ({
+                attributes: { path: [key], equals: value },
+              })),
             }
           : {}),
       };
@@ -175,9 +202,17 @@ export class ListingsService {
     if (condition) conditions.push(Prisma.sql`l.condition = ${condition}::"ListingCondition"`);
     if (minPrice !== undefined) conditions.push(Prisma.sql`l.price >= ${minPrice}`);
     if (maxPrice !== undefined) conditions.push(Prisma.sql`l.price <= ${maxPrice}`);
+    if (isFree) conditions.push(Prisma.sql`l."isFree" = true`);
+    if (isUrgent) conditions.push(Prisma.sql`l."isUrgent" = true`);
+    if (hasDelivery) conditions.push(Prisma.sql`l."hasDelivery" = true`);
     if (q) {
       const pattern = `%${q}%`;
       conditions.push(Prisma.sql`(l.title ILIKE ${pattern} OR l.description ILIKE ${pattern})`);
+    }
+    if (attributes) {
+      for (const [key, value] of Object.entries(attributes)) {
+        conditions.push(Prisma.sql`l.attributes ->> ${key} = ${value}`);
+      }
     }
     if (radiusKm) {
       conditions.push(Prisma.sql`
@@ -200,8 +235,10 @@ export class ListingsService {
 
     const selectFrom = Prisma.sql`
       SELECT
-        l.id, l."categoryId" as "categoryId", l.title, l.description, l.price, l."priceUsd" as "priceUsd",
-        l."isNegotiable" as "isNegotiable", l.photos, l."addressText" as "addressText",
+        l.id, l."categoryId" as "categoryId", l.title, l.description, l.price,
+        l."previousPrice" as "previousPrice", l."priceUsd" as "priceUsd",
+        l."isNegotiable" as "isNegotiable", l."isFree" as "isFree", l."isUrgent" as "isUrgent",
+        l."hasDelivery" as "hasDelivery", l.photos, l."addressText" as "addressText",
         l."regionId" as "regionId", l."districtId" as "districtId",
         l.lat, l.lng, l.phone, l.condition, l.status, l."viewsCount" as "viewsCount", l."createdAt" as "createdAt",
         l."boostedUntil" as "boostedUntil", l."bumpedAt" as "bumpedAt",
@@ -247,8 +284,12 @@ export class ListingsService {
       title: r.title,
       description: r.description,
       price: r.price,
+      previousPrice: r.previousPrice,
       priceUsd: r.priceUsd,
       isNegotiable: r.isNegotiable,
+      isFree: r.isFree,
+      isUrgent: r.isUrgent,
+      hasDelivery: r.hasDelivery,
       photos: r.photos,
       addressText: r.addressText,
       regionId: r.regionId,
@@ -341,8 +382,20 @@ export class ListingsService {
     const hasContentChanges = Object.values(content).some((value) => value !== undefined);
     const priceDropped =
       content.price !== undefined && content.price != null && listing.price != null && content.price < listing.price;
+    const priceRaised =
+      content.price !== undefined && content.price != null && listing.price != null && content.price > listing.price;
 
     const data: Prisma.ListingUpdateInput = { ...content };
+    if (content.isFree) {
+      data.price = null;
+      data.priceUsd = null;
+      data.isNegotiable = false;
+    }
+    if (priceDropped) {
+      data.previousPrice = listing.price;
+    } else if (priceRaised) {
+      data.previousPrice = null;
+    }
     if (status) {
       data.status = status;
     } else if (hasContentChanges && listing.status === ListingStatus.REJECTED) {

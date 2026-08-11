@@ -299,6 +299,32 @@ export class BotService implements OnModuleInit {
       .catch((err) => this.logger.warn(`Narx tushishi haqida xabar yuborilmadi: ${err}`));
   }
 
+  async notifyPriceOffer(telegramId: string, listingId: string, listingTitle: string, amount: number, buyerName: string) {
+    const keyboard = new InlineKeyboard().webApp(
+      "🔍 Ko'rish",
+      `${this.miniAppUrl}?listing=${encodeURIComponent(listingId)}`,
+    );
+    const text = `💬 ${buyerName} "${listingTitle}" eloningizga ${amount.toLocaleString("uz-UZ")} so'm taklif qildi.`;
+
+    await this.bot.api
+      .sendMessage(telegramId, text, { reply_markup: keyboard })
+      .catch((err) => this.logger.warn(`Narx taklifi haqida xabar yuborilmadi: ${err}`));
+  }
+
+  async notifyPriceOfferResolved(telegramId: string, listingId: string, listingTitle: string, accepted: boolean) {
+    const keyboard = new InlineKeyboard().webApp(
+      "🔍 Ko'rish",
+      `${this.miniAppUrl}?listing=${encodeURIComponent(listingId)}`,
+    );
+    const text = accepted
+      ? `✅ "${listingTitle}" eloniga taklif qilgan narxingiz qabul qilindi! Sotuvchi bilan bog'laning.`
+      : `❌ "${listingTitle}" eloniga taklif qilgan narxingiz rad etildi.`;
+
+    await this.bot.api
+      .sendMessage(telegramId, text, { reply_markup: keyboard })
+      .catch((err) => this.logger.warn(`Taklif natijasi haqida xabar yuborilmadi: ${err}`));
+  }
+
   async notifySavedSearchDigest(telegramId: string, totalMatches: number, labels: string[]) {
     const keyboard = new InlineKeyboard().webApp("🔍 Ko'rish", `${this.miniAppUrl}/saved-searches`);
     const text = `🔔 Saqlangan qidiruvlaringiz bo'yicha ${totalMatches} ta yangi e'lon topildi:\n${labels.join("\n")}`;

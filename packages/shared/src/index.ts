@@ -57,8 +57,12 @@ export interface ListingDto {
   brand?: string | null;
   attributes?: Record<string, string> | null;
   price: number | null;
+  previousPrice?: number | null;
   priceUsd?: number | null;
   isNegotiable: boolean;
+  isFree: boolean;
+  isUrgent: boolean;
+  hasDelivery: boolean;
   photos: string[];
   addressText: string | null;
   regionId: number | null;
@@ -151,6 +155,11 @@ export interface FeedQuery {
   minPrice?: number;
   maxPrice?: number;
   condition?: ListingCondition;
+  isFree?: boolean;
+  isUrgent?: boolean;
+  hasDelivery?: boolean;
+  /** Toifaga xos xususiyatlar bo'yicha filtr (masalan { rooms: "3" }). Amalda JSON satr sifatida yuboriladi. */
+  attributes?: Record<string, string>;
   limit?: number;
   offset?: number;
 }
@@ -173,7 +182,9 @@ export type NotificationType =
   | "REPORT_RESOLVED"
   | "LISTING_EXPIRED"
   | "NEW_RATING"
-  | "PRICE_DROP";
+  | "PRICE_DROP"
+  | "PRICE_OFFER_RECEIVED"
+  | "PRICE_OFFER_RESOLVED";
 
 export interface NotificationDto {
   id: string;
@@ -194,6 +205,9 @@ export interface CreateListingInput {
   price: number | null;
   priceUsd?: number | null;
   isNegotiable: boolean;
+  isFree?: boolean;
+  isUrgent?: boolean;
+  hasDelivery?: boolean;
   photos: string[];
   addressText: string | null;
   regionId: number | null;
@@ -245,10 +259,29 @@ export interface BotSettingsDto {
   channelId: string | null;
   starsRate: number;
   usdRate: number;
+  telegramChannelUrl: string | null;
+  supportUrl: string | null;
 }
 
 export interface PublicSettingsDto {
   usdRate: number;
+  telegramChannelUrl: string | null;
+  supportUrl: string | null;
+}
+
+export type PriceOfferStatus = "PENDING" | "ACCEPTED" | "REJECTED";
+
+export interface PriceOfferDto {
+  id: string;
+  listingId: string;
+  amount: number;
+  status: PriceOfferStatus;
+  createdAt: string;
+  buyer: UserSummaryDto;
+}
+
+export interface CreatePriceOfferInput {
+  amount: number;
 }
 
 export interface SavedSearchDto {

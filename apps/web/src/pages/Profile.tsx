@@ -6,6 +6,7 @@ import {
   BellRing,
   Check,
   ChevronRight,
+  HeadphonesIcon,
   ListChecks,
   LocateFixed,
   Map,
@@ -14,16 +15,19 @@ import {
   MessageSquareText,
   Pencil,
   Rocket,
+  Send,
   ShieldCheck,
   Wallet as WalletIcon,
   X,
 } from "lucide-react";
 import { UNLIMITED_LISTINGS } from "@kerak/shared";
 import { fetchMe, updateLocation, updateProfile } from "../api/users";
+import { fetchPublicSettings } from "../api/settings";
 import { reverseGeocode } from "../api/geo";
 import { LocationMapPicker } from "../components/map/LocationMapPicker";
 import { PageHeader } from "../components/PageHeader";
 import { Spinner } from "../components/Spinner";
+import { openSmartLink } from "../telegram";
 import { useTranslation } from "../i18n/LanguageContext";
 
 const TASHKENT_CENTER = { lat: 41.311081, lng: 69.240562 };
@@ -38,6 +42,7 @@ export function Profile() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: me, isLoading } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
+  const { data: publicSettings } = useQuery({ queryKey: ["public-settings"], queryFn: fetchPublicSettings });
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [showMapPicker, setShowMapPicker] = useState(false);
@@ -314,6 +319,38 @@ export function Profile() {
           </Link>
         )}
       </div>
+
+      {(publicSettings?.telegramChannelUrl || publicSettings?.supportUrl) && (
+        <div className="card flex flex-col gap-3 border-brand/25 bg-brand/5">
+          <span className="text-sm font-semibold text-brand">{t("profile.linksTitle")}</span>
+          <div className="grid grid-cols-2 gap-2">
+            {publicSettings.telegramChannelUrl && (
+              <button
+                type="button"
+                onClick={() => openSmartLink(publicSettings.telegramChannelUrl!)}
+                className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-brand py-3 text-xs font-semibold text-brand-contrast transition active:scale-[0.98]"
+              >
+                <Send className="h-4 w-4" />
+                {t("profile.channelLink")}
+              </button>
+            )}
+            {publicSettings.supportUrl && (
+              <button
+                type="button"
+                onClick={() => openSmartLink(publicSettings.supportUrl!)}
+                className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-brand py-3 text-xs font-semibold text-brand-contrast transition active:scale-[0.98]"
+              >
+                <HeadphonesIcon className="h-4 w-4" />
+                {t("profile.supportLink")}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      <p className="pb-2 pt-1 text-center text-[11px] text-hint">
+        © {new Date().getFullYear()} {t("profile.copyright")}
+      </p>
     </div>
   );
 }

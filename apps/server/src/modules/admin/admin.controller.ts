@@ -24,6 +24,8 @@ import { SetChannelDto } from "./dto/set-channel.dto";
 import { SettingsService } from "../settings/settings.service";
 import { RequestsService } from "../requests/requests.service";
 import { SetStarsRateDto } from "./dto/set-stars-rate.dto";
+import { SetTelegramChannelUrlDto } from "./dto/set-telegram-channel-url.dto";
+import { SetSupportUrlDto } from "./dto/set-support-url.dto";
 import { BroadcastDto } from "./dto/broadcast.dto";
 import type { User } from "@prisma/client";
 import { NotificationType } from "@prisma/client";
@@ -63,6 +65,16 @@ export class AdminController {
   async refreshUsdRate() {
     await this.settingsService.refreshUsdRateFromCbu();
     return this.settingsService.get();
+  }
+
+  @Patch("settings/telegram-channel-url")
+  setTelegramChannelUrl(@Body() dto: SetTelegramChannelUrlDto) {
+    return this.settingsService.updateTelegramChannelUrl(dto.telegramChannelUrl ?? null);
+  }
+
+  @Patch("settings/support-url")
+  setSupportUrl(@Body() dto: SetSupportUrlDto) {
+    return this.settingsService.updateSupportUrl(dto.supportUrl ?? null);
   }
 
   @Get("requests")

@@ -18,6 +18,7 @@ import { NotificationBell } from "../components/NotificationBell";
 import { LanguageSwitch } from "../components/LanguageSwitch";
 import { BannerCarousel } from "../components/BannerCarousel";
 import { CategoryScroller } from "../components/CategoryScroller";
+import { RegionBanner } from "../components/RegionBanner";
 import { useTranslation } from "../i18n/LanguageContext";
 import { getRecentlyViewedIds } from "../utils/recentlyViewed";
 
@@ -39,7 +40,17 @@ export function Home() {
   const [searchLabel, setSearchLabel] = useState("");
 
   const hasActiveSearch = Boolean(
-    search || filters.categoryId || filters.regionId || filters.districtId || filters.minPrice || filters.maxPrice || filters.condition,
+    search ||
+      filters.categoryId ||
+      filters.regionId ||
+      filters.districtId ||
+      filters.minPrice ||
+      filters.maxPrice ||
+      filters.condition ||
+      filters.isFree ||
+      filters.isUrgent ||
+      filters.hasDelivery ||
+      (filters.attributes && Object.keys(filters.attributes).length > 0),
   );
 
   const saveSearchMutation = useMutation({
@@ -134,6 +145,9 @@ export function Home() {
           <SearchBar onSearch={setSearch} />
           <NotificationBell />
           <LanguageSwitch />
+        </div>
+        <div className="pt-2">
+          <RegionBanner />
         </div>
       </div>
 

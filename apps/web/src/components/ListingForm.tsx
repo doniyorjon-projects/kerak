@@ -6,12 +6,15 @@ import {
   Banknote,
   Camera,
   ChevronDown,
+  Gift,
   ListChecks,
   MapPin,
   Phone,
   Sparkles,
   Tag,
+  Truck,
   Type,
+  Zap,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -23,7 +26,6 @@ import { fetchPublicSettings } from "../api/settings";
 import { generateAiDescription } from "../api/ai";
 import { fetchMe } from "../api/users";
 import { RegionDistrictPicker, type PlaceValue } from "./RegionDistrictPicker";
-import { CategoryPicker } from "./CategoryPicker";
 import { PhoneInput, phoneToDigits } from "./PhoneInput";
 import { PriceInput } from "./PriceInput";
 import { useTranslation } from "../i18n/LanguageContext";
@@ -37,6 +39,9 @@ export interface ListingFormInitialValues {
   price: number | null;
   priceUsd?: number | null;
   isNegotiable: boolean;
+  isFree?: boolean;
+  isUrgent?: boolean;
+  hasDelivery?: boolean;
   phone: string;
   photos: string[];
   addressText: string | null;
@@ -104,6 +109,9 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
   const [priceCurrency, setPriceCurrency] = useState<"UZS" | "USD">(initial?.priceUsd != null ? "USD" : "UZS");
   const [usdPrice, setUsdPrice] = useState(initial?.priceUsd != null ? String(initial.priceUsd) : "");
   const [isNegotiable, setIsNegotiable] = useState(initial?.isNegotiable ?? false);
+  const [isFree, setIsFree] = useState(initial?.isFree ?? false);
+  const [isUrgent, setIsUrgent] = useState(initial?.isUrgent ?? false);
+  const [hasDelivery, setHasDelivery] = useState(initial?.hasDelivery ?? false);
   const [phone, setPhone] = useState(initial?.phone ?? "");
   const [place, setPlace] = useState<PlaceValue | null>(null);
   const [photos, setPhotos] = useState<string[]>(initial?.photos ?? []);
@@ -146,9 +154,12 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
       description,
       brand: isProduct && brand.trim() ? brand.trim() : null,
       attributes: Object.keys(filledAttributes).length > 0 ? filledAttributes : null,
-      price: isNegotiable || !price ? null : Number(price),
-      priceUsd: isNegotiable || priceCurrency !== "USD" || !usdPrice ? null : Number(usdPrice),
-      isNegotiable,
+      price: isFree || isNegotiable || !price ? null : Number(price),
+      priceUsd: isFree || isNegotiable || priceCurrency !== "USD" || !usdPrice ? null : Number(usdPrice),
+      isNegotiable: isFree ? false : isNegotiable,
+      isFree,
+      isUrgent,
+      hasDelivery,
       photos,
       addressText: place.addressText,
       regionId: place.regionId,
@@ -164,7 +175,29 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="card flex flex-col gap-4">
         <SectionHeader icon={Tag} title={t("create.category")} />
-        <CategoryPicker categories={categories ?? []} value={categoryId} onChange={handleCategoryChange} />
+        <div className="relative">
+          <select
+            value={categoryId}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+            className="input appearance-none pr-9"
+          >
+            <option value="">{t("create.selectCategory")}</option>
+            {(categories ?? [])
+              .filter((c) => !c.parentId)
+              .map((root) => (
+                <optgroup key={root.id} label={`${root.icon ?? ""} ${root.nameUz}`}>
+                  {(categories ?? [])
+                    .filter((c) => c.parentId === root.id)
+                    .map((child) => (
+                      <option key={child.id} value={child.id}>
+                        {child.icon} {child.nameUz}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
+        </div>
 
         {showCondition && (
           <div className="grid grid-cols-2 gap-2">
@@ -288,78 +321,126 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
       </div>
 
       <div className="card flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-2.5">
-          <SectionHeader icon={Banknote} title={t("create.priceSection")} />
-          <div className="flex shrink-0 gap-1 rounded-full bg-surface-secondary p-0.5">
-            <button
-              type="button"
-              disabled={isNegotiable}
-              onClick={() => setPriceCurrency("UZS")}
-              className={`rounded-full px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50 ${
-                priceCurrency === "UZS" ? "bg-brand text-brand-contrast" : "text-hint"
-              }`}
-            >
-              {t("som")}
-            </button>
-            <button
-              type="button"
-              disabled={isNegotiable}
-              onClick={() => {
-                setUsdPrice(price ? String(Math.round(Number(price) / usdRate)) : "");
-                setPriceCurrency("USD");
-              }}
-              className={`rounded-full px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50 ${
-                priceCurrency === "USD" ? "bg-brand text-brand-contrast" : "text-hint"
-              }`}
-            >
-              $
-            </button>
-          </div>
-        </div>
-        <div className="relative">
-          {priceCurrency === "USD" ? (
-            <PriceInput
-              value={usdPrice}
-              onChange={(digits) => {
-                setUsdPrice(digits);
-                setPrice(digits ? String(Math.round(Number(digits) * usdRate)) : "");
-              }}
-              disabled={isNegotiable}
-              className="input pr-10 text-base font-semibold disabled:opacity-50"
-              placeholder="0"
-            />
-          ) : (
-            <PriceInput
-              value={price}
-              onChange={setPrice}
-              disabled={isNegotiable}
-              className="input pr-14 text-base font-semibold disabled:opacity-50"
-              placeholder="0"
-            />
-          )}
-          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-hint">
-            {priceCurrency === "USD" ? "$" : t("som")}
-          </span>
-        </div>
-        {priceCurrency === "USD" && price && (
-          <span className="text-xs text-hint">
-            ≈ {Number(price).toLocaleString("uz-UZ")} {t("som")}
-          </span>
-        )}
+        <SectionHeader icon={Banknote} title={t("create.priceSection")} />
+
         <label className="flex cursor-pointer items-center justify-between rounded-xl bg-surface-secondary px-3.5 py-2.5">
-          <span className="text-sm text-ink">{t("negotiable")}</span>
+          <span className="flex items-center gap-1.5 text-sm text-ink">
+            <Gift className="h-4 w-4 text-success-dark" />
+            {t("create.isFree")}
+          </span>
           <button
             type="button"
             role="switch"
-            aria-checked={isNegotiable}
-            onClick={() => setIsNegotiable((v) => !v)}
-            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${isNegotiable ? "bg-brand" : "bg-divider"}`}
+            aria-checked={isFree}
+            onClick={() => setIsFree((v) => !v)}
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${isFree ? "bg-brand" : "bg-divider"}`}
           >
             <span
-              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-soft transition-all ${isNegotiable ? "left-[22px]" : "left-0.5"}`}
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-soft transition-all ${isFree ? "left-[22px]" : "left-0.5"}`}
             />
           </button>
         </label>
+
+        {!isFree && (
+          <>
+            <div className="flex items-center justify-end gap-2.5">
+              <div className="flex shrink-0 gap-1 rounded-full bg-surface-secondary p-0.5">
+                <button
+                  type="button"
+                  disabled={isNegotiable}
+                  onClick={() => setPriceCurrency("UZS")}
+                  className={`rounded-full px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50 ${
+                    priceCurrency === "UZS" ? "bg-brand text-brand-contrast" : "text-hint"
+                  }`}
+                >
+                  {t("som")}
+                </button>
+                <button
+                  type="button"
+                  disabled={isNegotiable}
+                  onClick={() => {
+                    setUsdPrice(price ? String(Math.round(Number(price) / usdRate)) : "");
+                    setPriceCurrency("USD");
+                  }}
+                  className={`rounded-full px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50 ${
+                    priceCurrency === "USD" ? "bg-brand text-brand-contrast" : "text-hint"
+                  }`}
+                >
+                  $
+                </button>
+              </div>
+            </div>
+            <div className="relative">
+              {priceCurrency === "USD" ? (
+                <PriceInput
+                  value={usdPrice}
+                  onChange={(digits) => {
+                    setUsdPrice(digits);
+                    setPrice(digits ? String(Math.round(Number(digits) * usdRate)) : "");
+                  }}
+                  disabled={isNegotiable}
+                  className="input pr-10 text-base font-semibold disabled:opacity-50"
+                  placeholder="0"
+                />
+              ) : (
+                <PriceInput
+                  value={price}
+                  onChange={setPrice}
+                  disabled={isNegotiable}
+                  className="input pr-14 text-base font-semibold disabled:opacity-50"
+                  placeholder="0"
+                />
+              )}
+              <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-hint">
+                {priceCurrency === "USD" ? "$" : t("som")}
+              </span>
+            </div>
+            {priceCurrency === "USD" && price && (
+              <span className="text-xs text-hint">
+                ≈ {Number(price).toLocaleString("uz-UZ")} {t("som")}
+              </span>
+            )}
+            <label className="flex cursor-pointer items-center justify-between rounded-xl bg-surface-secondary px-3.5 py-2.5">
+              <span className="text-sm text-ink">{t("negotiable")}</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isNegotiable}
+                onClick={() => setIsNegotiable((v) => !v)}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${isNegotiable ? "bg-brand" : "bg-divider"}`}
+              >
+                <span
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-soft transition-all ${isNegotiable ? "left-[22px]" : "left-0.5"}`}
+                />
+              </button>
+            </label>
+          </>
+        )}
+      </div>
+
+      <div className="card flex flex-col gap-2">
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setIsUrgent((v) => !v)}
+            className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-semibold transition active:scale-[0.98] ${
+              isUrgent ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"
+            }`}
+          >
+            <Zap className="h-4 w-4" />
+            {t("create.isUrgent")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setHasDelivery((v) => !v)}
+            className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-semibold transition active:scale-[0.98] ${
+              hasDelivery ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"
+            }`}
+          >
+            <Truck className="h-4 w-4" />
+            {t("create.hasDelivery")}
+          </button>
+        </div>
       </div>
 
       <div className="card flex flex-col gap-3">
