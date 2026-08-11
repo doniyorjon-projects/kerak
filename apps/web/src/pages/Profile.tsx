@@ -8,10 +8,6 @@ import {
   ChevronRight,
   HeadphonesIcon,
   ListChecks,
-  LocateFixed,
-  Map,
-  MapPin,
-  MapPinned,
   MessageSquareText,
   Pencil,
   Rocket,
@@ -21,32 +17,18 @@ import {
   X,
 } from "lucide-react";
 import { UNLIMITED_LISTINGS } from "@kerak/shared";
-import { fetchMe, updateLocation, updateProfile } from "../api/users";
+import { fetchMe, updateProfile } from "../api/users";
 import { fetchPublicSettings } from "../api/settings";
-import { reverseGeocode } from "../api/geo";
-import { LocationMapPicker } from "../components/map/LocationMapPicker";
 import { PageHeader } from "../components/PageHeader";
 import { Spinner } from "../components/Spinner";
 import { openSmartLink } from "../telegram";
 import { useTranslation } from "../i18n/LanguageContext";
-
-const TASHKENT_CENTER = { lat: 41.311081, lng: 69.240562 };
-
-function formatPlace(result: { place: string | null; district: string | null; region: string | null; displayName: string | null }): string | null {
-  const parts = [result.place, result.district, result.region].filter(Boolean);
-  if (parts.length > 0) return parts.join(", ");
-  return result.displayName;
-}
 
 export function Profile() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: me, isLoading } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
   const { data: publicSettings } = useQuery({ queryKey: ["public-settings"], queryFn: fetchPublicSettings });
-  const [locating, setLocating] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
-  const [showMapPicker, setShowMapPicker] = useState(false);
-  const [pendingPosition, setPendingPosition] = useState<{ lat: number; lng: number } | null>(null);
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editName, setEditName] = useState("");
@@ -69,46 +51,6 @@ export function Profile() {
     },
     onError: (err: Error) => setProfileError(err.message),
   });
-
-  const locationMutation = useMutation({
-    mutationFn: ({ lat, lng }: { lat: number; lng: number }) => updateLocation(lat, lng),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(["me"], updated);
-      setPendingPosition(null);
-      setShowMapPicker(false);
-    },
-  });
-
-  const { data: savedPlace } = useQuery({
-    queryKey: ["reverse-geocode", "saved", me?.lat, me?.lng],
-    queryFn: () => reverseGeocode(me!.lat!, me!.lng!),
-    enabled: me?.lat != null && me?.lng != null,
-  });
-
-  const { data: pendingPlace, isFetching: isFetchingPendingPlace } = useQuery({
-    queryKey: ["reverse-geocode", "pending", pendingPosition?.lat, pendingPosition?.lng],
-    queryFn: () => reverseGeocode(pendingPosition!.lat, pendingPosition!.lng),
-    enabled: pendingPosition != null,
-  });
-
-  const detectLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationError(t("profile.geoUnsupported"));
-      return;
-    }
-    setLocating(true);
-    setLocationError(null);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        locationMutation.mutate({ lat: position.coords.latitude, lng: position.coords.longitude });
-        setLocating(false);
-      },
-      () => {
-        setLocationError(t("profile.geoFailed"));
-        setLocating(false);
-      },
-    );
-  };
 
   const startEditingProfile = () => {
     if (me) {
@@ -187,70 +129,6 @@ export function Profile() {
               <Pencil className="h-4 w-4 text-hint" />
             </button>
           </>
-        )}
-      </div>
-
-      <div className="card flex flex-col gap-3">
-        <span className="flex items-center gap-1.5 text-sm font-semibold text-ink">
-          <MapPin className="h-4 w-4 text-hint" />
-          {t("profile.location")}
-        </span>
-        <span className="text-xs leading-relaxed text-hint">
-          {me.lat != null && me.lng != null ? t("profile.locationSaved") : t("profile.locationNotSaved")}
-        </span>
-        {me.lat != null && me.lng != null && savedPlace && (
-          <span className="flex items-center gap-1.5 text-xs font-medium text-brand">
-            <MapPinned className="h-3.5 w-3.5" />
-            {t("profile.detectedNear")} {formatPlace(savedPlace)}
-          </span>
-        )}
-        <div className="flex gap-2">
-          <button type="button" onClick={detectLocation} disabled={locating} className="btn-secondary flex-1">
-            <LocateFixed className="h-4 w-4" />
-            {locating ? t("profile.detecting") : t("profile.updateLocation")}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setShowMapPicker((v) => !v);
-              setPendingPosition(null);
-            }}
-            className="btn-secondary flex-1"
-          >
-            <Map className="h-4 w-4" />
-            {t("profile.chooseOnMap")}
-          </button>
-        </div>
-        {locationError && <span className="text-xs text-destructive">{locationError}</span>}
-        {showMapPicker && (
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-hint">{t("profile.chooseOnMapHint")}</span>
-            <LocationMapPicker
-              lat={pendingPosition?.lat ?? me.lat ?? TASHKENT_CENTER.lat}
-              lng={pendingPosition?.lng ?? me.lng ?? TASHKENT_CENTER.lng}
-              onChange={setPendingPosition}
-            />
-            {pendingPosition && (
-              <div className="flex flex-col gap-2 rounded-xl bg-surface-secondary p-3">
-                <span className="text-xs text-ink">
-                  {isFetchingPendingPlace
-                    ? t("loading")
-                    : pendingPlace
-                      ? formatPlace(pendingPlace)
-                      : null}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => locationMutation.mutate(pendingPosition)}
-                  disabled={locationMutation.isPending}
-                  className="btn-primary"
-                >
-                  <Check className="h-4 w-4" />
-                  {locationMutation.isPending ? t("saving") : t("profile.confirmLocation")}
-                </button>
-              </div>
-            )}
-          </div>
         )}
       </div>
 

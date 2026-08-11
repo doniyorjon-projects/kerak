@@ -14,9 +14,9 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsNumber()
-  lat?: number;
+  lat?: number | null;
 
   @IsOptional()
   @IsNumber()
-  lng?: number;
+  lng?: number | null;
 }

@@ -1,5 +1,5 @@
 ﻿import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BellPlus, ChevronRight, MessageSquareText, PackageSearch, Rocket } from "lucide-react";
 import type { FeedSort } from "@kerak/shared";
@@ -18,15 +18,15 @@ import { NotificationBell } from "../components/NotificationBell";
 import { LanguageSwitch } from "../components/LanguageSwitch";
 import { BannerCarousel } from "../components/BannerCarousel";
 import { CategoryScroller } from "../components/CategoryScroller";
-import { RegionBanner } from "../components/RegionBanner";
+import { RegionBanner, RegionBannerTrigger } from "../components/RegionBanner";
 import { useTranslation } from "../i18n/LanguageContext";
 import { getRecentlyViewedIds } from "../utils/recentlyViewed";
 
 export function Home() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [regionPickerOpen, setRegionPickerOpen] = useState(false);
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
   const hasLocation = me?.lat != null && me?.lng != null;
@@ -67,7 +67,7 @@ export function Home() {
 
   const handleSortChange = (newSort: FeedSort) => {
     if (newSort === "distance" && !hasLocation) {
-      navigate("/profile");
+      setRegionPickerOpen(true);
       return;
     }
     setSort(newSort);
@@ -147,9 +147,11 @@ export function Home() {
           <LanguageSwitch />
         </div>
         <div className="pt-2">
-          <RegionBanner />
+          <RegionBannerTrigger onClick={() => setRegionPickerOpen(true)} />
         </div>
       </div>
+
+      <RegionBanner open={regionPickerOpen} onOpenChange={setRegionPickerOpen} />
 
       {isSearching ? (
         <>

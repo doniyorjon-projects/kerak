@@ -21,6 +21,6 @@ export function updateProfile(data: { firstName?: string; phone?: string }) {
   return api.patch<MeDto>("/users/me", data);
 }
 
-export function updateLocation(lat: number, lng: number) {
+export function updateLocation(lat: number | null, lng: number | null) {
   return api.patch<MeDto>("/users/me", { lat, lng });
 }
