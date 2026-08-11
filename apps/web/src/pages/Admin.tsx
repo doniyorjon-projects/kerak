@@ -1031,7 +1031,7 @@ function AdminRequestsTab() {
             <span className="flex items-center gap-1">
               <Wallet className="h-3 w-3" />
               {r.budgetMin != null || r.budgetMax != null
-                ? `${r.budgetMin?.toLocaleString("uz-UZ") ?? "0"} вЂ“ ${r.budgetMax?.toLocaleString("uz-UZ") ?? "?"}`
+                ? `${r.budgetMin?.toLocaleString("uz-UZ") ?? "0"} – ${r.budgetMax?.toLocaleString("uz-UZ") ?? "?"}`
                 : t("request.anyBudget")}
             </span>
             <span>{r.category.nameUz}</span>

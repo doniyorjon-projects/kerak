@@ -50,12 +50,20 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 }
 
-export function wakeUpServer(): void {
+let wakeUpPromise: Promise<void> | null = null;
+
+export function wakeUpServer(): Promise<void> {
   // Render'ning bepul tarifi bo'sh serverni uxlatib qo'yadi - mini-app ochilishi
   // bilanoq shu yengil so'rovni yuborib, haqiqiy amal (rasm yuklash, e'lon
   // joylash) vaqtiga qadar server allaqachon uyg'onib ulgurishi ehtimolini
-  // oshiramiz.
-  fetch(`${API_URL}/health`).catch(() => {});
+  // oshiramiz. Natija keshlanadi - chaqiruvchilar (main.tsx va splash ekran)
+  // bitta so'rovni birga kutadi.
+  if (!wakeUpPromise) {
+    wakeUpPromise = fetch(`${API_URL}/health`)
+      .then(() => undefined)
+      .catch(() => undefined);
+  }
+  return wakeUpPromise;
 }
 
 export function captureReferralId(referralId: string): void {

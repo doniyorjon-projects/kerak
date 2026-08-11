@@ -219,7 +219,7 @@ export function Home() {
           <section className="flex flex-col gap-3">
             <h2 className="section-title-lg">{t("home.recentTitle")}</h2>
             <div className="flex flex-wrap items-center gap-2">
-              <FeedFilters value={filters} onChange={setFilters} categories={leafCategories} />
+              <FeedFilters value={filters} onChange={setFilters} categories={categories} />
               {hasActiveSearch && (
                 <button
                   type="button"

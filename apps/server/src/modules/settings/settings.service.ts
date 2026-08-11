@@ -39,14 +39,16 @@ export class SettingsService implements OnModuleInit {
     return this.prisma.botSettings.update({ where: { id: settings.id }, data: { starsRate } });
   }
 
-  async onModuleInit() {
-    await this.refreshUsdRateFromCbu();
+  onModuleInit() {
+    // Ataylab kutilmaydi (await qilinmaydi) - CBU sayti sekin yoki
+    // ishlamay qolsa ham, server shu tufayli ishga tushmay qolmasligi kerak.
+    void this.refreshUsdRateFromCbu();
   }
 
   @Cron(CronExpression.EVERY_6_HOURS)
   async refreshUsdRateFromCbu() {
     try {
-      const res = await fetch(CBU_USD_RATE_URL);
+      const res = await fetch(CBU_USD_RATE_URL, { signal: AbortSignal.timeout(6000) });
       if (!res.ok) throw new Error(`CBU API ${res.status}`);
       const entries = (await res.json()) as CbuRateEntry[];
       const usdEntry = entries.find((e) => e.Ccy === "USD");

@@ -9,6 +9,9 @@ import { SettingsService } from "../settings/settings.service";
 import { BlocksService } from "../blocks/blocks.service";
 import { UsersService } from "../users/users.service";
 
+/** Hamkorlik/reklama va admin bilan bog'lanish uchun ko'rsatiladigan kontakt. */
+const ADMIN_CONTACT_USERNAME = "doniyorjon_k";
+
 @Injectable()
 export class BotService implements OnModuleInit {
   private readonly logger = new Logger(BotService.name);
@@ -79,7 +82,8 @@ export class BotService implements OnModuleInit {
             "🛍 Kerakli mahsulot yoki ustani soniyalarda toping\n" +
             "📢 O'zingiznikini bepul e'lon qilib soting\n" +
             "⭐️ Sharh va reyting orqali ishonchli tanlov qiling\n\n" +
-            "Minglab foydalanuvchi Kerak orqali xarid qilmoqda va daromad topmoqda. Endi navbat sizda — pastdagi tugmani bosing 👇",
+            "Minglab foydalanuvchi Kerak orqali xarid qilmoqda va daromad topmoqda. Endi navbat sizda — pastdagi tugmani bosing 👇\n\n" +
+            `<i>Hamkorlik yoki reklama uchun: @${ADMIN_CONTACT_USERNAME}</i>`,
         { reply_markup: keyboard, parse_mode: "HTML" },
       );
     });

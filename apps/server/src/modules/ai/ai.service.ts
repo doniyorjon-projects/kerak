@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { User } from "@prisma/client";
-import { FREE_LISTINGS_LIMIT } from "@kerak/shared";
+import { UNLIMITED_LISTINGS } from "@kerak/shared";
 
 const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
 
@@ -12,8 +12,8 @@ export class AiService {
   constructor(private readonly config: ConfigService) {}
 
   async generateDescription(user: User, title: string, categoryName?: string, draft?: string): Promise<string> {
-    if (user.listingsLimit <= FREE_LISTINGS_LIMIT) {
-      throw new ForbiddenException("Bu funksiya faqat pullik tarif egalari uchun mavjud");
+    if (user.listingsLimit < UNLIMITED_LISTINGS) {
+      throw new ForbiddenException("Bu funksiya faqat Biznes tarif egalari uchun mavjud");
     }
 
     const apiKey = this.config.get<string>("ANTHROPIC_API_KEY");

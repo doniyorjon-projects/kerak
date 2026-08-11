@@ -84,7 +84,7 @@ export function RequestDetail() {
           request.budgetMax != null ? request.budgetMax.toLocaleString("uz-UZ") : null,
         ]
           .filter(Boolean)
-          .join(" вЂ“ ") + ` ${t("som")}`
+          .join(" – ") + ` ${t("som")}`
       : t("request.anyBudget");
 
   return (

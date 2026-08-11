@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import type { CategoryDto, ListingCondition } from "@kerak/shared";
 import { REGIONS } from "../data/uzbekistanRegions";
+import { CategoryPicker } from "./CategoryPicker";
 import { useTranslation } from "../i18n/LanguageContext";
 
 export interface FeedFilterValue {
@@ -96,60 +97,60 @@ export function FeedFilters({ value, onChange, categories }: FeedFiltersProps) {
               </div>
 
               {categories && (
-                <label className="label">
-                  {t("filters.category")}
-                  <select
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-sm font-medium text-ink">{t("filters.category")}</span>
+                  <CategoryPicker
+                    categories={categories}
                     value={draft.categoryId ?? ""}
-                    onChange={(e) => setDraft((d) => ({ ...d, categoryId: e.target.value || undefined }))}
-                    className="input"
+                    onChange={(id) => setDraft((d) => ({ ...d, categoryId: id || undefined }))}
+                    allowClear
+                  />
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium text-ink">{t("filters.region")}</span>
+                <div className="relative">
+                  <select
+                    value={draft.regionId ?? ""}
+                    onChange={(e) => {
+                      const id = e.target.value ? Number(e.target.value) : undefined;
+                      setDraft((d) => ({ ...d, regionId: id, districtId: undefined }));
+                    }}
+                    className="input appearance-none pr-9"
                   >
-                    <option value="">{t("filters.allCategories")}</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.icon} {c.nameUz}
+                    <option value="">{t("filters.allRegions")}</option>
+                    {REGIONS.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.nameUz}
                       </option>
                     ))}
                   </select>
-                </label>
-              )}
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
+                </div>
+              </div>
 
-              <label className="label">
-                {t("filters.region")}
-                <select
-                  value={draft.regionId ?? ""}
-                  onChange={(e) => {
-                    const id = e.target.value ? Number(e.target.value) : undefined;
-                    setDraft((d) => ({ ...d, regionId: id, districtId: undefined }));
-                  }}
-                  className="input"
-                >
-                  <option value="">{t("filters.allRegions")}</option>
-                  {REGIONS.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.nameUz}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="label">
-                {t("filters.district")}
-                <select
-                  value={draft.districtId ?? ""}
-                  onChange={(e) =>
-                    setDraft((d) => ({ ...d, districtId: e.target.value ? Number(e.target.value) : undefined }))
-                  }
-                  disabled={!region}
-                  className="input disabled:opacity-50"
-                >
-                  <option value="">{t("filters.allDistricts")}</option>
-                  {region?.districts.map((dist) => (
-                    <option key={dist.id} value={dist.id}>
-                      {dist.nameUz}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium text-ink">{t("filters.district")}</span>
+                <div className="relative">
+                  <select
+                    value={draft.districtId ?? ""}
+                    onChange={(e) =>
+                      setDraft((d) => ({ ...d, districtId: e.target.value ? Number(e.target.value) : undefined }))
+                    }
+                    disabled={!region}
+                    className="input appearance-none pr-9 disabled:opacity-50"
+                  >
+                    <option value="">{t("filters.allDistricts")}</option>
+                    {region?.districts.map((dist) => (
+                      <option key={dist.id} value={dist.id}>
+                        {dist.nameUz}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
+                </div>
+              </div>
 
               <div className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium text-ink">{t("filters.priceRange")}</span>

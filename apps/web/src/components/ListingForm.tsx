@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { CATEGORY_ATTRIBUTES, CategoryType, FREE_LISTINGS_LIMIT } from "@kerak/shared";
+import { CATEGORIES_WITHOUT_CONDITION, CATEGORY_ATTRIBUTES, CategoryType, UNLIMITED_LISTINGS } from "@kerak/shared";
 import type { CreateListingInput, ListingCondition } from "@kerak/shared";
 import { fetchCategories } from "../api/categories";
 import { uploadPhoto } from "../api/listings";
@@ -23,6 +23,7 @@ import { fetchPublicSettings } from "../api/settings";
 import { generateAiDescription } from "../api/ai";
 import { fetchMe } from "../api/users";
 import { RegionDistrictPicker, type PlaceValue } from "./RegionDistrictPicker";
+import { CategoryPicker } from "./CategoryPicker";
 import { PhoneInput, phoneToDigits } from "./PhoneInput";
 import { PriceInput } from "./PriceInput";
 import { useTranslation } from "../i18n/LanguageContext";
@@ -71,12 +72,13 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
   const { data: publicSettings } = useQuery({ queryKey: ["public-settings"], queryFn: fetchPublicSettings });
   const usdRate = publicSettings?.usdRate ?? 12700;
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
-  const canUseAi = Boolean(me && me.listingsLimit > FREE_LISTINGS_LIMIT);
+  const canUseAi = Boolean(me && me.listingsLimit >= UNLIMITED_LISTINGS);
 
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [condition, setCondition] = useState<ListingCondition | null>(initial?.condition ?? null);
   const selectedCategory = leafCategories.find((c) => c.id === categoryId);
   const isProduct = selectedCategory?.type === CategoryType.PRODUCT;
+  const showCondition = isProduct && !CATEGORIES_WITHOUT_CONDITION.has(selectedCategory?.nameUz ?? "");
   const attributeFields = selectedCategory ? (CATEGORY_ATTRIBUTES[selectedCategory.nameUz] ?? []) : [];
   const [title, setTitle] = useState(initial?.title ?? "");
   const [brand, setBrand] = useState(initial?.brand ?? "");
@@ -154,7 +156,7 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
       lat: place.lat,
       lng: place.lng,
       phone,
-      condition: isProduct ? condition : null,
+      condition: showCondition ? condition : null,
     });
   };
 
@@ -162,23 +164,9 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="card flex flex-col gap-4">
         <SectionHeader icon={Tag} title={t("create.category")} />
-        <div className="relative">
-          <select
-            value={categoryId}
-            onChange={(e) => handleCategoryChange(e.target.value)}
-            className="input appearance-none pr-9"
-          >
-            <option value="">{t("create.selectCategory")}</option>
-            {leafCategories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.icon} {c.nameUz}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
-        </div>
+        <CategoryPicker categories={categories ?? []} value={categoryId} onChange={handleCategoryChange} />
 
-        {isProduct && (
+        {showCondition && (
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"

@@ -27,7 +27,8 @@ const houseFields: AttributeFieldDef[] = [
   { key: "rooms", label: "Xonalar soni", type: "select", options: ["1", "2", "3", "4", "5+"] },
   { key: "area", label: "Uy maydoni", type: "number", unit: "m²" },
   { key: "landArea", label: "Yer maydoni", type: "number", unit: "sotix" },
-  { key: "totalFloors", label: "Qavatlar soni", type: "number" },
+  { key: "floor", label: "Necha qavatda", type: "number" },
+  { key: "totalFloors", label: "Necha qavatli (jami)", type: "number" },
   { key: "buildYear", label: "Qurilgan yili", type: "number" },
   {
     key: "renovation",
@@ -67,8 +68,10 @@ export const CATEGORY_ATTRIBUTES: Record<string, AttributeFieldDef[]> = {
   // Ko'chmas mulk
   "Kvartira sotiladi": flatRooms,
   "Kvartira ijaraga": flatRooms,
-  "Uy/hovli sotiladi": houseFields,
-  "Uy/hovli ijaraga": houseFields,
+  "Uy sotiladi": houseFields,
+  "Uy ijaraga": houseFields,
+  "Hovli sotiladi": houseFields,
+  "Hovli ijaraga": houseFields,
   "Yer uchastka": [
     { key: "landArea", label: "Maydon", type: "number", unit: "sotix" },
     {
@@ -114,3 +117,22 @@ export const CATEGORY_ATTRIBUTES: Record<string, AttributeFieldDef[]> = {
     { key: "gender", label: "Kimga mo'ljallangan", type: "select", options: ["Erkak", "Ayol", "Bolalar", "Unisex"] },
   ],
 };
+
+/**
+ * "Yangi/Ishlatilgan" holati faqat jismoniy tovar sifatida sotiladigan,
+ * qo'ldan-qo'lga o'tishi mumkin bo'lgan narsalar uchun mantiqiy - ko'chmas
+ * mulk va tirik jonivorlar uchun bu maydon shart emas.
+ */
+export const CATEGORIES_WITHOUT_CONDITION = new Set<string>([
+  "Kvartira sotiladi",
+  "Kvartira ijaraga",
+  "Uy sotiladi",
+  "Uy ijaraga",
+  "Hovli sotiladi",
+  "Hovli ijaraga",
+  "Yer uchastka",
+  "Ofis va tijorat mulki",
+  "Uy hayvonlari",
+  "Qushlar",
+  "Chorva mollari",
+]);

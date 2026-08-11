@@ -31,7 +31,7 @@ const PLAN_CARDS: PlanCardInfo[] = [
     icon: ShieldCheck,
     pricingField: null,
     listingsLimit: FREE_LISTINGS_LIMIT,
-    featureKeys: ["plans.featureOneListing"],
+    featureKeys: [],
   },
   {
     tier: "STANDARD",
@@ -39,7 +39,7 @@ const PLAN_CARDS: PlanCardInfo[] = [
     icon: Sparkles,
     pricingField: "planStandard",
     listingsLimit: PLAN_LISTINGS_LIMIT.STANDARD,
-    featureKeys: ["plans.featureFiveListings", "plans.featureOneTime", "plans.featureSupport", "plans.featureAiDescription"],
+    featureKeys: ["plans.featureOneTime", "plans.featureSupport"],
   },
   {
     tier: "BUSINESS",
@@ -47,12 +47,7 @@ const PLAN_CARDS: PlanCardInfo[] = [
     icon: Rocket,
     pricingField: "planBusiness",
     listingsLimit: PLAN_LISTINGS_LIMIT.BUSINESS,
-    featureKeys: [
-      "plans.featureUnlimitedListings",
-      "plans.featureOneTime",
-      "plans.featurePrioritySupport",
-      "plans.featureAiDescription",
-    ],
+    featureKeys: ["plans.featureOneTime", "plans.featurePrioritySupport", "plans.featureAiDescription"],
   },
 ];
 
@@ -159,14 +154,12 @@ export function Plans() {
                     ? t("plans.featureUnlimitedListings")
                     : `${plan.listingsLimit} ${t("plans.listingsCountSuffix")}`}
                 </span>
-                {plan.featureKeys
-                  .filter((k) => k !== "plans.featureUnlimitedListings")
-                  .map((key) => (
-                    <span key={key} className="flex items-center gap-1.5 text-sm text-ink">
-                      <Check className="h-3.5 w-3.5 shrink-0 text-success" />
-                      {t(key)}
-                    </span>
-                  ))}
+                {plan.featureKeys.map((key) => (
+                  <span key={key} className="flex items-center gap-1.5 text-sm text-ink">
+                    <Check className="h-3.5 w-3.5 shrink-0 text-success" />
+                    {t(key)}
+                  </span>
+                ))}
               </div>
 
               {walletSuccessTier === plan.tier && (

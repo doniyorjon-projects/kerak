@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { BottomNav } from "./components/BottomNav";
+import { SplashScreen } from "./components/SplashScreen";
 import { Home } from "./pages/Home";
 import { Categories } from "./pages/Categories";
 import { CategoryFeed } from "./pages/CategoryFeed";
@@ -44,9 +45,11 @@ function useSharedListingRedirect() {
 
 export default function App() {
   useSharedListingRedirect();
+  const [showSplash, setShowSplash] = useState(true);
 
   return (
     <div className="min-h-screen bg-app pb-28 text-ink" style={{ paddingTop: "var(--tg-safe-top)" }}>
+      {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/categories" element={<Categories />} />
