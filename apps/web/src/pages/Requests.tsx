@@ -6,6 +6,7 @@ import { fetchRequestFeed } from "../api/requests";
 import { fetchCategories } from "../api/categories";
 import { REGIONS } from "../data/uzbekistanRegions";
 import { RequestCard } from "../components/RequestCard";
+import { CategoryPicker } from "../components/CategoryPicker";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
 import { Spinner } from "../components/Spinner";
@@ -19,7 +20,6 @@ export function Requests() {
   const [regionId, setRegionId] = useState("");
 
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
-  const leafCategories = (categories ?? []).filter((c) => c.parentId);
 
   const { data: requests, isLoading, error } = useQuery({
     queryKey: ["requests", categoryId, regionId],
@@ -39,22 +39,8 @@ export function Requests() {
         {t("request.add")}
       </Link>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div className="relative">
-          <select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            className="input appearance-none pr-9"
-          >
-            <option value="">{t("filters.allCategories")}</option>
-            {leafCategories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.icon} {c.nameUz}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
-        </div>
+      <div className="flex flex-col gap-2">
+        <CategoryPicker categories={categories ?? []} value={categoryId} onChange={setCategoryId} allowClear />
         <div className="relative">
           <select
             value={regionId}

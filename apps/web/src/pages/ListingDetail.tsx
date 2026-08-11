@@ -978,6 +978,12 @@ export function ListingDetail() {
           {reportStatus && <div className="text-xs text-hint">{reportStatus}</div>}
 
           <div className="flex flex-col gap-2">
+            {listing.contactName && (
+              <div className="flex items-center gap-1.5 text-sm text-hint">
+                <User className="h-3.5 w-3.5 shrink-0" />
+                {t("listing.contactNameLabel")}: <span className="font-medium text-ink">{listing.contactName}</span>
+              </div>
+            )}
             {listing.seller.username && listing.contactTelegram && (
               <button
                 type="button"

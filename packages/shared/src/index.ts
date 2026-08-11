@@ -73,6 +73,7 @@ export interface ListingDto {
   hasDelivery: boolean;
   sellerType?: SellerType | null;
   contactTelegram: boolean;
+  contactName?: string | null;
   photos: string[];
   addressText: string | null;
   regionId: number | null;
@@ -232,6 +233,7 @@ export interface CreateListingInput {
   lat: number | null;
   lng: number | null;
   phone: string;
+  contactName?: string | null;
   condition?: ListingCondition | null;
 }
 

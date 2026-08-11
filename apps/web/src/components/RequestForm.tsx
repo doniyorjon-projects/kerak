@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlignLeft, Banknote, ChevronDown, MapPin, Phone as PhoneIcon, Tag, Type } from "lucide-react";
+import { AlignLeft, Banknote, MapPin, Phone as PhoneIcon, Tag, Type } from "lucide-react";
 import type { CreateRequestInput } from "@kerak/shared";
 import { fetchCategories } from "../api/categories";
+import { CategoryPicker } from "./CategoryPicker";
 import { RegionDistrictPicker, type PlaceValue } from "./RegionDistrictPicker";
 import { PhoneInput, phoneToDigits } from "./PhoneInput";
 import { PriceInput } from "./PriceInput";
@@ -43,7 +44,6 @@ function SectionHeader({ icon: Icon, title, hint }: { icon: typeof Tag; title: s
 export function RequestForm({ initial, onSubmit, isSubmitting, submitLabel, submitError }: RequestFormProps) {
   const { t } = useTranslation();
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
-  const leafCategories = (categories ?? []).filter((c) => c.parentId);
 
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -78,25 +78,6 @@ export function RequestForm({ initial, onSubmit, isSubmitting, submitLabel, subm
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="card flex flex-col gap-4">
-        <SectionHeader icon={Tag} title={t("create.category")} />
-        <div className="relative">
-          <select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            className="input appearance-none pr-9"
-          >
-            <option value="">{t("create.selectCategory")}</option>
-            {leafCategories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.icon} {c.nameUz}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-hint" />
-        </div>
-
-        <div className="h-px bg-divider" />
-
         <SectionHeader icon={Type} title={t("request.titleLabel")} hint={`${title.length}/120`} />
         <input
           value={title}
@@ -114,6 +95,11 @@ export function RequestForm({ initial, onSubmit, isSubmitting, submitLabel, subm
           className="input min-h-28 resize-none"
           placeholder={t("request.descriptionPlaceholder")}
         />
+      </div>
+
+      <div className="card flex flex-col gap-4">
+        <SectionHeader icon={Tag} title={t("create.category")} />
+        <CategoryPicker categories={categories ?? []} value={categoryId} onChange={setCategoryId} />
       </div>
 
       <div className="card flex flex-col gap-3">

@@ -116,6 +116,11 @@ export class UpdateListingDto {
   phone?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  contactName?: string;
+
+  @IsOptional()
   @IsEnum(ListingCondition)
   condition?: ListingCondition;
 }

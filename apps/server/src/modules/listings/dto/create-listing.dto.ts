@@ -104,6 +104,11 @@ export class CreateListingDto {
   phone!: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  contactName?: string;
+
+  @IsOptional()
   @IsEnum(ListingCondition)
   condition?: ListingCondition;
 }

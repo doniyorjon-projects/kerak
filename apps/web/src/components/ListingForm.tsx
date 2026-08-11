@@ -48,6 +48,7 @@ export interface ListingFormInitialValues {
   sellerType?: SellerType | null;
   contactTelegram?: boolean;
   phone: string;
+  contactName?: string | null;
   photos: string[];
   addressText: string | null;
   condition?: ListingCondition | null;
@@ -163,6 +164,11 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
   const [sellerType, setSellerType] = useState<SellerType | null>(initial?.sellerType ?? null);
   const [contactTelegram, setContactTelegram] = useState(initial?.contactTelegram ?? true);
   const [phone, setPhone] = useState(initial?.phone ?? "");
+  const [contactName, setContactName] = useState(initial?.contactName ?? "");
+  useEffect(() => {
+    if (!initial?.contactName && !contactName && me?.firstName) setContactName(me.firstName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me]);
   const [place, setPlace] = useState<PlaceValue | null>(null);
   const [photos, setPhotos] = useState<string[]>(initial?.photos ?? []);
   const [uploading, setUploading] = useState(false);
@@ -234,12 +240,74 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
       lat: place.lat,
       lng: place.lng,
       phone,
+      contactName: contactName.trim() || null,
       condition: showCondition ? condition : null,
     });
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="card flex flex-col gap-4">
+        <SectionHeader icon={Type} title={t("create.listingTitle")} hint={`${title.length}/120`} />
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value.slice(0, 120))}
+          className="input"
+          placeholder={t("create.titlePlaceholder")}
+        />
+        {suggestedCategory && (
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-brand/10 px-3 py-2">
+            <span className="flex min-w-0 items-center gap-1.5 truncate text-xs font-medium text-brand">
+              <Sparkles className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">
+                {t("create.categorySuggestion")}: {suggestedCategory.icon} {suggestedCategory.nameUz}
+              </span>
+            </span>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => handleCategoryChange(suggestedCategory.id)}
+                className="rounded-full bg-brand px-2.5 py-1 text-xs font-semibold text-brand-contrast active:scale-[0.98]"
+              >
+                {t("create.applySuggestion")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDismissedSuggestionFor(title)}
+                aria-label={t("cancel")}
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-brand"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="h-px bg-divider" />
+
+        <SectionHeader icon={AlignLeft} title={t("create.description")} hint={`${description.length}/2000`} />
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value.slice(0, 2000))}
+          className="input min-h-28 resize-none"
+          placeholder={t("create.descriptionPlaceholder")}
+        />
+        {canUseAi && (
+          <button
+            type="button"
+            onClick={() => aiDescriptionMutation.mutate()}
+            disabled={!title.trim() || aiDescriptionMutation.isPending}
+            className="flex w-fit items-center gap-1.5 rounded-full bg-brand/10 px-3 py-1.5 text-xs font-semibold text-brand transition active:scale-[0.98] disabled:opacity-50"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            {aiDescriptionMutation.isPending ? t("create.aiGenerating") : t("create.aiGenerate")}
+          </button>
+        )}
+        {aiDescriptionMutation.isError && (
+          <span className="text-xs text-destructive">{aiDescriptionMutation.error.message}</span>
+        )}
+      </div>
+
       <div className="card flex flex-col gap-4">
         <SectionHeader icon={Tag} title={t("create.category")} />
         <CategoryPicker categories={categories ?? []} value={categoryId} onChange={handleCategoryChange} />
@@ -421,67 +489,6 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
             </div>
           </>
         )}
-
-        <div className="h-px bg-divider" />
-
-        <SectionHeader icon={Type} title={t("create.listingTitle")} hint={`${title.length}/120`} />
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value.slice(0, 120))}
-          className="input"
-          placeholder={t("create.titlePlaceholder")}
-        />
-        {suggestedCategory && (
-          <div className="flex items-center justify-between gap-2 rounded-xl bg-brand/10 px-3 py-2">
-            <span className="flex min-w-0 items-center gap-1.5 truncate text-xs font-medium text-brand">
-              <Sparkles className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">
-                {t("create.categorySuggestion")}: {suggestedCategory.icon} {suggestedCategory.nameUz}
-              </span>
-            </span>
-            <div className="flex shrink-0 items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => handleCategoryChange(suggestedCategory.id)}
-                className="rounded-full bg-brand px-2.5 py-1 text-xs font-semibold text-brand-contrast active:scale-[0.98]"
-              >
-                {t("create.applySuggestion")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setDismissedSuggestionFor(title)}
-                aria-label={t("cancel")}
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-brand"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="h-px bg-divider" />
-
-        <SectionHeader icon={AlignLeft} title={t("create.description")} hint={`${description.length}/2000`} />
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value.slice(0, 2000))}
-          className="input min-h-28 resize-none"
-          placeholder={t("create.descriptionPlaceholder")}
-        />
-        {canUseAi && (
-          <button
-            type="button"
-            onClick={() => aiDescriptionMutation.mutate()}
-            disabled={!title.trim() || aiDescriptionMutation.isPending}
-            className="flex w-fit items-center gap-1.5 rounded-full bg-brand/10 px-3 py-1.5 text-xs font-semibold text-brand transition active:scale-[0.98] disabled:opacity-50"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            {aiDescriptionMutation.isPending ? t("create.aiGenerating") : t("create.aiGenerate")}
-          </button>
-        )}
-        {aiDescriptionMutation.isError && (
-          <span className="text-xs text-destructive">{aiDescriptionMutation.error.message}</span>
-        )}
       </div>
 
       <div className="card flex flex-col gap-3">
@@ -614,6 +621,12 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
 
       <div className="card flex flex-col gap-3">
         <SectionHeader icon={Phone} title={t("create.phone")} />
+        <input
+          value={contactName}
+          onChange={(e) => setContactName(e.target.value.slice(0, 60))}
+          className="input"
+          placeholder={t("create.contactNamePlaceholder")}
+        />
         <PhoneInput value={phone} onChange={setPhone} />
 
         <div className="h-px bg-divider" />
