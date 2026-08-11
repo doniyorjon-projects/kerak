@@ -181,13 +181,14 @@ export function Home() {
         className="sticky top-0 z-30 -mx-4 -mt-4 border-b border-divider bg-app px-4 pb-3"
         style={{ paddingTop: "calc(var(--tg-safe-top) + 1rem)" }}
       >
+        <div className="flex items-center justify-between gap-2 pb-2.5">
+          <img src="/kerak-logo.png" alt="Kerak" className="h-7 w-auto shrink-0 dark:invert" />
+          <RegionBannerTrigger onClick={() => setRegionPickerOpen(true)} />
+        </div>
         <div className="flex items-center gap-2">
           <SearchBar onSearch={setSearch} />
           <NotificationBell />
           <LanguageSwitch />
-        </div>
-        <div className="pt-2">
-          <RegionBannerTrigger onClick={() => setRegionPickerOpen(true)} />
         </div>
       </div>
 
