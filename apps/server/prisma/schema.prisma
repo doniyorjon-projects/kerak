@@ -112,6 +112,9 @@ model User {
   referredBy    User?    @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
   referrals     User[]   @relation("Referrals")
   referralPromptSent Boolean @default(false)
+  neverPostedPromptSent Boolean @default(false)
+  inactivityPromptSentAt DateTime?
+  walletPromptSentAt DateTime?
   lastSeenAt    DateTime?
   botBlockedAt  DateTime?
   createdAt     DateTime @default(now())
@@ -185,6 +188,8 @@ model Listing {
   viewsCount      Int               @default(0)
   boostedUntil    DateTime?
   bumpedAt        DateTime?
+  boostPromptSentAt DateTime?
+  staleReminderSentAt DateTime?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 

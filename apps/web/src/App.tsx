@@ -36,10 +36,15 @@ function useSharedListingRedirect() {
     const requestId = params.get("request");
     const referralId = params.get("ref");
     const page = params.get("page");
+    const PAGE_ROUTES: Record<string, string> = {
+      wallet: "/wallet",
+      create: "/create",
+      "my-listings": "/my-listings",
+    };
     if (referralId) captureReferralId(referralId);
     if (listingId) navigate(`/listings/${listingId}`, { replace: true });
     else if (requestId) navigate(`/requests/${requestId}`, { replace: true });
-    else if (page === "wallet") navigate("/wallet", { replace: true });
+    else if (page && PAGE_ROUTES[page]) navigate(PAGE_ROUTES[page], { replace: true });
     else if (referralId) navigate("/", { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -549,4 +549,228 @@ export class BotService implements OnModuleInit {
       return false;
     }
   }
+
+  /**
+   * Hali birorta e'lon joylamagan foydalanuvchilarga ro'yxatdan o'tganidan
+   * 2 kun o'tgach birinchi e'lon joylashga undovchi bir martalik xabar.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_10AM)
+  async sendNeverPostedPrompts() {
+    const threshold = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    const candidates = await this.prisma.user.findMany({
+      where: {
+        neverPostedPromptSent: false,
+        isBlocked: false,
+        botBlockedAt: null,
+        createdAt: { lte: threshold },
+        listings: { none: {} },
+      },
+      select: { id: true, telegramId: true },
+      take: 200,
+    });
+
+    for (const user of candidates) {
+      await this.sendNeverPostedPrompt(user.telegramId);
+      await this.prisma.user.update({ where: { id: user.id }, data: { neverPostedPromptSent: true } });
+    }
+  }
+
+  private async sendNeverPostedPrompt(telegramId: string) {
+    const text = [
+      "👀 Hali birorta e'lon joylamadingiz.",
+      "",
+      "Kerak'da e'lon joylash bepul va bir necha soniya vaqt oladi - sotmoqchi bo'lgan narsangiz yoki xizmatingiz haqida hoziroq e'lon joylang.",
+    ].join("\n");
+    const keyboard = new InlineKeyboard().webApp("📢 E'lon joylash", `${this.miniAppUrl}?page=create`);
+    try {
+      await this.bot.api.sendMessage(telegramId, text, { reply_markup: keyboard });
+      void this.recordSendResult(telegramId, null);
+    } catch (err) {
+      this.logger.warn(`Birinchi e'lon taklifi yuborilmadi (${telegramId}): ${err}`);
+      void this.recordSendResult(telegramId, err);
+    }
+  }
+
+  /**
+   * E'lon 3+ kundan beri faol, lekin ko'rishlar soni past bo'lsa va hozir
+   * ko'tarilmagan bo'lsa - uni ko'tarishni taklif qiluvchi bir martalik xabar.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_11AM)
+  async sendLowViewBoostPrompts() {
+    const threshold = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const now = new Date();
+    const candidates = await this.prisma.listing.findMany({
+      where: {
+        status: "ACTIVE",
+        boostPromptSentAt: null,
+        createdAt: { lte: threshold },
+        viewsCount: { lt: 5 },
+        OR: [{ boostedUntil: null }, { boostedUntil: { lt: now } }],
+        seller: { isBlocked: false, botBlockedAt: null },
+      },
+      select: { id: true, title: true, seller: { select: { telegramId: true } } },
+      take: 200,
+    });
+
+    for (const listing of candidates) {
+      await this.sendLowViewBoostPrompt(listing.seller.telegramId, listing.id, listing.title);
+      await this.prisma.listing.update({ where: { id: listing.id }, data: { boostPromptSentAt: new Date() } });
+    }
+  }
+
+  private async sendLowViewBoostPrompt(telegramId: string, listingId: string, title: string) {
+    const keyboard = new InlineKeyboard().webApp(
+      "🚀 Ko'tarish",
+      `${this.miniAppUrl}?listing=${encodeURIComponent(listingId)}`,
+    );
+    const text = `👁 "${title}" eloningiz hali kam ko'rilmoqda.\n\nKo'proq xaridor topish uchun e'loningizni ko'tarib (TOP qilib) chiqarishingiz mumkin.`;
+    try {
+      await this.bot.api.sendMessage(telegramId, text, { reply_markup: keyboard });
+      void this.recordSendResult(telegramId, null);
+    } catch (err) {
+      this.logger.warn(`Ko'tarish taklifi yuborilmadi (${telegramId}): ${err}`);
+      void this.recordSendResult(telegramId, err);
+    }
+  }
+
+  /**
+   * E'lon uzoq vaqt (30+ kun) sotilmagan holda faol tursa - narxini
+   * yangilash yoki holatini belgilashni eslatuvchi bir martalik xabar.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_NOON)
+  async sendStaleListingPrompts() {
+    const threshold = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const candidates = await this.prisma.listing.findMany({
+      where: {
+        status: "ACTIVE",
+        staleReminderSentAt: null,
+        createdAt: { lte: threshold },
+        seller: { isBlocked: false, botBlockedAt: null },
+      },
+      select: { id: true, title: true, seller: { select: { telegramId: true } } },
+      take: 200,
+    });
+
+    for (const listing of candidates) {
+      await this.sendStaleListingPrompt(listing.seller.telegramId, listing.id, listing.title);
+      await this.prisma.listing.update({ where: { id: listing.id }, data: { staleReminderSentAt: new Date() } });
+    }
+  }
+
+  private async sendStaleListingPrompt(telegramId: string, listingId: string, title: string) {
+    const keyboard = new InlineKeyboard().webApp(
+      "✏️ Yangilash",
+      `${this.miniAppUrl}?listing=${encodeURIComponent(listingId)}`,
+    );
+    const text = `⏳ "${title}" eloningiz bir oydan beri sotilmay turibdi.\n\nNarxini tushirib yoki ma'lumotlarini yangilab ko'ring - bu ko'proq xaridor topishga yordam beradi. Agar allaqachon sotilgan bo'lsa, uni "Sotildi" deb belgilashni unutmang.`;
+    try {
+      await this.bot.api.sendMessage(telegramId, text, { reply_markup: keyboard });
+      void this.recordSendResult(telegramId, null);
+    } catch (err) {
+      this.logger.warn(`Eski elon eslatmasi yuborilmadi (${telegramId}): ${err}`);
+      void this.recordSendResult(telegramId, err);
+    }
+  }
+
+  /**
+   * 14+ kun botga kirmagan foydalanuvchilarni qaytarish uchun xabar. Agar
+   * foydalanuvchi hududida u yo'q bo'lgan davrda yangi e'lon qo'shilmagan
+   * bo'lsa, butun sayt bo'yicha sonini ko'rsatadi. Har 30 kunda bir marta
+   * qayta yuborilishi mumkin (bir martalik emas).
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_1PM)
+  async sendInactivityWinBackPrompts() {
+    const inactiveThreshold = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+    const resendThreshold = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const candidates = await this.prisma.user.findMany({
+      where: {
+        isBlocked: false,
+        botBlockedAt: null,
+        lastSeenAt: { lte: inactiveThreshold },
+        OR: [{ inactivityPromptSentAt: null }, { inactivityPromptSentAt: { lte: resendThreshold } }],
+      },
+      select: { id: true, telegramId: true, regionId: true, lastSeenAt: true },
+      take: 200,
+    });
+
+    for (const user of candidates) {
+      const since = user.lastSeenAt ?? inactiveThreshold;
+      let count = user.regionId
+        ? await this.prisma.listing.count({
+            where: { status: "ACTIVE", regionId: user.regionId, createdAt: { gte: since } },
+          })
+        : 0;
+      const isRegional = user.regionId != null && count > 0;
+      if (!isRegional) {
+        count = await this.prisma.listing.count({ where: { status: "ACTIVE", createdAt: { gte: since } } });
+      }
+      await this.sendInactivityPrompt(user.telegramId, count, isRegional);
+      await this.prisma.user.update({ where: { id: user.id }, data: { inactivityPromptSentAt: new Date() } });
+    }
+  }
+
+  private async sendInactivityPrompt(telegramId: string, newListingsCount: number, isRegional: boolean) {
+    const scopeText = isRegional ? "hududingizda" : "Kerak'da";
+    const text =
+      newListingsCount > 0
+        ? `😊 Sizni sog'indik! Siz yo'q vaqtingizda ${scopeText} ${newListingsCount} ta yangi e'lon qo'shildi.\n\nQaytib kirib ko'ring 👇`
+        : "😊 Sizni sog'indik! Kerak'da yangi e'lonlar va imkoniyatlar sizni kutmoqda.\n\nQaytib kirib ko'ring 👇";
+    const keyboard = new InlineKeyboard().webApp("🔍 Ko'rish", this.miniAppUrl);
+    try {
+      await this.bot.api.sendMessage(telegramId, text, { reply_markup: keyboard });
+      void this.recordSendResult(telegramId, null);
+    } catch (err) {
+      this.logger.warn(`Qaytarish xabari yuborilmadi (${telegramId}): ${err}`);
+      void this.recordSendResult(telegramId, err);
+    }
+  }
+
+  /**
+   * Hamyonida musbat balans bo'lgan, lekin uzoq vaqt (14+ kun) hech qanday
+   * hamyon operatsiyasi qilmagan foydalanuvchilarga balansni qanday
+   * ishlatish mumkinligini eslatadi. Har 30 kunda bir marta qayta yuboriladi.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_2PM)
+  async sendWalletReminderPrompts() {
+    const resendThreshold = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const spendThreshold = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+    const candidates = await this.prisma.user.findMany({
+      where: {
+        isBlocked: false,
+        botBlockedAt: null,
+        balance: { gt: 0 },
+        OR: [{ walletPromptSentAt: null }, { walletPromptSentAt: { lte: resendThreshold } }],
+      },
+      select: {
+        id: true,
+        telegramId: true,
+        balance: true,
+        walletTransactions: { orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true } },
+      },
+      take: 200,
+    });
+
+    for (const user of candidates) {
+      const lastTxAt = user.walletTransactions[0]?.createdAt;
+      if (lastTxAt && lastTxAt > spendThreshold) continue;
+      await this.sendWalletReminderPrompt(user.telegramId, user.balance);
+      await this.prisma.user.update({ where: { id: user.id }, data: { walletPromptSentAt: new Date() } });
+    }
+  }
+
+  private async sendWalletReminderPrompt(telegramId: string, balance: number) {
+    const text = [
+      `💰 Hamyoningizda ${balance.toLocaleString("uz-UZ")} so'm bor.`,
+      "",
+      "Bu pul bilan e'lonlaringizni ko'tarishingiz (TOP qilib chiqarish) yoki tarifingizni oshirib ko'proq e'lon joylashingiz mumkin.",
+    ].join("\n");
+    const keyboard = new InlineKeyboard().webApp("💳 Hamyonni ochish", `${this.miniAppUrl}?page=wallet`);
+    try {
+      await this.bot.api.sendMessage(telegramId, text, { reply_markup: keyboard });
+      void this.recordSendResult(telegramId, null);
+    } catch (err) {
+      this.logger.warn(`Hamyon eslatmasi yuborilmadi (${telegramId}): ${err}`);
+      void this.recordSendResult(telegramId, err);
+    }
+  }
 }
