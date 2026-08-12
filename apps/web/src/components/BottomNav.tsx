@@ -84,7 +84,7 @@ export function BottomNav() {
         {({ isActive }) => (
           <span
             className={`-mt-7 flex h-14 w-14 items-center justify-center rounded-full bg-promo text-white shadow-float ring-4 ring-app transition-transform ${
-              isActive ? "scale-105" : ""
+              isActive ? "scale-105" : "motion-safe:animate-[request-bounce_3.4s_ease-in-out_infinite]"
             } active:scale-95`}
           >
             <Plus className="h-7 w-7" strokeWidth={2.5} />

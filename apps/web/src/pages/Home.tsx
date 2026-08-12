@@ -228,9 +228,9 @@ export function Home() {
 
           <Link
             to="/requests"
-            className="card flex items-center gap-3 border-promo/30 bg-promo/5 transition active:scale-[0.98]"
+            className="card flex items-center gap-3 border-promo/30 bg-promo/5 transition active:scale-[0.98] motion-safe:animate-[card-bounce_3.4s_ease-in-out_infinite]"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-promo/15 text-promo-dark motion-safe:animate-[request-bounce_3.4s_ease-in-out_infinite]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-promo/15 text-promo-dark">
               <MessageSquareText className="h-5 w-5" />
             </div>
             <div className="flex flex-1 flex-col">
