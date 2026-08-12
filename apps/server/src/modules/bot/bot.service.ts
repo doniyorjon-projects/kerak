@@ -13,6 +13,14 @@ import { UsersService } from "../users/users.service";
 /** Hamkorlik/reklama va admin bilan bog'lanish uchun ko'rsatiladigan kontakt. */
 const ADMIN_CONTACT_USERNAME = "doniyorjon_k";
 
+// Render'dagi bepul Postgres bazasi yaratilganidan 30 kun o'tib (2026-08-06 +
+// 30 kun = 2026-09-05) avtomatik o'chib ketadi - shu sanadan 2 kun oldin
+// adminga bir martalik eslatma yuboriladi (DigitalOcean'ga ko'chirishni
+// yakunlash uchun). Sana faqat bitta kun bilan mos kelgani uchun alohida
+// "yuborildimi" belgisi kerak emas - kunlik cron shu kuni bir marta ishga
+// tushadi va bir marta yuboradi.
+const POSTGRES_EXPIRY_REMINDER_DATE = "2026-09-03";
+
 @Injectable()
 export class BotService implements OnModuleInit {
   private readonly logger = new Logger(BotService.name);
@@ -772,5 +780,22 @@ export class BotService implements OnModuleInit {
       this.logger.warn(`Hamyon eslatmasi yuborilmadi (${telegramId}): ${err}`);
       void this.recordSendResult(telegramId, err);
     }
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_9AM)
+  async sendPostgresExpiryReminder() {
+    if (!this.adminTelegramId) return;
+    const today = new Date().toISOString().slice(0, 10);
+    if (today !== POSTGRES_EXPIRY_REMINDER_DATE) return;
+
+    const text = [
+      "⚠️ Eslatma: Render'dagi bepul Postgres bazangiz 2026-09-05 kuni (yaratilganidan 30 kun o'tib) avtomatik o'chib ketadi.",
+      "",
+      "DigitalOcean'ga ko'chirishni shu sanaga qadar yakunlab qo'yish kerak, aks holda bazadagi barcha ma'lumot yo'qoladi.",
+    ].join("\n");
+
+    await this.bot.api
+      .sendMessage(this.adminTelegramId, text)
+      .catch((err) => this.logger.warn(`Postgres eslatmasi yuborilmadi: ${err}`));
   }
 }
