@@ -7,6 +7,8 @@ import { fetchListingFeed, fetchListingsByIds } from "../api/listings";
 import { fetchCategories } from "../api/categories";
 import { fetchMe, updateLocation } from "../api/users";
 import { createSavedSearch } from "../api/savedSearches";
+import { fetchPublicSettings } from "../api/settings";
+import { fetchCurrentWeather, weatherEmoji } from "../api/weather";
 import { ListingCard } from "../components/ListingCard";
 import { FeedControls } from "../components/FeedControls";
 import { FeedFilters, type FeedFilterValue } from "../components/FeedFilters";
@@ -19,8 +21,14 @@ import { LanguageSwitch } from "../components/LanguageSwitch";
 import { BannerCarousel } from "../components/BannerCarousel";
 import { CategoryScroller } from "../components/CategoryScroller";
 import { RegionBanner, RegionBannerTrigger } from "../components/RegionBanner";
+import { REGIONS } from "../data/uzbekistanRegions";
+import { useHideOnScroll } from "../hooks/useHideOnScroll";
 import { useTranslation } from "../i18n/LanguageContext";
 import { getRecentlyViewedIds } from "../utils/recentlyViewed";
+
+const UZBEKISTAN_DEFAULT = { lat: 41.284315, lng: 69.261541 };
+const WEATHER_REFETCH_MS = 10 * 60 * 1000;
+const USD_RATE_REFETCH_MS = 5 * 60 * 1000;
 
 export function Home() {
   const { t } = useTranslation();
@@ -31,6 +39,21 @@ export function Home() {
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
   const hasLocation = me?.lat != null && me?.lng != null;
   const rootCategories = (categories ?? []).filter((c) => !c.parentId).sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const headerHidden = useHideOnScroll();
+  const weatherRegion = REGIONS.find((r) => r.id === me?.regionId);
+  const weatherCoords = weatherRegion ?? UZBEKISTAN_DEFAULT;
+  const { data: weather } = useQuery({
+    queryKey: ["weather", weatherRegion?.id ?? "uz"],
+    queryFn: () => fetchCurrentWeather(weatherCoords.lat, weatherCoords.lng),
+    refetchInterval: WEATHER_REFETCH_MS,
+    staleTime: WEATHER_REFETCH_MS,
+  });
+  const { data: publicSettings } = useQuery({
+    queryKey: ["public-settings"],
+    queryFn: fetchPublicSettings,
+    refetchInterval: USD_RATE_REFETCH_MS,
+  });
 
   const [sort, setSort] = useState<FeedSort>("newest");
   const [radiusKm, setRadiusKm] = useState(20);
@@ -185,10 +208,36 @@ export function Home() {
           <img src="/kerak-logo.png" alt="Kerak" className="ml-2 h-9 w-auto shrink-0 dark:invert" />
           <RegionBannerTrigger onClick={() => setRegionPickerOpen(true)} />
         </div>
-        <div className="flex items-center gap-2">
-          <SearchBar onSearch={setSearch} />
-          <NotificationBell />
-          <LanguageSwitch />
+        <div
+          className={`overflow-hidden transition-[max-height,opacity] duration-300 ease-out ${
+            headerHidden ? "max-h-0 opacity-0" : "max-h-24 opacity-100"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <SearchBar onSearch={setSearch} />
+            <NotificationBell />
+            <LanguageSwitch />
+          </div>
+          <div className="flex items-center justify-between gap-2 pt-2 text-xs font-medium text-hint">
+            <span className="flex items-center gap-1">
+              {weather ? (
+                <>
+                  <span>{weatherEmoji(weather.weatherCode)}</span>
+                  <span>{weather.temperature}°C</span>
+                  <span className="text-hint/70">
+                    · {weatherRegion?.nameUz ?? t("home.uzbekistanLabel")}
+                  </span>
+                </>
+              ) : (
+                <span className="opacity-0">—</span>
+              )}
+            </span>
+            {publicSettings && (
+              <span className="flex items-center gap-1">
+                <span>$1 = {Math.round(publicSettings.usdRate).toLocaleString("uz-UZ")} {t("som")}</span>
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
