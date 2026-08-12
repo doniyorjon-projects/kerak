@@ -208,16 +208,16 @@ export function Home() {
           <img src="/kerak-logo.png" alt="Kerak" className="ml-2 h-9 w-auto shrink-0 dark:invert" />
           <RegionBannerTrigger onClick={() => setRegionPickerOpen(true)} />
         </div>
+        <div className="flex items-center gap-2">
+          <SearchBar onSearch={setSearch} />
+          <NotificationBell />
+          <LanguageSwitch />
+        </div>
         <div
           className={`overflow-hidden transition-[max-height,opacity] duration-300 ease-out ${
-            headerHidden ? "max-h-0 opacity-0" : "max-h-24 opacity-100"
+            headerHidden ? "max-h-0 opacity-0" : "max-h-8 opacity-100"
           }`}
         >
-          <div className="flex items-center gap-2">
-            <SearchBar onSearch={setSearch} />
-            <NotificationBell />
-            <LanguageSwitch />
-          </div>
           <div className="flex items-center justify-between gap-2 pt-2 text-xs font-medium text-hint">
             <span className="flex items-center gap-1">
               {weather ? (
