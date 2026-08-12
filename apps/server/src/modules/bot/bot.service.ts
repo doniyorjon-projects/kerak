@@ -50,6 +50,7 @@ export class BotService implements OnModuleInit {
       const listingId = payload?.startsWith("listing_") ? payload.slice("listing_".length) : null;
       const requestId = payload?.startsWith("request_") ? payload.slice("request_".length) : null;
       const referralId = payload?.startsWith("ref_") ? payload.slice("ref_".length) : null;
+      const page = payload?.startsWith("page_") ? payload.slice("page_".length) : null;
 
       if (ctx.from) {
         const result = await this.usersService.upsertFromTelegram(ctx.from, referralId ?? undefined);
@@ -68,17 +69,20 @@ export class BotService implements OnModuleInit {
       if (listingId) params.set("listing", listingId);
       if (requestId) params.set("request", requestId);
       if (referralId) params.set("ref", referralId);
+      if (page) params.set("page", page);
       const qs = params.toString();
       const appUrl = qs ? `${this.miniAppUrl}?${qs}` : this.miniAppUrl;
 
       const keyboard = new InlineKeyboard().webApp(
-        listingId || requestId ? "🚀 Ko'rish" : "🚀 Hoziroq boshlash",
+        listingId || requestId ? "🚀 Ko'rish" : page ? "🚀 Ochish" : "🚀 Hoziroq boshlash",
         appUrl,
       );
       await ctx.reply(
         listingId || requestId
           ? "Ulashilgan e'lonni ko'rish uchun tugmani bosing 👇"
-          : "👋 Assalomu alaykum!\n\n" +
+          : page
+            ? "Davom etish uchun tugmani bosing 👇"
+            : "👋 Assalomu alaykum!\n\n" +
             "<b>Kerak</b>ga xush kelibsiz — O'zbekistondagi mahsulot va xizmatlar uchun qulay onlayn bozor.\n\n" +
             "🛍 Kerakli mahsulot yoki ustani soniyalarda toping\n" +
             "📢 O'zingiznikini bepul e'lon qilib soting\n" +

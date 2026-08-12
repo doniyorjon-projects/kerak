@@ -36,7 +36,12 @@ export class ClickService {
   }
 
   buildPaymentUrl(orderId: string, amount: number): string {
-    const returnUrl = this.config.get<string>("MINI_APP_URL") ?? "";
+    // To'lov sahifasi tashqi brauzerda ochiladi (Telegram WebView emas), shuning
+    // uchun "Davom etish" bosilgach oddiy https havolaga emas, balki t.me chuqur
+    // havolasiga qaytarish kerak - shundagina qurilma foydalanuvchini avtomatik
+    // Telegram ilovasiga (va u yerdan qayta mini-app'ga) olib qaytaradi.
+    const botUsername = this.config.get<string>("BOT_USERNAME") ?? "";
+    const returnUrl = botUsername ? `https://t.me/${botUsername}?start=page_wallet` : (this.config.get<string>("MINI_APP_URL") ?? "");
     const params = new URLSearchParams({
       service_id: this.serviceId,
       merchant_id: this.merchantId,
