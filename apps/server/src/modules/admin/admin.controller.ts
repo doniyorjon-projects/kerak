@@ -305,6 +305,11 @@ export class AdminController {
     return this.botService.broadcastMessage(dto.message, dto.listingId);
   }
 
+  @Post("broadcast-referral-prompt")
+  broadcastReferralPrompt() {
+    return this.botService.broadcastReferralPromptNow();
+  }
+
   @Get("reports")
   findPendingReports() {
     return this.reportsService.findPending();

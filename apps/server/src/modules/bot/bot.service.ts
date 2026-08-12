@@ -450,6 +450,32 @@ export class BotService implements OnModuleInit {
   }
 
   /**
+   * Admin panel orqali chaqiriladi - hozirgi barcha foydalanuvchilarga
+   * referal taklifnomasini darhol yuboradi (test/bir martalik e'lon
+   * sifatida), keyin esa har birini "yuborilgan" deb belgilaydi - shundan
+   * keyin faqat YANGI ro'yxatdan o'tadiganlar odatdagi 15 daqiqalik oqim
+   * bo'yicha xabar oladi.
+   */
+  async broadcastReferralPromptNow(): Promise<{ sent: number; failed: number }> {
+    const users = await this.prisma.user.findMany({
+      where: { isBlocked: false },
+      select: { id: true, telegramId: true },
+    });
+
+    let sent = 0;
+    let failed = 0;
+    for (const user of users) {
+      const ok = await this.sendReferralPrompt(user.telegramId, user.id);
+      if (ok) sent += 1;
+      else failed += 1;
+      await this.prisma.user.update({ where: { id: user.id }, data: { referralPromptSent: true } });
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    }
+
+    return { sent, failed };
+  }
+
+  /**
    * Har bir foydalanuvchiga botga birinchi marta start bosganidan 15 daqiqa
    * o'tgach, referal dasturi haqida bir martalik xabar yuboradi. Vaqt bo'yicha
    * so'rov (in-memory setTimeout emas) ishlatiladi, chunki server istalgan
@@ -470,7 +496,7 @@ export class BotService implements OnModuleInit {
     }
   }
 
-  private async sendReferralPrompt(telegramId: string, userId: string) {
+  private async sendReferralPrompt(telegramId: string, userId: string): Promise<boolean> {
     const bonus = REFERRAL_BONUS_AMOUNT.toLocaleString("uz-UZ");
     const text = [
       "🎁 Do'stlaringizni taklif qiling va bonus qo'lga kiriting!",
@@ -486,8 +512,10 @@ export class BotService implements OnModuleInit {
 
     try {
       await this.bot.api.sendMessage(telegramId, text, { reply_markup: keyboard });
+      return true;
     } catch (err) {
       this.logger.warn(`Referal taklifnomasi yuborilmadi (${telegramId}): ${err}`);
+      return false;
     }
   }
 }
