@@ -16,6 +16,7 @@ import {
   Tag,
   Trash2,
   TrendingUp,
+  User,
   X,
   XCircle,
 } from "lucide-react";
@@ -102,10 +103,10 @@ function ListingRow({ listing, selectMode, selected, onToggleSelect }: ListingRo
                 {t(labelKey)}
               </span>
             </div>
-            {listing.sellerType === "BUSINESS" && (
+            {listing.sellerType && (
               <span className="flex w-fit items-center gap-1 rounded-full bg-surface-secondary px-2 py-0.5 text-xs font-medium text-hint">
-                <Store className="h-3.5 w-3.5" />
-                {t("listing.businessBadge")}
+                {listing.sellerType === "BUSINESS" ? <Store className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
+                {listing.sellerType === "BUSINESS" ? t("listing.businessBadge") : t("create.sellerTypePrivate")}
               </span>
             )}
             {isBoosted && (

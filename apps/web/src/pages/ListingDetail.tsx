@@ -23,6 +23,7 @@ import {
   Rocket,
   Send,
   Share2,
+  Store,
   Tag,
   Trash2,
   Truck,
@@ -373,7 +374,7 @@ export function ListingDetail() {
             {listing.brand}
           </span>
         )}
-        {(listing.isUrgent || listing.hasDelivery || listing.isBargainable || listing.sellerType === "BUSINESS") && (
+        {(listing.isUrgent || listing.hasDelivery || listing.isBargainable || listing.sellerType) && (
           <div className="flex flex-wrap items-center gap-1.5">
             {listing.isUrgent && (
               <span className="flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-brand-contrast">
@@ -393,9 +394,10 @@ export function ListingDetail() {
                 {t("listing.hasDeliveryBadge")}
               </span>
             )}
-            {listing.sellerType === "BUSINESS" && (
+            {listing.sellerType && (
               <span className="flex items-center gap-1 rounded-full bg-surface-secondary px-2 py-0.5 text-[11px] font-semibold text-hint">
-                {t("create.sellerTypeBusiness")}
+                {listing.sellerType === "BUSINESS" ? <Store className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                {listing.sellerType === "BUSINESS" ? t("create.sellerTypeBusiness") : t("create.sellerTypePrivate")}
               </span>
             )}
           </div>
