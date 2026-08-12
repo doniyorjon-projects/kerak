@@ -12,6 +12,7 @@ import {
   PlayCircle,
   Rocket,
   Square,
+  Store,
   Tag,
   Trash2,
   TrendingUp,
@@ -101,6 +102,12 @@ function ListingRow({ listing, selectMode, selected, onToggleSelect }: ListingRo
                 {t(labelKey)}
               </span>
             </div>
+            {listing.sellerType === "BUSINESS" && (
+              <span className="flex w-fit items-center gap-1 rounded-full bg-surface-secondary px-2 py-0.5 text-xs font-medium text-hint">
+                <Store className="h-3.5 w-3.5" />
+                {t("listing.businessBadge")}
+              </span>
+            )}
             {isBoosted && (
               <span className="flex items-center gap-1 text-xs font-medium text-promo">
                 <Rocket className="h-3.5 w-3.5" />
