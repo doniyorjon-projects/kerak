@@ -1,6 +1,6 @@
 ﻿import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Clock, Eye, Gift, Handshake, Heart, ImageOff, MapPin, Rocket, Zap } from "lucide-react";
+import { Clock, Eye, Gift, Handshake, Heart, ImageOff, MapPin, Rocket, Store, Zap } from "lucide-react";
 import type { ListingDto } from "@kerak/shared";
 import { addFavorite, removeFavorite } from "../api/favorites";
 import { fetchPublicSettings } from "../api/settings";
@@ -109,10 +109,20 @@ export function ListingCard({ listing }: { listing: ListingDto }) {
             <ImageOff className="h-8 w-8 text-hint" strokeWidth={1.5} />
           </div>
         )}
-        {listing.condition && (
-          <span className="absolute bottom-2 left-2 z-10 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
-            {listing.condition === "NEW" ? t("create.conditionNew") : t("create.conditionUsed")}
-          </span>
+        {(listing.condition || listing.sellerType === "BUSINESS") && (
+          <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1">
+            {listing.condition && (
+              <span className="rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
+                {listing.condition === "NEW" ? t("create.conditionNew") : t("create.conditionUsed")}
+              </span>
+            )}
+            {listing.sellerType === "BUSINESS" && (
+              <span className="flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
+                <Store className="h-2.5 w-2.5" />
+                {t("listing.businessBadge")}
+              </span>
+            )}
+          </div>
         )}
       </div>
       <div className="flex flex-1 flex-col gap-1 p-3">

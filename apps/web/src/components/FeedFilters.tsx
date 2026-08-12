@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, Gift, SlidersHorizontal, Truck, Zap, X } from "lucide-react";
 import { resolveCategoryFields } from "@kerak/shared";
-import type { CategoryDto, ListingCondition } from "@kerak/shared";
+import type { CategoryDto, ListingCondition, SellerType } from "@kerak/shared";
 import { REGIONS } from "../data/uzbekistanRegions";
 import { CategoryPicker } from "./CategoryPicker";
 import { useTranslation } from "../i18n/LanguageContext";
@@ -17,6 +17,7 @@ export interface FeedFilterValue {
   isFree?: boolean;
   isUrgent?: boolean;
   hasDelivery?: boolean;
+  sellerType?: SellerType;
   attributes?: Record<string, string>;
   attributesAny?: Record<string, string>;
   attributesMin?: Record<string, string>;
@@ -65,6 +66,7 @@ export function FeedFilters({ value, onChange, categories }: FeedFiltersProps) {
       value.isFree ? true : undefined,
       value.isUrgent ? true : undefined,
       value.hasDelivery ? true : undefined,
+      value.sellerType,
     ].filter((v) => v !== undefined).length +
     Object.keys(value.attributes ?? {}).length +
     Object.keys(value.attributesAny ?? {}).length +
@@ -355,6 +357,33 @@ export function FeedFilters({ value, onChange, categories }: FeedFiltersProps) {
                     className={`rounded-xl py-2 text-xs font-semibold transition ${draft.condition === "USED" ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"}`}
                   >
                     {t("create.conditionUsed")}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium text-ink">{t("filters.sellerType")}</span>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDraft((d) => ({ ...d, sellerType: undefined }))}
+                    className={`rounded-xl py-2 text-xs font-semibold transition ${!draft.sellerType ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"}`}
+                  >
+                    {t("filters.allSellerTypes")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDraft((d) => ({ ...d, sellerType: "PRIVATE" }))}
+                    className={`rounded-xl py-2 text-xs font-semibold transition ${draft.sellerType === "PRIVATE" ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"}`}
+                  >
+                    {t("create.sellerTypePrivate")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDraft((d) => ({ ...d, sellerType: "BUSINESS" }))}
+                    className={`rounded-xl py-2 text-xs font-semibold transition ${draft.sellerType === "BUSINESS" ? "bg-brand text-brand-contrast" : "bg-surface-secondary text-ink"}`}
+                  >
+                    {t("create.sellerTypeBusiness")}
                   </button>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { ContactEventType, ListingCondition, ListingStatus, NotificationType, Prisma } from "@prisma/client";
+import { ContactEventType, ListingCondition, ListingStatus, NotificationType, Prisma, SellerType } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { CreateListingDto } from "./dto/create-listing.dto";
 import { UpdateListingDto } from "./dto/update-listing.dto";
@@ -30,6 +30,7 @@ export interface FindFeedOptions {
   isFree?: boolean;
   isUrgent?: boolean;
   hasDelivery?: boolean;
+  sellerType?: SellerType;
   attributes?: Record<string, string>;
   attributesAny?: Record<string, string>;
   attributesMin?: Record<string, string>;
@@ -50,6 +51,8 @@ interface FeedRow {
   isFree: boolean;
   isUrgent: boolean;
   hasDelivery: boolean;
+  isBargainable: boolean;
+  sellerType: SellerType | null;
   photos: string[];
   addressText: string | null;
   regionId: number | null;
@@ -132,6 +135,7 @@ export class ListingsService {
       isFree,
       isUrgent,
       hasDelivery,
+      sellerType,
       attributes,
       attributesAny,
       attributesMin,
@@ -184,6 +188,7 @@ export class ListingsService {
         ...(isFree ? { isFree: true } : {}),
         ...(isUrgent ? { isUrgent: true } : {}),
         ...(hasDelivery ? { hasDelivery: true } : {}),
+        ...(sellerType ? { sellerType } : {}),
         ...(q
           ? {
               OR: [
@@ -240,6 +245,7 @@ export class ListingsService {
     if (isFree) conditions.push(Prisma.sql`l."isFree" = true`);
     if (isUrgent) conditions.push(Prisma.sql`l."isUrgent" = true`);
     if (hasDelivery) conditions.push(Prisma.sql`l."hasDelivery" = true`);
+    if (sellerType) conditions.push(Prisma.sql`l."sellerType" = ${sellerType}::"SellerType"`);
     if (q) {
       const pattern = `%${q}%`;
       conditions.push(Prisma.sql`(l.title ILIKE ${pattern} OR l.description ILIKE ${pattern})`);
@@ -290,7 +296,8 @@ export class ListingsService {
         l.id, l."categoryId" as "categoryId", l.title, l.description, l.price,
         l."previousPrice" as "previousPrice", l."priceUsd" as "priceUsd",
         l."isNegotiable" as "isNegotiable", l."isFree" as "isFree", l."isUrgent" as "isUrgent",
-        l."hasDelivery" as "hasDelivery", l.photos, l."addressText" as "addressText",
+        l."hasDelivery" as "hasDelivery", l."isBargainable" as "isBargainable", l."sellerType" as "sellerType",
+        l.photos, l."addressText" as "addressText",
         l."regionId" as "regionId", l."districtId" as "districtId",
         l.lat, l.lng, l.phone, l.condition, l.status, l."viewsCount" as "viewsCount", l."createdAt" as "createdAt",
         l."boostedUntil" as "boostedUntil", l."bumpedAt" as "bumpedAt",
@@ -342,6 +349,8 @@ export class ListingsService {
       isFree: r.isFree,
       isUrgent: r.isUrgent,
       hasDelivery: r.hasDelivery,
+      isBargainable: r.isBargainable,
+      sellerType: r.sellerType,
       photos: r.photos,
       addressText: r.addressText,
       regionId: r.regionId,

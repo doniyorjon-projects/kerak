@@ -170,6 +170,7 @@ export interface FeedQuery {
   isFree?: boolean;
   isUrgent?: boolean;
   hasDelivery?: boolean;
+  sellerType?: SellerType;
   /** Aniq moslik (select/text/boolean) - masalan { rooms: "3" }. */
   attributes?: Record<string, string>;
   /** Multiselect - qiymat massiv ichida bormi (masalan { amenities: "Lift" }). */

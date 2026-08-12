@@ -19,6 +19,7 @@ export function fetchListingFeed(query: FeedQuery = {}) {
   if (query.isFree) params.set("isFree", "true");
   if (query.isUrgent) params.set("isUrgent", "true");
   if (query.hasDelivery) params.set("hasDelivery", "true");
+  if (query.sellerType) params.set("sellerType", query.sellerType);
   if (query.attributes && Object.keys(query.attributes).length > 0) {
     params.set("attributes", JSON.stringify(query.attributes));
   }
