@@ -24,7 +24,7 @@ import type { LucideIcon } from "lucide-react";
 import { UNLIMITED_LISTINGS, resolveCategoryFields } from "@kerak/shared";
 import type { AttributeValue, CategoryDto, CreateListingInput, ListingCondition, SellerType } from "@kerak/shared";
 import { CategoryPicker } from "./CategoryPicker";
-import { fetchCategories } from "../api/categories";
+import { fetchCategories, getCategoryName } from "../api/categories";
 import { uploadPhoto } from "../api/listings";
 import { fetchPublicSettings } from "../api/settings";
 import { generateAiDescription, suggestCategory } from "../api/ai";
@@ -97,7 +97,7 @@ function attributesToMultiselectValues(attributes: Record<string, AttributeValue
 }
 
 export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, submitError }: ListingFormProps) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
   const categoriesById = useMemo(() => new Map((categories ?? []).map((c) => [c.id, c] as const)), [categories]);
   const { data: publicSettings } = useQuery({ queryKey: ["public-settings"], queryFn: fetchPublicSettings });
@@ -264,7 +264,7 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
             <span className="flex min-w-0 items-center gap-1.5 truncate text-xs font-medium text-brand">
               <Sparkles className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">
-                {t("create.categorySuggestion")}: {suggestedCategory.icon} {suggestedCategory.nameUz}
+                {t("create.categorySuggestion")}: {suggestedCategory.icon} {getCategoryName(suggestedCategory, lang)}
               </span>
             </span>
             <div className="flex shrink-0 items-center gap-1.5">

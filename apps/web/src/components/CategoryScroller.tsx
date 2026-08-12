@@ -2,8 +2,11 @@ import { useRef, useState, useLayoutEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Folder } from "lucide-react";
 import type { CategoryDto } from "@kerak/shared";
+import { useTranslation } from "../i18n/LanguageContext";
+import { getCategoryName } from "../api/categories";
 
 export function CategoryScroller({ categories }: { categories: CategoryDto[] }) {
+  const { lang } = useTranslation();
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [thumb, setThumb] = useState<{ widthPct: number; leftPct: number } | null>(null);
 
@@ -48,7 +51,7 @@ export function CategoryScroller({ categories }: { categories: CategoryDto[] }) 
                 {category.icon ?? <Folder className="h-4 w-4 text-hint" strokeWidth={1.5} />}
               </span>
               <span className="line-clamp-2 text-[11px] font-medium leading-tight text-ink">
-                {category.nameUz}
+                {getCategoryName(category, lang)}
               </span>
             </Link>
           ))}

@@ -16,7 +16,7 @@ import {
 import { deleteRequest, fetchRequest, updateRequest } from "../api/requests";
 import { fetchMe } from "../api/users";
 import { blockUser, checkBlockStatus, unblockUser } from "../api/blocks";
-import { fetchCategories } from "../api/categories";
+import { fetchCategories, getCategoryName } from "../api/categories";
 import { REGIONS } from "../data/uzbekistanRegions";
 import { PageHeader } from "../components/PageHeader";
 import { Spinner } from "../components/Spinner";
@@ -34,7 +34,7 @@ function getDistrictName(regionId: number | null, districtId: number | null): st
 export function RequestDetail() {
   const { requestId } = useParams<{ requestId: string }>();
   useBackButton("/requests");
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -102,7 +102,7 @@ export function RequestDetail() {
 
         {category && (
           <span className="w-fit rounded-full bg-brand/10 px-2.5 py-1 text-xs font-medium text-brand">
-            {category.icon} {category.nameUz}
+            {category.icon} {getCategoryName(category, lang)}
           </span>
         )}
 

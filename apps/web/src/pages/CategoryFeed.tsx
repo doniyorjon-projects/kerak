@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { PackageSearch } from "lucide-react";
 import type { FeedSort } from "@kerak/shared";
 import { fetchListingFeed } from "../api/listings";
-import { fetchCategories } from "../api/categories";
+import { fetchCategories, getCategoryName } from "../api/categories";
 import { fetchMe } from "../api/users";
 import { ListingCard } from "../components/ListingCard";
 import { FeedControls } from "../components/FeedControls";
@@ -19,7 +19,7 @@ import { useTranslation } from "../i18n/LanguageContext";
 export function CategoryFeed() {
   const { categoryId } = useParams<{ categoryId: string }>();
   useBackButton("/categories");
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const navigate = useNavigate();
 
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe });
@@ -56,7 +56,7 @@ export function CategoryFeed() {
   return (
     <div className="page">
       <PageHeader
-        title={category ? `${category.icon ?? ""} ${category.nameUz}`.trim() : t("categoryFeed.fallbackTitle")}
+        title={category ? `${category.icon ?? ""} ${getCategoryName(category, lang)}`.trim() : t("categoryFeed.fallbackTitle")}
         backTo="/categories"
       />
 

@@ -5,6 +5,10 @@ export function fetchCategories() {
   return api.get<CategoryDto[]>("/categories");
 }
 
+export function getCategoryName(category: { nameUz: string; nameRu?: string | null }, lang: "uz" | "ru"): string {
+  return (lang === "ru" && category.nameRu) || category.nameUz;
+}
+
 export function createCategory(data: {
   id: string;
   nameUz: string;

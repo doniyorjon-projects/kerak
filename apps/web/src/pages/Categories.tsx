@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Folder, PackageSearch } from "lucide-react";
-import { fetchCategories } from "../api/categories";
+import { fetchCategories, getCategoryName } from "../api/categories";
 import { CategoryCard } from "../components/CategoryCard";
 import { SearchBar } from "../components/SearchBar";
 import { PageHeader } from "../components/PageHeader";
@@ -10,7 +10,7 @@ import { Spinner } from "../components/Spinner";
 import { useTranslation } from "../i18n/LanguageContext";
 
 export function Categories() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [search, setSearch] = useState("");
   const [activeRootId, setActiveRootId] = useState<string | null>(null);
   const { data: categories, isLoading, error } = useQuery({
@@ -25,8 +25,8 @@ export function Categories() {
   const searchResults = useMemo(() => {
     if (!search.trim()) return null;
     const q = search.trim().toLowerCase();
-    return (categories ?? []).filter((c) => c.parentId && c.nameUz.toLowerCase().includes(q));
-  }, [categories, search]);
+    return (categories ?? []).filter((c) => c.parentId && getCategoryName(c, lang).toLowerCase().includes(q));
+  }, [categories, search, lang]);
 
   if (isLoading) return <Spinner label={t("loading")} />;
   if (error) return <div className="p-4 text-center text-destructive">{t("categories.loadError")}</div>;
@@ -71,7 +71,7 @@ export function Categories() {
                       isActive ? "font-semibold text-brand" : "font-medium text-hint"
                     }`}
                   >
-                    {root.nameUz}
+                    {getCategoryName(root, lang)}
                   </span>
                 </button>
               );
@@ -83,7 +83,7 @@ export function Categories() {
               <>
                 <h2 className="mb-3 flex items-center gap-1.5 text-sm font-bold text-ink">
                   <span>{activeRoot.icon}</span>
-                  {activeRoot.nameUz}
+                  {getCategoryName(activeRoot, lang)}
                 </h2>
                 <div className="grid grid-cols-2 gap-2.5">
                   {childrenOf(activeRoot.id).map((category) => (

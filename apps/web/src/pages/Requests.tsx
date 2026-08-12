@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, MessageSquareText, Plus, X } from "lucide-react";
 import { fetchRequestFeed } from "../api/requests";
-import { fetchCategories } from "../api/categories";
+import { fetchCategories, getCategoryName } from "../api/categories";
 import { REGIONS } from "../data/uzbekistanRegions";
 import { RequestCard } from "../components/RequestCard";
 import { CategoryPicker } from "../components/CategoryPicker";
@@ -21,7 +21,7 @@ function CategoryFilterDropdown({
   categoryId: string;
   onChange: (id: string) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [open, setOpen] = useState(false);
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
   const selected = categories?.find((c) => c.id === categoryId);
@@ -34,7 +34,7 @@ function CategoryFilterDropdown({
         className="input flex items-center justify-between text-left"
       >
         <span className={`truncate ${selected ? "text-ink" : "text-hint"}`}>
-          {selected ? `${selected.icon ?? ""} ${selected.nameUz}`.trim() : t("filters.allCategories")}
+          {selected ? `${selected.icon ?? ""} ${getCategoryName(selected, lang)}`.trim() : t("filters.allCategories")}
         </span>
         <ChevronDown className="h-4 w-4 shrink-0 text-hint" />
       </button>
