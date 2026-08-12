@@ -1,13 +1,21 @@
 import { randomUUID } from "crypto";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { ListObjectsV2Command, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+
+export interface StorageUsage {
+  usedBytes: number;
+  objectCount: number;
+}
+
+const USAGE_CACHE_TTL_MS = 5 * 60 * 1000;
 
 @Injectable()
 export class StorageService {
   private readonly s3: S3Client;
   private readonly bucket: string;
   private readonly publicUrl: string;
+  private usageCache: (StorageUsage & { fetchedAt: number }) | null = null;
 
   constructor(private readonly config: ConfigService) {
     const accountId = this.config.get<string>("R2_ACCOUNT_ID");
@@ -38,5 +46,34 @@ export class StorageService {
     );
 
     return `${this.publicUrl}/${key}`;
+  }
+
+  /**
+   * Butun bucket bo'yicha ishlatilgan hajmni hisoblaydi (R2'da to'g'ridan-to'g'ri
+   * "kvota" tushunchasi yo'q, shuning uchun barcha obyektlarni sanab chiqamiz).
+   * Har safar so'ralganda butun bucketni ro'yxatlash qimmat bo'lgani uchun
+   * natija bir necha daqiqaga keshlanadi.
+   */
+  async getUsage(): Promise<StorageUsage> {
+    if (this.usageCache && Date.now() - this.usageCache.fetchedAt < USAGE_CACHE_TTL_MS) {
+      return this.usageCache;
+    }
+
+    let usedBytes = 0;
+    let objectCount = 0;
+    let continuationToken: string | undefined;
+    do {
+      const res = await this.s3.send(
+        new ListObjectsV2Command({ Bucket: this.bucket, ContinuationToken: continuationToken }),
+      );
+      for (const obj of res.Contents ?? []) {
+        usedBytes += obj.Size ?? 0;
+        objectCount += 1;
+      }
+      continuationToken = res.IsTruncated ? res.NextContinuationToken : undefined;
+    } while (continuationToken);
+
+    this.usageCache = { usedBytes, objectCount, fetchedAt: Date.now() };
+    return { usedBytes, objectCount };
   }
 }

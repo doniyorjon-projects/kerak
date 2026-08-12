@@ -88,6 +88,15 @@ export function fetchAdminStats() {
   return api.get<AdminStats>("/admin/stats");
 }
 
+export interface AdminStorageUsage {
+  r2: { usedBytes: number; limitBytes: number; objectCount: number };
+  database: { usedBytes: number; limitBytes: number };
+}
+
+export function fetchStorageUsage() {
+  return api.get<AdminStorageUsage>("/admin/storage-usage");
+}
+
 export interface AdminUserDetail {
   id: string;
   telegramId: string;

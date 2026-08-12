@@ -11,6 +11,7 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
+  Database,
   DollarSign,
   Flag,
   HeadphonesIcon,
@@ -53,6 +54,7 @@ import {
   fetchBotSettings,
   fetchPendingListings,
   fetchPendingReports,
+  fetchStorageUsage,
   fetchUserListings,
   fetchUsers,
   rejectListing,
@@ -82,6 +84,7 @@ import { ImageLightbox } from "../components/ImageLightbox";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
 import { Spinner } from "../components/Spinner";
+import { StorageMeter } from "../components/StorageMeter";
 import { useBackButton } from "../hooks/useBackButton";
 import { useTranslation } from "../i18n/LanguageContext";
 import type { TranslationKey } from "../i18n/translations";
@@ -682,6 +685,11 @@ function CategoriesTab() {
 function StatsTab() {
   const { t } = useTranslation();
   const { data: stats, isLoading } = useQuery({ queryKey: ["admin", "stats"], queryFn: fetchAdminStats });
+  const { data: storage } = useQuery({
+    queryKey: ["admin", "storage-usage"],
+    queryFn: fetchStorageUsage,
+    refetchInterval: 5 * 60 * 1000,
+  });
 
   if (isLoading) return <Spinner label={t("loading")} />;
   if (!stats) return null;
@@ -702,13 +710,33 @@ function StatsTab() {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {cards.map((c) => (
-        <div key={c.label} className="card flex flex-col gap-1">
-          <span className="text-2xl font-bold text-ink">{c.value}</span>
-          <span className="text-xs text-hint">{c.label}</span>
+    <div className="flex flex-col gap-3">
+      {storage && (
+        <div className="flex flex-col gap-2.5">
+          <span className="section-title">{t("admin.storageTitle")}</span>
+          <StorageMeter
+            icon={Images}
+            label={t("admin.storageR2Label")}
+            usedBytes={storage.r2.usedBytes}
+            limitBytes={storage.r2.limitBytes}
+            hint={t("admin.storageObjectCount").replace("{count}", String(storage.r2.objectCount))}
+          />
+          <StorageMeter
+            icon={Database}
+            label={t("admin.storageDbLabel")}
+            usedBytes={storage.database.usedBytes}
+            limitBytes={storage.database.limitBytes}
+          />
         </div>
-      ))}
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        {cards.map((c) => (
+          <div key={c.label} className="card flex flex-col gap-1">
+            <span className="text-2xl font-bold text-ink">{c.value}</span>
+            <span className="text-xs text-hint">{c.label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

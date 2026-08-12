@@ -32,6 +32,14 @@ import { BroadcastDto } from "./dto/broadcast.dto";
 import type { User } from "@prisma/client";
 import { NotificationType } from "@prisma/client";
 import { BOOST_DAYS, PLAN_LISTINGS_LIMIT, UNLIMITED_LISTINGS } from "@kerak/shared";
+import { StorageService } from "../uploads/storage.service";
+
+// Cloudflare R2 bepul tarifining taxminiy hajmi - R2'ning o'zi "kvota"
+// tushunchasini API orqali bermaydi, shuning uchun ma'muriy ko'rsatma sifatida
+// qo'lda belgilanadi.
+const R2_STORAGE_LIMIT_BYTES = 25 * 1024 ** 3;
+// Render'ning bepul Postgres tarifi - 1 GB disk.
+const DB_STORAGE_LIMIT_BYTES = 1 * 1024 ** 3;
 
 @Controller("admin")
 @UseGuards(TelegramAuthGuard, AdminGuard)
@@ -46,6 +54,7 @@ export class AdminController {
     private readonly notificationsService: NotificationsService,
     private readonly settingsService: SettingsService,
     private readonly requestsService: RequestsService,
+    private readonly storageService: StorageService,
   ) {}
 
   // anthropicApiKey hech qachon xom holda frontendga qaytarilmaydi (write-only) -
@@ -460,6 +469,26 @@ export class AdminController {
       boosts: { paidCount: boostStats._count, totalRevenue: boostStats._sum.amount ?? 0 },
       favorites: totalFavorites,
       messages: totalMessages,
+    };
+  }
+
+  @Get("storage-usage")
+  async getStorageUsage() {
+    const [r2Usage, dbSizeRows] = await Promise.all([
+      this.storageService.getUsage(),
+      this.prisma.$queryRaw<{ size: bigint }[]>`SELECT pg_database_size(current_database()) as size`,
+    ]);
+
+    return {
+      r2: {
+        usedBytes: r2Usage.usedBytes,
+        limitBytes: R2_STORAGE_LIMIT_BYTES,
+        objectCount: r2Usage.objectCount,
+      },
+      database: {
+        usedBytes: Number(dbSizeRows[0].size),
+        limitBytes: DB_STORAGE_LIMIT_BYTES,
+      },
     };
   }
 }
