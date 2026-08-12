@@ -7,6 +7,7 @@ import {
   Camera,
   ChevronDown,
   Gift,
+  Handshake,
   ListChecks,
   MapPin,
   MessageCircle,
@@ -45,6 +46,7 @@ export interface ListingFormInitialValues {
   isFree?: boolean;
   isUrgent?: boolean;
   hasDelivery?: boolean;
+  isBargainable?: boolean;
   sellerType?: SellerType | null;
   contactTelegram?: boolean;
   phone: string;
@@ -159,6 +161,7 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
   const [usdPrice, setUsdPrice] = useState(initial?.priceUsd != null ? String(initial.priceUsd) : "");
   const [isNegotiable, setIsNegotiable] = useState(initial?.isNegotiable ?? false);
   const [isFree, setIsFree] = useState(initial?.isFree ?? false);
+  const [isBargainable, setIsBargainable] = useState(initial?.isBargainable ?? false);
   const [isUrgent, setIsUrgent] = useState(initial?.isUrgent ?? false);
   const [hasDelivery, setHasDelivery] = useState(initial?.hasDelivery ?? false);
   const [sellerType, setSellerType] = useState<SellerType | null>(initial?.sellerType ?? null);
@@ -227,8 +230,9 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
       attributes: Object.keys(finalAttributes).length > 0 ? finalAttributes : null,
       price: isFree || isNegotiable || !price ? null : Number(price),
       priceUsd: isFree || isNegotiable || priceCurrency !== "USD" || !usdPrice ? null : Number(usdPrice),
-      isNegotiable: isFree ? false : isNegotiable,
-      isFree,
+      isNegotiable,
+      isFree: isNegotiable ? false : isFree,
+      isBargainable: isNegotiable || isFree ? false : isBargainable,
       isUrgent,
       hasDelivery,
       sellerType,
@@ -495,96 +499,115 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
         <SectionHeader icon={Banknote} title={t("create.priceSection")} />
 
         <label className="flex cursor-pointer items-center justify-between rounded-xl bg-surface-secondary px-3.5 py-2.5">
-          <span className="flex items-center gap-1.5 text-sm text-ink">
-            <Gift className="h-4 w-4 text-success-dark" />
-            {t("create.isFree")}
-          </span>
+          <span className="text-sm text-ink">{t("negotiable")}</span>
           <button
             type="button"
             role="switch"
-            aria-checked={isFree}
-            onClick={() => setIsFree((v) => !v)}
-            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${isFree ? "bg-brand" : "bg-divider"}`}
+            aria-checked={isNegotiable}
+            onClick={() => setIsNegotiable((v) => !v)}
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${isNegotiable ? "bg-brand" : "bg-divider"}`}
           >
             <span
-              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-soft transition-all ${isFree ? "left-[22px]" : "left-0.5"}`}
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-soft transition-all ${isNegotiable ? "left-[22px]" : "left-0.5"}`}
             />
           </button>
         </label>
 
-        {!isFree && (
+        {!isNegotiable && (
           <>
-            <div className="flex items-center justify-end gap-2.5">
-              <div className="flex shrink-0 gap-1 rounded-full bg-surface-secondary p-0.5">
-                <button
-                  type="button"
-                  disabled={isNegotiable}
-                  onClick={() => setPriceCurrency("UZS")}
-                  className={`rounded-full px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50 ${
-                    priceCurrency === "UZS" ? "bg-brand text-brand-contrast" : "text-hint"
-                  }`}
-                >
-                  {t("som")}
-                </button>
-                <button
-                  type="button"
-                  disabled={isNegotiable}
-                  onClick={() => {
-                    setUsdPrice(price ? String(Math.round(Number(price) / usdRate)) : "");
-                    setPriceCurrency("USD");
-                  }}
-                  className={`rounded-full px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50 ${
-                    priceCurrency === "USD" ? "bg-brand text-brand-contrast" : "text-hint"
-                  }`}
-                >
-                  $
-                </button>
-              </div>
-            </div>
-            <div className="relative">
-              {priceCurrency === "USD" ? (
-                <PriceInput
-                  value={usdPrice}
-                  onChange={(digits) => {
-                    setUsdPrice(digits);
-                    setPrice(digits ? String(Math.round(Number(digits) * usdRate)) : "");
-                  }}
-                  disabled={isNegotiable}
-                  className="input pr-10 text-base font-semibold disabled:opacity-50"
-                  placeholder="0"
-                />
-              ) : (
-                <PriceInput
-                  value={price}
-                  onChange={setPrice}
-                  disabled={isNegotiable}
-                  className="input pr-14 text-base font-semibold disabled:opacity-50"
-                  placeholder="0"
-                />
-              )}
-              <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-hint">
-                {priceCurrency === "USD" ? "$" : t("som")}
-              </span>
-            </div>
-            {priceCurrency === "USD" && price && (
-              <span className="text-xs text-hint">
-                ≈ {Number(price).toLocaleString("uz-UZ")} {t("som")}
-              </span>
-            )}
             <label className="flex cursor-pointer items-center justify-between rounded-xl bg-surface-secondary px-3.5 py-2.5">
-              <span className="text-sm text-ink">{t("negotiable")}</span>
+              <span className="flex items-center gap-1.5 text-sm text-ink">
+                <Gift className="h-4 w-4 text-success-dark" />
+                {t("create.isFree")}
+              </span>
               <button
                 type="button"
                 role="switch"
-                aria-checked={isNegotiable}
-                onClick={() => setIsNegotiable((v) => !v)}
-                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${isNegotiable ? "bg-brand" : "bg-divider"}`}
+                aria-checked={isFree}
+                onClick={() => setIsFree((v) => !v)}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${isFree ? "bg-brand" : "bg-divider"}`}
               >
                 <span
-                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-soft transition-all ${isNegotiable ? "left-[22px]" : "left-0.5"}`}
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-soft transition-all ${isFree ? "left-[22px]" : "left-0.5"}`}
                 />
               </button>
             </label>
+
+            {!isFree && (
+              <>
+                <div className="flex items-center justify-end gap-2.5">
+                  <div className="flex shrink-0 gap-1 rounded-full bg-surface-secondary p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setPriceCurrency("UZS")}
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${
+                        priceCurrency === "UZS" ? "bg-brand text-brand-contrast" : "text-hint"
+                      }`}
+                    >
+                      {t("som")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUsdPrice(price ? String(Math.round(Number(price) / usdRate)) : "");
+                        setPriceCurrency("USD");
+                      }}
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${
+                        priceCurrency === "USD" ? "bg-brand text-brand-contrast" : "text-hint"
+                      }`}
+                    >
+                      $
+                    </button>
+                  </div>
+                </div>
+                <div className="relative">
+                  {priceCurrency === "USD" ? (
+                    <PriceInput
+                      value={usdPrice}
+                      onChange={(digits) => {
+                        setUsdPrice(digits);
+                        setPrice(digits ? String(Math.round(Number(digits) * usdRate)) : "");
+                      }}
+                      className="input pr-10 text-base font-semibold"
+                      placeholder="0"
+                    />
+                  ) : (
+                    <PriceInput
+                      value={price}
+                      onChange={setPrice}
+                      className="input pr-14 text-base font-semibold"
+                      placeholder="0"
+                    />
+                  )}
+                  <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-hint">
+                    {priceCurrency === "USD" ? "$" : t("som")}
+                  </span>
+                </div>
+                {priceCurrency === "USD" && price && (
+                  <span className="text-xs text-hint">
+                    ≈ {Number(price).toLocaleString("uz-UZ")} {t("som")}
+                  </span>
+                )}
+
+                <label className="flex cursor-pointer items-center justify-between rounded-xl bg-surface-secondary px-3.5 py-2.5">
+                  <span className="flex items-center gap-1.5 text-sm text-ink">
+                    <Handshake className="h-4 w-4 text-hint" />
+                    {t("create.isBargainable")}
+                  </span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={isBargainable}
+                    onClick={() => setIsBargainable((v) => !v)}
+                    className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${isBargainable ? "bg-brand" : "bg-divider"}`}
+                  >
+                    <span
+                      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-soft transition-all ${isBargainable ? "left-[22px]" : "left-0.5"}`}
+                    />
+                  </button>
+                </label>
+              </>
+            )}
           </>
         )}
       </div>

@@ -11,6 +11,7 @@ import {
   Eye,
   Flag,
   HandCoins,
+  Handshake,
   Heart,
   MapPin,
   Megaphone,
@@ -372,12 +373,18 @@ export function ListingDetail() {
             {listing.brand}
           </span>
         )}
-        {(listing.isUrgent || listing.hasDelivery || listing.sellerType === "BUSINESS") && (
+        {(listing.isUrgent || listing.hasDelivery || listing.isBargainable || listing.sellerType === "BUSINESS") && (
           <div className="flex flex-wrap items-center gap-1.5">
             {listing.isUrgent && (
               <span className="flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-brand-contrast">
                 <Zap className="h-3 w-3" />
                 {t("listing.isUrgentBadge")}
+              </span>
+            )}
+            {listing.isBargainable && (
+              <span className="flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-brand-contrast">
+                <Handshake className="h-3 w-3" />
+                {t("listing.isBargainableBadge")}
               </span>
             )}
             {listing.hasDelivery && (

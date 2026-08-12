@@ -1,6 +1,6 @@
 ﻿import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Clock, Eye, Gift, Heart, ImageOff, MapPin, Rocket, Zap } from "lucide-react";
+import { Clock, Eye, Gift, Handshake, Heart, ImageOff, MapPin, Rocket, Zap } from "lucide-react";
 import type { ListingDto } from "@kerak/shared";
 import { addFavorite, removeFavorite } from "../api/favorites";
 import { fetchPublicSettings } from "../api/settings";
@@ -82,6 +82,12 @@ export function ListingCard({ listing }: { listing: ListingDto }) {
             <span className="flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[10px] font-semibold text-brand-contrast shadow-soft">
               <Zap className="h-3 w-3" />
               {t("listing.isUrgentBadge")}
+            </span>
+          )}
+          {listing.isBargainable && (
+            <span className="flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[10px] font-semibold text-brand-contrast shadow-soft">
+              <Handshake className="h-3 w-3" />
+              {t("listing.isBargainableBadge")}
             </span>
           )}
         </div>

@@ -71,6 +71,7 @@ export interface ListingDto {
   isFree: boolean;
   isUrgent: boolean;
   hasDelivery: boolean;
+  isBargainable: boolean;
   sellerType?: SellerType | null;
   contactTelegram: boolean;
   contactName?: string | null;
@@ -224,6 +225,7 @@ export interface CreateListingInput {
   isFree?: boolean;
   isUrgent?: boolean;
   hasDelivery?: boolean;
+  isBargainable?: boolean;
   sellerType?: SellerType | null;
   contactTelegram?: boolean;
   photos: string[];

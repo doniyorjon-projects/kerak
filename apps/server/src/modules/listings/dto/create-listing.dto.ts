@@ -64,6 +64,10 @@ export class CreateListingDto {
   hasDelivery?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  isBargainable?: boolean;
+
+  @IsOptional()
   @IsEnum(SellerType)
   sellerType?: SellerType;
 

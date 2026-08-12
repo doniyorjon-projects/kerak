@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { Cron, CronExpression } from "@nestjs/schedule";
 import { Bot, InlineKeyboard } from "grammy";
 import { Listing, NotificationType, PaymentStatus, WalletTransactionType } from "@prisma/client";
 import { REFERRAL_BONUS_AMOUNT } from "@kerak/shared";
@@ -446,5 +447,47 @@ export class BotService implements OnModuleInit {
     ].join("\n");
 
     await this.bot.api.sendMessage(this.adminTelegramId, text, { reply_markup: keyboard });
+  }
+
+  /**
+   * Har bir foydalanuvchiga botga birinchi marta start bosganidan 15 daqiqa
+   * o'tgach, referal dasturi haqida bir martalik xabar yuboradi. Vaqt bo'yicha
+   * so'rov (in-memory setTimeout emas) ishlatiladi, chunki server istalgan
+   * vaqt qayta ishga tushishi mumkin - shunda ham hech kim urib qolmaydi.
+   */
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async sendPendingReferralPrompts() {
+    const threshold = new Date(Date.now() - 15 * 60 * 1000);
+    const pending = await this.prisma.user.findMany({
+      where: { referralPromptSent: false, createdAt: { lte: threshold } },
+      select: { id: true, telegramId: true },
+      take: 200,
+    });
+
+    for (const user of pending) {
+      await this.sendReferralPrompt(user.telegramId, user.id);
+      await this.prisma.user.update({ where: { id: user.id }, data: { referralPromptSent: true } });
+    }
+  }
+
+  private async sendReferralPrompt(telegramId: string, userId: string) {
+    const bonus = REFERRAL_BONUS_AMOUNT.toLocaleString("uz-UZ");
+    const text = [
+      "🎁 Do'stlaringizni taklif qiling va bonus qo'lga kiriting!",
+      "",
+      `Havolangizni do'stlaringizga yuboring - botga birinchi marta start bosgan har bir do'stingiz uchun hamyoningizga ${bonus} so'm tushadi, do'stingizning hamyoniga ham ${bonus} so'm qo'shiladi.`,
+      "",
+      "Yig'ilgan bonus pulingiz bilan e'lonlaringizni ko'tarishingiz (TOP qilib chiqarish) yoki tarifingizni oshirib ko'proq e'lon joylashingiz mumkin.",
+      "",
+      "Havolangizni olish uchun pastdagi tugmani bosing 👇",
+    ].join("\n");
+
+    const keyboard = new InlineKeyboard().webApp("💰 Havolamni olish", `${this.miniAppUrl}?page=wallet`);
+
+    try {
+      await this.bot.api.sendMessage(telegramId, text, { reply_markup: keyboard });
+    } catch (err) {
+      this.logger.warn(`Referal taklifnomasi yuborilmadi (${telegramId}): ${err}`);
+    }
   }
 }

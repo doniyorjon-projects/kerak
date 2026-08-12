@@ -111,6 +111,7 @@ model User {
   referredById  String?
   referredBy    User?    @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
   referrals     User[]   @relation("Referrals")
+  referralPromptSent Boolean @default(false)
   createdAt     DateTime @default(now())
 
   listings           Listing[]
@@ -165,6 +166,7 @@ model Listing {
   isFree          Boolean           @default(false)
   isUrgent        Boolean           @default(false)
   hasDelivery     Boolean           @default(false)
+  isBargainable   Boolean           @default(false)
   sellerType      SellerType?
   contactTelegram Boolean           @default(true)
   photos          String[]
