@@ -1,9 +1,11 @@
 ﻿import { NavLink } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Heart, Home, LayoutGrid, Plus, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "../i18n/LanguageContext";
 import type { TranslationKey } from "../i18n/translations";
 import { useHideOnScroll } from "../hooks/useHideOnScroll";
+import { fetchFavorites } from "../api/favorites";
 
 const LEFT_TABS: { to: string; labelKey: TranslationKey; icon: LucideIcon; end?: boolean }[] = [
   { to: "/", labelKey: "nav.home", icon: Home, end: true },
@@ -20,11 +22,13 @@ function NavTab({
   labelKey,
   icon: Icon,
   end,
+  badgeCount,
 }: {
   to: string;
   labelKey: TranslationKey;
   icon: LucideIcon;
   end?: boolean;
+  badgeCount?: number;
 }) {
   const { t } = useTranslation();
   return (
@@ -35,7 +39,18 @@ function NavTab({
             isActive ? "bg-brand text-brand-contrast" : "text-hint"
           }`}
         >
-          <Icon className="h-[21px] w-[21px] shrink-0" strokeWidth={isActive ? 2.25 : 1.75} />
+          <span className="relative flex shrink-0">
+            <Icon className="h-[21px] w-[21px] shrink-0" strokeWidth={isActive ? 2.25 : 1.75} />
+            {!!badgeCount && (
+              <span
+                className={`absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-semibold ${
+                  isActive ? "bg-brand-contrast text-brand" : "bg-brand text-brand-contrast"
+                }`}
+              >
+                {badgeCount > 99 ? "99+" : badgeCount}
+              </span>
+            )}
+          </span>
           <span
             className={`overflow-hidden whitespace-nowrap text-xs font-medium transition-all duration-200 ${
               isActive ? "max-w-[80px] opacity-100" : "max-w-0 opacity-0"
@@ -51,6 +66,8 @@ function NavTab({
 
 export function BottomNav() {
   const hidden = useHideOnScroll();
+  const { data: favorites } = useQuery({ queryKey: ["favorites"], queryFn: fetchFavorites });
+  const favoritesCount = favorites?.length ?? 0;
 
   return (
     <nav
@@ -76,7 +93,7 @@ export function BottomNav() {
       </NavLink>
 
       {RIGHT_TABS.map((tab) => (
-        <NavTab key={tab.to} {...tab} />
+        <NavTab key={tab.to} {...tab} badgeCount={tab.to === "/favorites" ? favoritesCount : undefined} />
       ))}
     </nav>
   );
