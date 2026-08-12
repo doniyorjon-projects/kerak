@@ -98,6 +98,8 @@ export interface AdminUserDetail {
   isBlocked: boolean;
   listingsLimit: number;
   createdAt: string;
+  lastSeenAt: string | null;
+  botBlockedAt: string | null;
   listingsCount: number;
   reportsFiledCount: number;
   rating: { avg: number | null; count: number };

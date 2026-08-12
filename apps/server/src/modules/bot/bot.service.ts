@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { Bot, InlineKeyboard } from "grammy";
+import { Bot, GrammyError, InlineKeyboard } from "grammy";
 import { Listing, NotificationType, PaymentStatus, WalletTransactionType } from "@prisma/client";
 import { REFERRAL_BONUS_AMOUNT } from "@kerak/shared";
 import { PrismaService } from "../../prisma/prisma.service";
@@ -218,12 +218,35 @@ export class BotService implements OnModuleInit {
     });
   }
 
+  /**
+   * Foydalanuvchiga xabar yuborish natijasini User.botBlockedAt maydonida
+   * kuzatib boradi - admin panelda "botni bloklaganlar"ni ko'rsatish uchun.
+   * Muvaffaqiyatli yuborilsa (demak hali bloklanmagan/qayta ochgan) va
+   * oldin bloklangan deb belgilangan bo'lsa - tozalanadi.
+   */
+  private async recordSendResult(telegramId: string, err: unknown | null) {
+    try {
+      if (err instanceof GrammyError && err.error_code === 403 && err.description.toLowerCase().includes("blocked")) {
+        await this.prisma.user.updateMany({ where: { telegramId }, data: { botBlockedAt: new Date() } });
+      } else if (!err) {
+        await this.prisma.user.updateMany({
+          where: { telegramId, botBlockedAt: { not: null } },
+          data: { botBlockedAt: null },
+        });
+      }
+    } catch (dbErr) {
+      this.logger.warn(`botBlockedAt yangilanmadi (${telegramId}): ${dbErr}`);
+    }
+  }
+
   async sendMessageTo(telegramId: string, text: string): Promise<number | null> {
     try {
       const sent = await this.bot.api.sendMessage(telegramId, text);
+      void this.recordSendResult(telegramId, null);
       return sent.message_id;
     } catch (err) {
       this.logger.warn(`Xabar yuborilmadi (${telegramId}): ${err}`);
+      void this.recordSendResult(telegramId, err);
       return null;
     }
   }
@@ -416,9 +439,11 @@ export class BotService implements OnModuleInit {
       try {
         await this.bot.api.sendMessage(user.telegramId, text, { reply_markup: keyboard });
         sent += 1;
+        void this.recordSendResult(user.telegramId, null);
       } catch (err) {
         failed += 1;
         this.logger.warn(`Ommaviy xabar yuborilmadi (${user.telegramId}): ${err}`);
+        void this.recordSendResult(user.telegramId, err);
       }
       await new Promise((resolve) => setTimeout(resolve, 40));
     }
@@ -512,9 +537,11 @@ export class BotService implements OnModuleInit {
 
     try {
       await this.bot.api.sendMessage(telegramId, text, { reply_markup: keyboard });
+      void this.recordSendResult(telegramId, null);
       return true;
     } catch (err) {
       this.logger.warn(`Referal taklifnomasi yuborilmadi (${telegramId}): ${err}`);
+      void this.recordSendResult(telegramId, err);
       return false;
     }
   }

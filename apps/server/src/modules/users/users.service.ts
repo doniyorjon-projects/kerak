@@ -19,7 +19,7 @@ export class UsersService {
       // o'zgartirgan bo'lishi mumkin, Telegram'dan qayta yozib yuborilmasligi kerak.
       return this.prisma.user.update({
         where: { id: existing.id },
-        data: { username: tgUser.username ?? null },
+        data: { username: tgUser.username ?? null, lastSeenAt: new Date() },
       });
     }
 
@@ -34,6 +34,7 @@ export class UsersService {
         username: tgUser.username ?? null,
         firstName: tgUser.first_name,
         referredById: referrer?.id ?? null,
+        lastSeenAt: new Date(),
       },
     });
 

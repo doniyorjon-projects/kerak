@@ -141,6 +141,8 @@ export class AdminController {
       isBlocked: u.isBlocked,
       listingsLimit: u.listingsLimit,
       createdAt: u.createdAt,
+      lastSeenAt: u.lastSeenAt,
+      botBlockedAt: u.botBlockedAt,
       listingsCount: u._count.listings,
       reportsFiledCount: u._count.reports,
       rating: ratingMap.get(u.id) ?? { avg: null, count: 0 },

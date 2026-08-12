@@ -6,6 +6,7 @@ import {
   BarChart3,
   Ban,
   Banknote,
+  BellOff,
   Check,
   ChevronDown,
   ChevronRight,
@@ -84,6 +85,7 @@ import { Spinner } from "../components/Spinner";
 import { useBackButton } from "../hooks/useBackButton";
 import { useTranslation } from "../i18n/LanguageContext";
 import type { TranslationKey } from "../i18n/translations";
+import { formatRelativeDate } from "../utils/formatRelativeDate";
 
 function ModerationTab() {
   const { t } = useTranslation();
@@ -827,10 +829,11 @@ function UserListingsPanel({ userId }: { userId: string }) {
 }
 
 function UsersTab() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const queryClient = useQueryClient();
   const { data: users, isLoading } = useQuery({ queryKey: ["admin", "users"], queryFn: fetchUsers });
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"new" | "inactive">("new");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [tariffId, setTariffId] = useState<string | null>(null);
@@ -869,15 +872,24 @@ function UsersTab() {
     },
   });
 
-  const filtered = (users ?? []).filter((u) => {
-    const q = search.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      u.firstName.toLowerCase().includes(q) ||
-      u.username?.toLowerCase().includes(q) ||
-      u.telegramId.includes(q)
-    );
-  });
+  const filtered = (users ?? [])
+    .filter((u) => {
+      const q = search.trim().toLowerCase();
+      if (!q) return true;
+      return (
+        u.firstName.toLowerCase().includes(q) ||
+        u.username?.toLowerCase().includes(q) ||
+        u.telegramId.includes(q)
+      );
+    })
+    .slice()
+    .sort((a, b) => {
+      if (sortBy === "new") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      // "Kam faol" - hech qachon ko'rinmaganlar birinchi, keyin eng eski faollikdan yangisiga
+      const aTime = a.lastSeenAt ? new Date(a.lastSeenAt).getTime() : 0;
+      const bTime = b.lastSeenAt ? new Date(b.lastSeenAt).getTime() : 0;
+      return aTime - bTime;
+    });
 
   if (isLoading) return <Spinner label={t("loading")} />;
 
@@ -889,6 +901,23 @@ function UsersTab() {
         placeholder={t("admin.searchUsers")}
         className="input"
       />
+
+      <div className="flex gap-1 rounded-full bg-surface-secondary p-0.5">
+        <button
+          type="button"
+          onClick={() => setSortBy("new")}
+          className={`flex-1 rounded-full py-1.5 text-xs font-medium transition ${sortBy === "new" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+        >
+          {t("admin.sortNewest")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setSortBy("inactive")}
+          className={`flex-1 rounded-full py-1.5 text-xs font-medium transition ${sortBy === "inactive" ? "bg-brand text-brand-contrast" : "text-hint"}`}
+        >
+          {t("admin.sortInactive")}
+        </button>
+      </div>
 
       {filtered.length === 0 && <EmptyState icon={Users} title={t("admin.noUsers")} />}
 
@@ -904,6 +933,7 @@ function UsersTab() {
                   {u.firstName}
                   {u.isAdmin && <ShieldCheck className="h-3.5 w-3.5 text-brand" />}
                   {u.isBlocked && <Ban className="h-3.5 w-3.5 text-destructive" />}
+                  {u.botBlockedAt && <BellOff className="h-3.5 w-3.5 text-destructive" />}
                 </span>
                 <span className="text-xs text-hint">
                   {u.username ? `@${u.username}` : u.telegramId} В· {u.telegramId}
@@ -929,6 +959,13 @@ function UsersTab() {
               )}
               {u.phone && <span>{u.phone}</span>}
               <span>{new Date(u.createdAt).toLocaleDateString("uz-UZ")}</span>
+              {u.botBlockedAt ? (
+                <span className="font-medium text-destructive">{t("admin.botBlocked")}</span>
+              ) : (
+                <span>
+                  {t("admin.lastSeen")}: {u.lastSeenAt ? formatRelativeDate(u.lastSeenAt, t, lang) : t("admin.neverSeen")}
+                </span>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2">

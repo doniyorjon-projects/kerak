@@ -112,6 +112,8 @@ model User {
   referredBy    User?    @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
   referrals     User[]   @relation("Referrals")
   referralPromptSent Boolean @default(false)
+  lastSeenAt    DateTime?
+  botBlockedAt  DateTime?
   createdAt     DateTime @default(now())
 
   listings           Listing[]
