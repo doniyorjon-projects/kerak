@@ -441,6 +441,8 @@ export const translations = {
     "admin.anthropicApiKeyTitle": "Anthropic API kaliti",
     "admin.anthropicApiKeyHint": "AI bilan tavsif yozish va kategoriya tavsiyasi shu kalit orqali ishlaydi. Kiritilgandan so'ng darhol, deploy qilmasdan ishga tushadi.",
     "admin.anthropicApiKeySet": "O'rnatilgan",
+    "admin.openrouterApiKeyTitle": "OpenRouter API kaliti",
+    "admin.openrouterApiKeyHint": "Kategoriya tavsiyasi avval shu (bepul) kalit orqali sinaladi, ishlamasa Anthropic'ga o'tadi. Kiritilgandan so'ng darhol, deploy qilmasdan ishga tushadi.",
 
     // so'rovlar (talab qilaman)
     "request.pageTitle": "So'rovlar",
@@ -933,6 +935,8 @@ export const translations = {
     "admin.anthropicApiKeyTitle": "Ключ Anthropic API",
     "admin.anthropicApiKeyHint": "Написание описаний и рекомендация категорий с ИИ работают через этот ключ. Заработает сразу после ввода, без деплоя.",
     "admin.anthropicApiKeySet": "Установлен",
+    "admin.openrouterApiKeyTitle": "Ключ OpenRouter API",
+    "admin.openrouterApiKeyHint": "Рекомендация категории сначала пробуется через этот (бесплатный) ключ, при неудаче переходит на Anthropic. Заработает сразу после ввода, без деплоя.",
 
     // запросы (куплю/ищу)
     "request.pageTitle": "Запросы",

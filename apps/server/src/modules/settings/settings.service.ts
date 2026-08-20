@@ -68,6 +68,19 @@ export class SettingsService implements OnModuleInit {
     return settings.anthropicApiKey;
   }
 
+  async updateOpenrouterApiKey(apiKey: string) {
+    const settings = await this.get();
+    return this.prisma.botSettings.update({
+      where: { id: settings.id },
+      data: { openrouterApiKey: apiKey.trim() },
+    });
+  }
+
+  async getOpenrouterApiKey(): Promise<string | null> {
+    const settings = await this.get();
+    return settings.openrouterApiKey;
+  }
+
   onModuleInit() {
     // Ataylab kutilmaydi (await qilinmaydi) - CBU sayti sekin yoki
     // ishlamay qolsa ham, server shu tufayli ishga tushmay qolmasligi kerak.

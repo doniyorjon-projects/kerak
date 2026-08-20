@@ -284,6 +284,7 @@ export interface BotSettingsDto {
   telegramChannelUrl: string | null;
   supportUrl: string | null;
   anthropicApiKeySet: boolean;
+  openrouterApiKeySet: boolean;
 }
 
 export interface PublicSettingsDto {

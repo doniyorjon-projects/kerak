@@ -27,6 +27,7 @@ import { SetStarsRateDto } from "./dto/set-stars-rate.dto";
 import { SetTelegramChannelUrlDto } from "./dto/set-telegram-channel-url.dto";
 import { SetSupportUrlDto } from "./dto/set-support-url.dto";
 import { SetAnthropicApiKeyDto } from "./dto/set-anthropic-api-key.dto";
+import { SetOpenrouterApiKeyDto } from "./dto/set-openrouter-api-key.dto";
 import type { BotSettings } from "@prisma/client";
 import { BroadcastDto } from "./dto/broadcast.dto";
 import type { User } from "@prisma/client";
@@ -57,11 +58,15 @@ export class AdminController {
     private readonly storageService: StorageService,
   ) {}
 
-  // anthropicApiKey hech qachon xom holda frontendga qaytarilmaydi (write-only) -
-  // faqat "o'rnatilganmi yo'qmi" degan bool sifatida.
+  // anthropicApiKey/openrouterApiKey hech qachon xom holda frontendga
+  // qaytarilmaydi (write-only) - faqat "o'rnatilganmi yo'qmi" degan bool sifatida.
   private sanitizeSettings(settings: BotSettings) {
-    const { anthropicApiKey, ...rest } = settings;
-    return { ...rest, anthropicApiKeySet: Boolean(anthropicApiKey) };
+    const { anthropicApiKey, openrouterApiKey, ...rest } = settings;
+    return {
+      ...rest,
+      anthropicApiKeySet: Boolean(anthropicApiKey),
+      openrouterApiKeySet: Boolean(openrouterApiKey),
+    };
   }
 
   @Get("settings")
@@ -98,6 +103,11 @@ export class AdminController {
   @Patch("settings/anthropic-api-key")
   async setAnthropicApiKey(@Body() dto: SetAnthropicApiKeyDto) {
     return this.sanitizeSettings(await this.settingsService.updateAnthropicApiKey(dto.apiKey));
+  }
+
+  @Patch("settings/openrouter-api-key")
+  async setOpenrouterApiKey(@Body() dto: SetOpenrouterApiKeyDto) {
+    return this.sanitizeSettings(await this.settingsService.updateOpenrouterApiKey(dto.apiKey));
   }
 
   @Get("requests")

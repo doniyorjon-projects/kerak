@@ -184,6 +184,10 @@ export function setAnthropicApiKey(apiKey: string) {
   return api.patch<BotSettingsDto>("/admin/settings/anthropic-api-key", { apiKey });
 }
 
+export function setOpenrouterApiKey(apiKey: string) {
+  return api.patch<BotSettingsDto>("/admin/settings/openrouter-api-key", { apiKey });
+}
+
 export interface AdminRequest {
   id: string;
   title: string;

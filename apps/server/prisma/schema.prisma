@@ -400,6 +400,7 @@ model BotSettings {
   telegramChannelUrl String?
   supportUrl         String?
   anthropicApiKey    String?
+  openrouterApiKey   String?
   updatedAt          DateTime @updatedAt
 }
 
