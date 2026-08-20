@@ -39,15 +39,14 @@ export class AiService {
     return dbKey || this.config.get<string>("OPENROUTER_API_KEY");
   }
 
+  /**
+   * suggestCategory'dagi bilan bir xil strategiya: avval OpenRouter'ning
+   * bepul modeli sinaladi, u ishlamasa (kalit yo'q, limit, xatolik)
+   * Anthropic'ga o'tiladi.
+   */
   async generateDescription(user: User, title: string, categoryName?: string, draft?: string): Promise<string> {
     if (user.listingsLimit < UNLIMITED_LISTINGS) {
       throw new ForbiddenException("Bu funksiya faqat Biznes tarif egalari uchun mavjud");
-    }
-
-    const apiKey = await this.getApiKey();
-    if (!apiKey) {
-      this.logger.warn("ANTHROPIC_API_KEY sozlanmagan - AI tavsif xizmati ishlamaydi");
-      throw new ServiceUnavailableException("AI xizmati hozircha sozlanmagan");
     }
 
     const prompt = [
@@ -60,6 +59,50 @@ export class AiService {
       .filter(Boolean)
       .join("\n");
 
+    const openrouterKey = await this.getOpenrouterApiKey();
+    if (openrouterKey) {
+      const text = await this.generateDescriptionViaOpenRouter(prompt, openrouterKey);
+      if (text) return text;
+    }
+
+    const anthropicKey = await this.getApiKey();
+    if (anthropicKey) {
+      const text = await this.generateDescriptionViaAnthropic(prompt, anthropicKey);
+      if (text) return text;
+    }
+
+    if (!openrouterKey && !anthropicKey) {
+      this.logger.warn("Na OpenRouter, na Anthropic kaliti sozlanmagan - AI tavsif xizmati ishlamaydi");
+      throw new ServiceUnavailableException("AI xizmati hozircha sozlanmagan");
+    }
+
+    throw new ServiceUnavailableException("Tavsif yaratib bo'lmadi, birozdan keyin qayta urinib ko'ring");
+  }
+
+  private async generateDescriptionViaOpenRouter(prompt: string, apiKey: string): Promise<string | null> {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
+        max_tokens: 400,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    }).catch((err) => {
+      this.logger.warn(`OpenRouter tavsif so'rovi muvaffaqiyatsiz: ${err}`);
+      return null;
+    });
+
+    if (!res || !res.ok) return null;
+
+    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    return data.choices?.[0]?.message?.content?.trim() || null;
+  }
+
+  private async generateDescriptionViaAnthropic(prompt: string, apiKey: string): Promise<string | null> {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -77,17 +120,10 @@ export class AiService {
       return null;
     });
 
-    if (!res || !res.ok) {
-      throw new ServiceUnavailableException("Tavsif yaratib bo'lmadi, birozdan keyin qayta urinib ko'ring");
-    }
+    if (!res || !res.ok) return null;
 
     const data = (await res.json()) as { content?: { type: string; text?: string }[] };
-    const text = data.content?.find((block) => block.type === "text")?.text?.trim();
-    if (!text) {
-      throw new ServiceUnavailableException("Tavsif yaratib bo'lmadi, birozdan keyin qayta urinib ko'ring");
-    }
-
-    return text;
+    return data.content?.find((block) => block.type === "text")?.text?.trim() || null;
   }
 
   /**
