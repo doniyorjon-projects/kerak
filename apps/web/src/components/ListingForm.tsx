@@ -9,6 +9,7 @@ import {
   Gift,
   Handshake,
   ListChecks,
+  Loader2,
   MapPin,
   MessageCircle,
   Phone,
@@ -174,21 +175,35 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
   }, [me]);
   const [place, setPlace] = useState<PlaceValue | null>(null);
   const [photos, setPhotos] = useState<string[]>(initial?.photos ?? []);
-  const [uploading, setUploading] = useState(false);
+  const [pendingPhotos, setPendingPhotos] = useState<{ id: string; previewUrl: string }[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
+  const uploading = pendingPhotos.length > 0;
 
-  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
+  // Fayl tanlangan zahoti (tarmoq javobini kutmasdan) o'sha rasmning o'zi
+  // xira holatda spinner bilan panjarada ko'rinadi - foydalanuvchi nima
+  // yuklanayotganini va u ishlayotganini darhol ko'radi. Har bir fayl
+  // mustaqil yuklanadi, shuning uchun biri xato bersa boshqalari davom etadi.
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const remaining = Math.max(0, 8 - photos.length - pendingPhotos.length);
+    const files = Array.from(e.target.files ?? []).slice(0, remaining);
+    e.target.value = "";
     if (files.length === 0) return;
-    setUploading(true);
-    try {
-      const uploaded = await Promise.all(files.map((file) => uploadPhoto(file)));
-      setPhotos((prev) => [...prev, ...uploaded.map((u) => u.url)].slice(0, 8));
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : t("create.errPhoto"));
-    } finally {
-      setUploading(false);
-      e.target.value = "";
+
+    const items = files.map((file) => ({ id: crypto.randomUUID(), file, previewUrl: URL.createObjectURL(file) }));
+    setPendingPhotos((prev) => [...prev, ...items.map(({ id, previewUrl }) => ({ id, previewUrl }))]);
+
+    for (const item of items) {
+      uploadPhoto(item.file)
+        .then((uploaded) => {
+          setPhotos((prev) => (prev.length < 8 ? [...prev, uploaded.url] : prev));
+        })
+        .catch((err) => {
+          setFormError(err instanceof Error ? err.message : t("create.errPhoto"));
+        })
+        .finally(() => {
+          setPendingPhotos((prev) => prev.filter((p) => p.id !== item.id));
+          URL.revokeObjectURL(item.previewUrl);
+        });
     }
   };
 
@@ -701,7 +716,7 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
       </div>
 
       <div className="card flex flex-col gap-3">
-        <SectionHeader icon={Camera} title={t("create.photos")} hint={`${photos.length}/8`} />
+        <SectionHeader icon={Camera} title={t("create.photos")} hint={`${photos.length + pendingPhotos.length}/8`} />
         <div className="grid grid-cols-4 gap-2">
           {photos.map((url, idx) => (
             <div key={url} className="group relative aspect-square overflow-hidden rounded-xl border border-divider">
@@ -720,12 +735,20 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
               </button>
             </div>
           ))}
-          {photos.length < 8 && (
+          {pendingPhotos.map((item) => (
+            <div key={item.id} className="relative aspect-square overflow-hidden rounded-xl border border-divider">
+              <img src={item.previewUrl} className="h-full w-full object-cover opacity-40" />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                <Loader2 className="h-5 w-5 animate-spin text-white" strokeWidth={2.5} />
+              </div>
+            </div>
+          ))}
+          {photos.length + pendingPhotos.length < 8 && (
             <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-divider text-hint transition active:scale-[0.97]">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand/10 text-brand">
                 <Camera className="h-4 w-4" />
               </div>
-              <span className="text-[10px] font-medium">{uploading ? t("sending") : t("create.addPhoto")}</span>
+              <span className="text-[10px] font-medium">{t("create.addPhoto")}</span>
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
@@ -736,6 +759,12 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
             </label>
           )}
         </div>
+        {uploading && (
+          <span className="flex items-center gap-1.5 text-xs text-hint">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2.5} />
+            {t("create.uploadingPhotos")}
+          </span>
+        )}
       </div>
 
       {(formError || submitError) && (
@@ -745,7 +774,7 @@ export function ListingForm({ initial, onSubmit, isSubmitting, submitLabel, subm
         </div>
       )}
 
-      <button type="submit" disabled={isSubmitting} className="btn-primary py-3.5 text-base">
+      <button type="submit" disabled={isSubmitting || uploading} className="btn-primary py-3.5 text-base">
         {isSubmitting ? t("sending") : submitLabel}
       </button>
     </form>
