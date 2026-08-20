@@ -8,9 +8,14 @@ import { SettingsService } from "../settings/settings.service";
 const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
 // OpenRouter'ning bepul (":free") modeli - kategoriya tanlash oddiy
 // klassifikatsiya vazifasi bo'lgani uchun katta/pullik model shart emas.
-// Google Gemma ko'p tilli (jumladan o'zbek tiliga yaqin) matnlarda yaxshi
-// ishlashi bilan tanilgan, shu sabab tanlandi.
-const OPENROUTER_MODEL = "google/gemma-4-31b-it:free";
+// Qo'lda solishtirib ko'rilgan (haqiqiy so'rovlar bilan): gemma-4-31b hozircha
+// yuqori talab tufayli tez-tez "429 upstream rate-limited" qaytaryapti;
+// gpt-oss-20b va nemotron variantlari esa yashirin "reasoning" tokenlariga
+// javob byudjetini sarflab (yoki O'zbekiston kontekstidagi nomlarni - masalan
+// "Nexia" avtomobil ekanini - bilmasdan) noto'g'ri/bo'sh javob berdi.
+// gemma-4-26b-a4b esa har ikkala sinovda ham (avtomobil va "hech biriga mos
+// kelmaydi" holatlari) to'g'ri, qisqa va reasoning'siz javob berdi.
+const OPENROUTER_MODEL = "google/gemma-4-26b-a4b-it:free";
 
 @Injectable()
 export class AiService {
@@ -134,7 +139,7 @@ export class AiService {
       },
       body: JSON.stringify({
         model: OPENROUTER_MODEL,
-        max_tokens: 20,
+        max_tokens: 30,
         messages: [{ role: "user", content: prompt }],
       }),
     }).catch((err) => {
