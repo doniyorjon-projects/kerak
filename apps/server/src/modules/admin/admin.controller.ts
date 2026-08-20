@@ -414,6 +414,7 @@ export class AdminController {
       totalUsers,
       newUsersToday,
       newUsersThisWeek,
+      blockedUsers,
       totalListings,
       listingsByStatus,
       newListingsToday,
@@ -427,6 +428,7 @@ export class AdminController {
       this.prisma.user.count(),
       this.prisma.user.count({ where: { createdAt: { gte: startOfToday } } }),
       this.prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
+      this.prisma.user.count({ where: { botBlockedAt: { not: null } } }),
       this.prisma.listing.count(),
       this.prisma.listing.groupBy({ by: ["status"], _count: true }),
       this.prisma.listing.count({ where: { createdAt: { gte: startOfToday } } }),
@@ -449,7 +451,7 @@ export class AdminController {
     for (const row of reportsByStatus) reportStatusMap[row.status] = row._count;
 
     return {
-      users: { total: totalUsers, newToday: newUsersToday, newThisWeek: newUsersThisWeek },
+      users: { total: totalUsers, newToday: newUsersToday, newThisWeek: newUsersThisWeek, blocked: blockedUsers },
       listings: {
         total: totalListings,
         pending: listingStatusMap.PENDING ?? 0,

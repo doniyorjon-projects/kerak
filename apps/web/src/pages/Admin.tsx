@@ -697,6 +697,7 @@ function StatsTab() {
   const cards: { label: string; value: number | string }[] = [
     { label: t("admin.statUsers"), value: stats.users.total },
     { label: t("admin.statNewUsersWeek"), value: stats.users.newThisWeek },
+    { label: t("admin.statBlockedUsers"), value: stats.users.blocked },
     { label: t("admin.statListings"), value: stats.listings.total },
     { label: t("admin.statActiveListings"), value: stats.listings.active },
     { label: t("admin.statPendingListings"), value: stats.listings.pending },

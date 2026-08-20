@@ -21,6 +21,21 @@ const ADMIN_CONTACT_USERNAME = "doniyorjon_k";
 // tushadi va bir marta yuboradi.
 const POSTGRES_EXPIRY_REMINDER_DATE = "2026-09-03";
 
+const CHANNEL_CAPTION_MAX_LENGTH = 1024;
+
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** So'z o'rtasidan kesib qo'ymaslik uchun eng yaqin bo'shliqdan kesadi. */
+function truncateAtWord(text: string, maxLength: number): string {
+  if (maxLength <= 0) return "";
+  if (text.length <= maxLength) return text;
+  const truncated = text.slice(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(" ");
+  return `${lastSpace > 0 ? truncated.slice(0, lastSpace) : truncated}...`;
+}
+
 @Injectable()
 export class BotService implements OnModuleInit {
   private readonly logger = new Logger(BotService.name);
@@ -390,29 +405,59 @@ export class BotService implements OnModuleInit {
       return;
     }
 
+    const category = await this.prisma.category.findUnique({ where: { id: listing.categoryId } });
+
     const shareUrl = `https://t.me/${this.botUsername}?start=listing_${listing.id}`;
-    const keyboard = new InlineKeyboard().url("🚀 Ko'rish", shareUrl);
-    const priceText = listing.price != null ? `${listing.price.toLocaleString("uz-UZ")} so'm` : "Kelishilgan holda";
-    const description =
-      listing.description.length > 200 ? `${listing.description.slice(0, 200)}...` : listing.description;
-    const caption = [
-      `🆕 ${listing.title}`,
-      `💰 ${priceText}`,
-      listing.addressText ? `📍 ${listing.addressText}` : "",
-      "",
-      description,
+    const keyboard = new InlineKeyboard().url("🚀 Batafsil", shareUrl);
+
+    const priceText = listing.isFree
+      ? "🎁 Bepul"
+      : listing.price != null
+        ? `${listing.price.toLocaleString("uz-UZ")} so'm${listing.isNegotiable ? " (kelishiladi)" : ""}`
+        : "💬 Narxi kelishiladi";
+
+    const badges = [
+      listing.isUrgent ? "⚡️ Shoshilinch" : null,
+      listing.isBargainable ? "🤝 Savdolashish mumkin" : null,
+      listing.hasDelivery ? "🚚 Yetkazib beriladi" : null,
+      listing.sellerType === "BUSINESS" ? "🏪 Biznes" : null,
     ]
-      .filter(Boolean)
+      .filter((b): b is string => b !== null)
+      .join("  ·  ");
+
+    const categoryLine = category
+      ? `${category.icon ?? "📁"} ${escapeHtml(category.nameUz)}${
+          listing.condition ? ` · ${listing.condition === "NEW" ? "Yangi" : "Ishlatilgan"}` : ""
+        }`
+      : null;
+
+    // Sarlavha/narx/kategoriya/manzil/belgilar - HTML teglar shu qismda, shuning
+    // uchun umumiy hajm 1024 belgidan oshsa faqat tavsif (oddiy matn, teglarsiz)
+    // qisqartiriladi - aks holda teg o'rtasidan kesilib, Telegram xato qaytarishi
+    // mumkin edi.
+    const infoLines = [
+      `🆕 <b>${escapeHtml(listing.title)}</b>`,
+      `💰 <b>${escapeHtml(priceText)}</b>`,
+      categoryLine,
+      listing.addressText ? `📍 ${escapeHtml(listing.addressText)}` : null,
+      badges || null,
+    ]
+      .filter((line): line is string => Boolean(line))
       .join("\n");
+
+    const descriptionBudget = CHANNEL_CAPTION_MAX_LENGTH - infoLines.length - 2;
+    const descriptionText = truncateAtWord(escapeHtml(listing.description), Math.min(300, descriptionBudget));
+    const caption = [infoLines, descriptionText].filter(Boolean).join("\n\n");
 
     try {
       if (listing.photos[0]) {
         await this.bot.api.sendPhoto(settings.channelId, listing.photos[0], {
-          caption: caption.slice(0, 1024),
+          caption,
+          parse_mode: "HTML",
           reply_markup: keyboard,
         });
       } else {
-        await this.bot.api.sendMessage(settings.channelId, caption, { reply_markup: keyboard });
+        await this.bot.api.sendMessage(settings.channelId, caption, { parse_mode: "HTML", reply_markup: keyboard });
       }
     } catch (err) {
       this.logger.warn(`Kanalga post qilinmadi: ${err}`);

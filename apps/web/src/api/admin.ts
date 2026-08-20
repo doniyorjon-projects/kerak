@@ -66,7 +66,7 @@ export function removeAdmin(id: string) {
 }
 
 export interface AdminStats {
-  users: { total: number; newToday: number; newThisWeek: number };
+  users: { total: number; newToday: number; newThisWeek: number; blocked: number };
   listings: {
     total: number;
     pending: number;
