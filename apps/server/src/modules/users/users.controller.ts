@@ -29,11 +29,20 @@ export class UsersController {
    * Foydalanuvchi kanalga a'zo emasligi va bugun banner ko'rsatilmagan
    * bo'lsagina true qaytaradi - shu bilan birga "ko'rsatildi" deb belgilaydi,
    * shuning uchun bir kunda faqat bir marta ishlaydi.
+   *
+   * "Qo'shilish" havolasi HAR DOIM a'zolik tekshirilayotgan kanal (channelId)
+   * ga qarab hisoblanadi, alohida sozlangan telegramChannelUrl'ga emas - aks
+   * holda banner boshqa kanalga yo'naltirib, foydalanuvchi qo'shilsa ham
+   * "a'zo emas" deb chiqaveradi. telegramChannelUrl faqat channelId ochiq
+   * @username shaklida bo'lmagan (raqamli/yopiq) holatlar uchun zaxira.
    */
   @Get("channel-banner")
   async getChannelBanner(@CurrentUser() user: User) {
     const settings = await this.settingsService.get();
-    if (!settings.channelId || !settings.telegramChannelUrl) {
+    const channelUrl = settings.channelId?.startsWith("@")
+      ? `https://t.me/${settings.channelId.slice(1)}`
+      : settings.telegramChannelUrl;
+    if (!settings.channelId || !channelUrl) {
       return { show: false, channelUrl: null };
     }
 
@@ -50,7 +59,7 @@ export class UsersController {
     }
 
     await this.prisma.user.update({ where: { id: user.id }, data: { channelBannerLastShownAt: new Date() } });
-    return { show: true, channelUrl: settings.telegramChannelUrl };
+    return { show: true, channelUrl };
   }
 
   @Patch("me")
