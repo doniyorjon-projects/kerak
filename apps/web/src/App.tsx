@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { BottomNav } from "./components/BottomNav";
 import { SplashScreen } from "./components/SplashScreen";
+import { ChannelSubscribeBanner } from "./components/ChannelSubscribeBanner";
 import { Home } from "./pages/Home";
 import { Categories } from "./pages/Categories";
 import { CategoryFeed } from "./pages/CategoryFeed";
@@ -85,6 +86,7 @@ export default function App() {
         </Routes>
       </div>
       <BottomNav />
+      {!showSplash && <ChannelSubscribeBanner />}
     </div>
   );
 }

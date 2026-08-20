@@ -397,6 +397,22 @@ export class BotService implements OnModuleInit {
       .catch((err) => this.logger.warn(`Muddati o'tgan elon xabari yuborilmadi: ${err}`));
   }
 
+  /**
+   * Foydalanuvchi berilgan kanalga a'zomi-yo'qmi tekshiradi. Buning uchun
+   * bot o'sha kanalda ADMIN bo'lishi shart - aks holda Telegram API xatolik
+   * qaytaradi, shu holatda "a'zo" deb hisoblaymiz (xatolik holida foydalanuvchini
+   * bezovta qilmaslik xavfsizroq).
+   */
+  async checkChannelMembership(channelId: string, telegramId: string): Promise<boolean> {
+    try {
+      const member = await this.bot.api.getChatMember(channelId, Number(telegramId));
+      return ["creator", "administrator", "member", "restricted"].includes(member.status);
+    } catch (err) {
+      this.logger.warn(`Kanal a'zoligini tekshirib bo'lmadi (${telegramId}): ${err}`);
+      return true;
+    }
+  }
+
   async postToChannel(listing: Listing) {
     const settings = await this.settingsService.get();
     if (!settings.channelId) return;

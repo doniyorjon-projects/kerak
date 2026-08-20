@@ -115,6 +115,7 @@ model User {
   neverPostedPromptSent Boolean @default(false)
   inactivityPromptSentAt DateTime?
   walletPromptSentAt DateTime?
+  channelBannerLastShownAt DateTime?
   lastSeenAt    DateTime?
   botBlockedAt  DateTime?
   createdAt     DateTime @default(now())

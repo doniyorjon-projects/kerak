@@ -19,6 +19,15 @@ export function fetchMe() {
   return api.get<MeDto>("/users/me");
 }
 
+export interface ChannelBannerDto {
+  show: boolean;
+  channelUrl: string | null;
+}
+
+export function fetchChannelBanner() {
+  return api.get<ChannelBannerDto>("/users/channel-banner");
+}
+
 export function updateProfile(data: { firstName?: string; phone?: string }) {
   return api.patch<MeDto>("/users/me", data);
 }
