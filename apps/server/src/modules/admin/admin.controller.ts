@@ -41,6 +41,9 @@ import { StorageService } from "../uploads/storage.service";
 const R2_STORAGE_LIMIT_BYTES = 25 * 1024 ** 3;
 // Render'ning bepul Postgres tarifi - 1 GB disk.
 const DB_STORAGE_LIMIT_BYTES = 1 * 1024 ** 3;
+// OpenRouter bepul tarifi: hisobga umumiy $10 tashlanmaguncha kuniga 50 ta
+// so'rov, shundan keyin 1000 taga oshadi - agar to'lansa shu qiymatni yangilang.
+const OPENROUTER_DAILY_LIMIT = 50;
 
 @Controller("admin")
 @UseGuards(TelegramAuthGuard, AdminGuard)
@@ -486,9 +489,13 @@ export class AdminController {
 
   @Get("storage-usage")
   async getStorageUsage() {
-    const [r2Usage, dbSizeRows] = await Promise.all([
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const [r2Usage, dbSizeRows, openrouterRequestsToday] = await Promise.all([
       this.storageService.getUsage(),
       this.prisma.$queryRaw<{ size: bigint }[]>`SELECT pg_database_size(current_database()) as size`,
+      this.prisma.aiRequestLog.count({ where: { provider: "openrouter", createdAt: { gte: startOfToday } } }),
     ]);
 
     return {
@@ -500,6 +507,10 @@ export class AdminController {
       database: {
         usedBytes: Number(dbSizeRows[0].size),
         limitBytes: DB_STORAGE_LIMIT_BYTES,
+      },
+      openrouter: {
+        usedCount: openrouterRequestsToday,
+        limitCount: OPENROUTER_DAILY_LIMIT,
       },
     };
   }

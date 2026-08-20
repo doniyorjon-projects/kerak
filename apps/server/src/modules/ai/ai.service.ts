@@ -39,6 +39,17 @@ export class AiService {
     return dbKey || this.config.get<string>("OPENROUTER_API_KEY");
   }
 
+  // OpenRouter'ning o'zi bepul tarifdagi so'rovlar sonini qaytarmaydi (faqat
+  // doim $0 bo'lgan xarajatni) - shuning uchun admin panelda kunlik limitga
+  // nisbatan ko'rsatish uchun har bir haqiqiy so'rovni o'zimiz yozib boramiz.
+  private async logOpenrouterRequest() {
+    try {
+      await this.prisma.aiRequestLog.create({ data: { provider: "openrouter" } });
+    } catch (err) {
+      this.logger.warn(`AI so'rov logi saqlanmadi: ${err}`);
+    }
+  }
+
   /**
    * suggestCategory'dagi bilan bir xil strategiya: avval OpenRouter'ning
    * bepul modeli sinaladi, u ishlamasa (kalit yo'q, limit, xatolik)
@@ -80,6 +91,7 @@ export class AiService {
   }
 
   private async generateDescriptionViaOpenRouter(prompt: string, apiKey: string): Promise<string | null> {
+    void this.logOpenrouterRequest();
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -167,6 +179,7 @@ export class AiService {
   }
 
   private async suggestCategoryViaOpenRouter(prompt: string, apiKey: string): Promise<string | null> {
+    void this.logOpenrouterRequest();
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {

@@ -28,6 +28,7 @@ import {
   Send,
   Settings,
   ShieldCheck,
+  Sparkles,
   Star,
   Tags,
   Trash2,
@@ -728,6 +729,14 @@ function StatsTab() {
             label={t("admin.storageDbLabel")}
             usedBytes={storage.database.usedBytes}
             limitBytes={storage.database.limitBytes}
+          />
+          <StorageMeter
+            icon={Sparkles}
+            label={t("admin.storageOpenrouterLabel")}
+            usedBytes={storage.openrouter.usedCount}
+            limitBytes={storage.openrouter.limitCount}
+            formatValue={(n) => String(n)}
+            hint={t("admin.storageOpenrouterHint")}
           />
         </div>
       )}

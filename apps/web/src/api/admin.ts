@@ -91,6 +91,7 @@ export function fetchAdminStats() {
 export interface AdminStorageUsage {
   r2: { usedBytes: number; limitBytes: number; objectCount: number };
   database: { usedBytes: number; limitBytes: number };
+  openrouter: { usedCount: number; limitCount: number };
 }
 
 export function fetchStorageUsage() {

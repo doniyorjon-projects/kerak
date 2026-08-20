@@ -404,6 +404,17 @@ model BotSettings {
   updatedAt          DateTime @updatedAt
 }
 
+// OpenRouter'ning o'zi bepul tarifda so'rovlar sonini emas, faqat dollar
+// xarajatini (doim $0) qaytaradi - shuning uchun kunlik limitga nisbatan
+// qancha ishlatilganini bilish uchun har bir chaqiruvni o'zimiz yozib boramiz.
+model AiRequestLog {
+  id        String   @id @default(cuid())
+  provider  String
+  createdAt DateTime @default(now())
+
+  @@index([provider, createdAt])
+}
+
 model UserBlock {
   id        String   @id @default(cuid())
   blockerId String

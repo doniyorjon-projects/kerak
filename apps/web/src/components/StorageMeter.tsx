@@ -7,6 +7,8 @@ interface StorageMeterProps {
   usedBytes: number;
   limitBytes: number;
   hint?: string;
+  /** Standart holatda bayt sifatida formatlaydi - son (masalan so'rovlar soni) uchun almashtiring. */
+  formatValue?: (n: number) => string;
 }
 
 /** Severity: <70% xotirjam, 70-90% ogohlantirish, >90% tanqidiy. */
@@ -16,7 +18,14 @@ function severityClass(percent: number): { fill: string; text: string } {
   return { fill: "bg-success", text: "text-success" };
 }
 
-export function StorageMeter({ icon: Icon, label, usedBytes, limitBytes, hint }: StorageMeterProps) {
+export function StorageMeter({
+  icon: Icon,
+  label,
+  usedBytes,
+  limitBytes,
+  hint,
+  formatValue = formatBytes,
+}: StorageMeterProps) {
   const percent = limitBytes > 0 ? Math.min(100, (usedBytes / limitBytes) * 100) : 0;
   const { fill, text } = severityClass(percent);
 
@@ -37,7 +46,7 @@ export function StorageMeter({ icon: Icon, label, usedBytes, limitBytes, hint }:
       </div>
       <div className="flex items-center justify-between text-xs text-hint">
         <span>
-          {formatBytes(usedBytes)} / {formatBytes(limitBytes)}
+          {formatValue(usedBytes)} / {formatValue(limitBytes)}
         </span>
         {hint && <span>{hint}</span>}
       </div>
