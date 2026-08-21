@@ -25,8 +25,17 @@ export class ClickController {
     private readonly botService: BotService,
   ) {}
 
+  /**
+   * Click Merchant API v2 protokoli ikkala bosqich (Prepare va Complete) uchun
+   * ham bitta ro'yxatdan o'tgan "Callback URL"ga so'rov yuboradi - qaysi
+   * bosqich ekanini shu so'rov ichidagi "action" maydoni bildiradi
+   * (action=0 - Prepare, action=1 - Complete). Shuning uchun Click panelida
+   * ham faqat shu bitta manzil (/api/payments/click) ro'yxatdan o'tkaziladi;
+   * alohida /prepare va /complete yo'llari yaratish shart emas va foydasiz -
+   * Click ularni chaqirmaydi.
+   */
   @Post()
-  async handleCallback(@Body() body: ClickCallbackParams) {
+  async handlePrepareOrComplete(@Body() body: ClickCallbackParams) {
     if (!this.clickService.verifySignature(body)) {
       return this.reply(body, CLICK_ERROR.SIGN_FAILED, "SIGN CHECK FAILED!");
     }
@@ -36,6 +45,7 @@ export class ClickController {
     return this.reply(body, CLICK_ERROR.ACTION_NOT_FOUND, "Action not found");
   }
 
+  /** 1-bosqich: Click summani va buyurtmani tasdiqlaydi, hali pul o'tkazmaydi. */
   private async prepare(body: ClickCallbackParams) {
     const boostOrder = await this.prisma.boostOrder.findUnique({ where: { id: body.merchant_trans_id } });
     if (boostOrder) return this.prepareOrder("boostOrder", boostOrder, body);
@@ -81,6 +91,7 @@ export class ClickController {
     return this.reply(body, CLICK_ERROR.SUCCESS, "Success", { merchant_prepare_id: order.id });
   }
 
+  /** 2-bosqich: to'lov haqiqatan amalga oshgach - balans/tarif/boost shu yerda faollashadi. */
   private async complete(body: ClickCallbackParams) {
     const orderId = body.merchant_prepare_id ?? body.merchant_trans_id;
 
