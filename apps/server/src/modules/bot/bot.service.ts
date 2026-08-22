@@ -377,14 +377,24 @@ export class BotService implements OnModuleInit {
   }
 
   /**
-   * O'sha toifada faol e'loni bor sotuvchilarga yangi so'rov haqida xabar
-   * beradi (bir nechta sotuvchiga ketma-ket yuborilishi mumkin bo'lgani
-   * uchun botBlockedAt kuzatuvi ham yangilanadi).
+   * Yangi qoldirilgan so'rov haqida BARCHA foydalanuvchilarga xabar beradi
+   * (kategoriya bo'yicha filtrlanmaydi - shuning uchun qaysi toifaga
+   * tegishli ekani xabarning o'zida ko'rsatiladi). Ko'p foydalanuvchiga
+   * ketma-ket yuborilgani uchun botBlockedAt kuzatuvi ham yangilanadi.
    */
   async notifyNewRequestMatch(
     telegramId: string,
-    request: { id: string; title: string; description: string; budgetMin: number | null; budgetMax: number | null },
+    request: {
+      id: string;
+      title: string;
+      description: string;
+      budgetMin: number | null;
+      budgetMax: number | null;
+      categoryId: string;
+    },
   ) {
+    const category = await this.prisma.category.findUnique({ where: { id: request.categoryId } });
+
     const budgetText =
       request.budgetMin != null && request.budgetMax != null
         ? `${request.budgetMin.toLocaleString("uz-UZ")} - ${request.budgetMax.toLocaleString("uz-UZ")} so'm`
@@ -398,13 +408,16 @@ export class BotService implements OnModuleInit {
       request.description.length > 200 ? `${request.description.slice(0, 200)}...` : request.description;
 
     const text = [
-      "🔔 Sizning toifangizda yangi so'rov qoldirildi!",
+      "🔔 Yangi so'rov qoldirildi!",
+      category ? `${category.icon ?? "📁"} ${category.nameUz}` : null,
       "",
       `📝 ${request.title}`,
       `💰 Byudjet: ${budgetText}`,
       "",
       description,
-    ].join("\n");
+    ]
+      .filter((line) => line !== null)
+      .join("\n");
 
     const keyboard = new InlineKeyboard().webApp(
       "👀 Ko'rish",
@@ -415,7 +428,7 @@ export class BotService implements OnModuleInit {
       await this.bot.api.sendMessage(telegramId, text, { reply_markup: keyboard });
       void this.recordSendResult(telegramId, null);
     } catch (err) {
-      this.logger.warn(`So'rov moslik xabari yuborilmadi (${telegramId}): ${err}`);
+      this.logger.warn(`So'rov xabari yuborilmadi (${telegramId}): ${err}`);
       void this.recordSendResult(telegramId, err);
     }
   }

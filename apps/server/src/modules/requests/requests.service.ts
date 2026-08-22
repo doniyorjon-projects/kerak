@@ -25,43 +25,28 @@ export class RequestsService {
       include: AUTHOR_INCLUDE,
     });
 
-    // Sotuvchilarga xabar berish so'rov yaratish javobini kutdirmasligi
-    // uchun fon rejimida ishga tushiriladi (ko'p sotuvchi bo'lsa ham
-    // API darhol javob qaytaradi).
-    void this.notifyMatchingSellers(request).catch((err) =>
-      this.logger.warn(`So'rov bo'yicha sotuvchilarga xabar berishda xatolik: ${err}`),
+    // Hammaga xabar berish so'rov yaratish javobini kutdirmasligi uchun
+    // fon rejimida ishga tushiriladi (ko'p foydalanuvchi bo'lsa ham API
+    // darhol javob qaytaradi).
+    void this.notifyAllUsers(request).catch((err) =>
+      this.logger.warn(`So'rov haqida xabar berishda xatolik: ${err}`),
     );
 
     return request;
   }
 
-  /** Berilgan kategoriya id'si + uning barcha bola (istalgan chuqurlikdagi) id'larini qaytaradi. */
-  private async resolveCategoryDescendantIds(categoryId: string): Promise<string[]> {
-    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
-      WITH RECURSIVE descendants AS (
-        SELECT id FROM "Category" WHERE id = ${categoryId}
-        UNION ALL
-        SELECT c.id FROM "Category" c JOIN descendants d ON c."parentId" = d.id
-      )
-      SELECT id FROM descendants
-    `;
-    return rows.map((r) => r.id);
-  }
-
-  private async notifyMatchingSellers(request: Prisma.RequestGetPayload<{ include: typeof AUTHOR_INCLUDE }>) {
-    const categoryIds = await this.resolveCategoryDescendantIds(request.categoryId);
-    const sellers = await this.prisma.user.findMany({
+  private async notifyAllUsers(request: Prisma.RequestGetPayload<{ include: typeof AUTHOR_INCLUDE }>) {
+    const users = await this.prisma.user.findMany({
       where: {
         id: { not: request.authorId },
         isBlocked: false,
         botBlockedAt: null,
-        listings: { some: { categoryId: { in: categoryIds }, status: "ACTIVE" } },
       },
       select: { telegramId: true },
     });
 
-    for (const seller of sellers) {
-      await this.botService.notifyNewRequestMatch(seller.telegramId, request);
+    for (const user of users) {
+      await this.botService.notifyNewRequestMatch(user.telegramId, request);
       await new Promise((resolve) => setTimeout(resolve, 40));
     }
   }
