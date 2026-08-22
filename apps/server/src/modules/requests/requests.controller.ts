@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { User } from "@prisma/client";
 import { TelegramAuthGuard } from "../../common/telegram-auth.guard";
+import { OptionalAuthGuard } from "../../common/optional-auth.guard";
 import { CurrentUser } from "../../common/current-user.decorator";
 import { RequestsService } from "./requests.service";
 import { CreateRequestDto } from "./dto/create-request.dto";
@@ -22,9 +23,10 @@ export class RequestsController {
     return this.requestsService.findMine(user.id);
   }
 
+  @UseGuards(OptionalAuthGuard)
   @Get(":id")
-  findOne(@Param("id") id: string) {
-    return this.requestsService.findOne(id);
+  findOne(@Param("id") id: string, @CurrentUser() viewer?: User) {
+    return this.requestsService.findOne(id, viewer?.id);
   }
 
   @UseGuards(TelegramAuthGuard)

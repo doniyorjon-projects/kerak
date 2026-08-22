@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { MapPin, Wallet } from "lucide-react";
+import { Eye, MapPin, Wallet } from "lucide-react";
 import type { RequestDto } from "@kerak/shared";
 import { REGIONS } from "../data/uzbekistanRegions";
 import { useTranslation } from "../i18n/LanguageContext";
@@ -41,12 +41,18 @@ export function RequestCard({ request }: { request: RequestDto }) {
         ) : (
           <span className="text-xs text-hint">{t("request.anyBudget")}</span>
         )}
-        {districtName && (
-          <span className="flex shrink-0 items-center gap-1 text-xs text-hint">
-            <MapPin className="h-3 w-3" />
-            {districtName}
+        <span className="flex shrink-0 items-center gap-2 text-xs text-hint">
+          {districtName && (
+            <span className="flex min-w-0 items-center gap-1">
+              <MapPin className="h-3 w-3 shrink-0" />
+              <span className="truncate">{districtName}</span>
+            </span>
+          )}
+          <span className="flex shrink-0 items-center gap-1">
+            <Eye className="h-3 w-3" />
+            {request.viewsCount}
           </span>
-        )}
+        </span>
       </div>
     </Link>
   );

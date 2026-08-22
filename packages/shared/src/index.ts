@@ -254,6 +254,7 @@ export interface RequestDto {
   districtId: number | null;
   phone: string;
   status: RequestStatus;
+  viewsCount: number;
   createdAt: string;
   author: UserSummaryDto;
 }

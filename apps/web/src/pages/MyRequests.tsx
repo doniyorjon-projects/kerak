@@ -1,6 +1,6 @@
 ﻿import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, MessageSquareText, Pencil, Trash2, XCircle } from "lucide-react";
+import { CheckCircle2, Eye, MessageSquareText, Pencil, Trash2, XCircle } from "lucide-react";
 import type { RequestDto } from "@kerak/shared";
 import { deleteRequest, fetchMyRequests, updateRequest } from "../api/requests";
 import { PageHeader } from "../components/PageHeader";
@@ -35,6 +35,10 @@ function RequestRow({ request }: { request: RequestDto }) {
             {isClosed ? t("request.statusClosed") : t("request.statusActive")}
           </span>
         </div>
+        <span className="flex items-center gap-1 text-xs text-hint">
+          <Eye className="h-3.5 w-3.5" />
+          {request.viewsCount.toLocaleString("uz-UZ")} {t("listing.views")}
+        </span>
       </Link>
       <div className="grid grid-cols-3 gap-2">
         <Link

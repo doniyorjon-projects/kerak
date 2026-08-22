@@ -79,9 +79,21 @@ export class RequestsService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, viewerId?: string) {
     const request = await this.prisma.request.findUnique({ where: { id }, include: AUTHOR_INCLUDE });
     if (!request) throw new NotFoundException("So'rov topilmadi");
+
+    if (viewerId && viewerId !== request.authorId && request.status === RequestStatus.ACTIVE) {
+      const { count } = await this.prisma.requestView.createMany({
+        data: [{ requestId: id, viewerId }],
+        skipDuplicates: true,
+      });
+      if (count > 0) {
+        await this.prisma.request.update({ where: { id }, data: { viewsCount: { increment: 1 } } });
+        request.viewsCount += 1;
+      }
+    }
+
     return request;
   }
 

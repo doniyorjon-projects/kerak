@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Ban,
   CheckCircle2,
+  Eye,
   MapPin,
   MessageCircle,
   Pencil,
@@ -119,6 +120,10 @@ export function RequestDetail() {
               {districtName}
             </span>
           )}
+          <span className="flex items-center gap-1.5 text-hint">
+            <Eye className="h-4 w-4" />
+            {request.viewsCount.toLocaleString("uz-UZ")} {t("listing.views")}
+          </span>
         </div>
       </div>
 
