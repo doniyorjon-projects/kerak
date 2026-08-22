@@ -376,6 +376,50 @@ export class BotService implements OnModuleInit {
       .catch((err) => this.logger.warn(`Taklif natijasi haqida xabar yuborilmadi: ${err}`));
   }
 
+  /**
+   * O'sha toifada faol e'loni bor sotuvchilarga yangi so'rov haqida xabar
+   * beradi (bir nechta sotuvchiga ketma-ket yuborilishi mumkin bo'lgani
+   * uchun botBlockedAt kuzatuvi ham yangilanadi).
+   */
+  async notifyNewRequestMatch(
+    telegramId: string,
+    request: { id: string; title: string; description: string; budgetMin: number | null; budgetMax: number | null },
+  ) {
+    const budgetText =
+      request.budgetMin != null && request.budgetMax != null
+        ? `${request.budgetMin.toLocaleString("uz-UZ")} - ${request.budgetMax.toLocaleString("uz-UZ")} so'm`
+        : request.budgetMin != null
+          ? `${request.budgetMin.toLocaleString("uz-UZ")} so'mdan`
+          : request.budgetMax != null
+            ? `${request.budgetMax.toLocaleString("uz-UZ")} so'mgacha`
+            : "Kelishiladi";
+
+    const description =
+      request.description.length > 200 ? `${request.description.slice(0, 200)}...` : request.description;
+
+    const text = [
+      "🔔 Sizning toifangizda yangi so'rov qoldirildi!",
+      "",
+      `📝 ${request.title}`,
+      `💰 Byudjet: ${budgetText}`,
+      "",
+      description,
+    ].join("\n");
+
+    const keyboard = new InlineKeyboard().webApp(
+      "👀 Ko'rish",
+      `${this.miniAppUrl}?request=${encodeURIComponent(request.id)}`,
+    );
+
+    try {
+      await this.bot.api.sendMessage(telegramId, text, { reply_markup: keyboard });
+      void this.recordSendResult(telegramId, null);
+    } catch (err) {
+      this.logger.warn(`So'rov moslik xabari yuborilmadi (${telegramId}): ${err}`);
+      void this.recordSendResult(telegramId, err);
+    }
+  }
+
   async notifySavedSearchDigest(telegramId: string, totalMatches: number, labels: string[]) {
     const keyboard = new InlineKeyboard().webApp("🔍 Ko'rish", `${this.miniAppUrl}/saved-searches`);
     const text = `🔔 Saqlangan qidiruvlaringiz bo'yicha ${totalMatches} ta yangi e'lon topildi:\n${labels.join("\n")}`;

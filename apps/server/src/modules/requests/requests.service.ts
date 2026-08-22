@@ -1,9 +1,10 @@
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { ForbiddenException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { Prisma, RequestStatus } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { CreateRequestDto } from "./dto/create-request.dto";
 import { UpdateRequestDto } from "./dto/update-request.dto";
 import { FindRequestsDto } from "./dto/find-requests.dto";
+import { BotService } from "../bot/bot.service";
 
 const AUTHOR_INCLUDE = {
   author: { select: { id: true, telegramId: true, username: true, firstName: true } },
@@ -11,13 +12,58 @@ const AUTHOR_INCLUDE = {
 
 @Injectable()
 export class RequestsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(RequestsService.name);
 
-  create(authorId: string, dto: CreateRequestDto) {
-    return this.prisma.request.create({
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly botService: BotService,
+  ) {}
+
+  async create(authorId: string, dto: CreateRequestDto) {
+    const request = await this.prisma.request.create({
       data: { ...dto, authorId, status: RequestStatus.ACTIVE },
       include: AUTHOR_INCLUDE,
     });
+
+    // Sotuvchilarga xabar berish so'rov yaratish javobini kutdirmasligi
+    // uchun fon rejimida ishga tushiriladi (ko'p sotuvchi bo'lsa ham
+    // API darhol javob qaytaradi).
+    void this.notifyMatchingSellers(request).catch((err) =>
+      this.logger.warn(`So'rov bo'yicha sotuvchilarga xabar berishda xatolik: ${err}`),
+    );
+
+    return request;
+  }
+
+  /** Berilgan kategoriya id'si + uning barcha bola (istalgan chuqurlikdagi) id'larini qaytaradi. */
+  private async resolveCategoryDescendantIds(categoryId: string): Promise<string[]> {
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+      WITH RECURSIVE descendants AS (
+        SELECT id FROM "Category" WHERE id = ${categoryId}
+        UNION ALL
+        SELECT c.id FROM "Category" c JOIN descendants d ON c."parentId" = d.id
+      )
+      SELECT id FROM descendants
+    `;
+    return rows.map((r) => r.id);
+  }
+
+  private async notifyMatchingSellers(request: Prisma.RequestGetPayload<{ include: typeof AUTHOR_INCLUDE }>) {
+    const categoryIds = await this.resolveCategoryDescendantIds(request.categoryId);
+    const sellers = await this.prisma.user.findMany({
+      where: {
+        id: { not: request.authorId },
+        isBlocked: false,
+        botBlockedAt: null,
+        listings: { some: { categoryId: { in: categoryIds }, status: "ACTIVE" } },
+      },
+      select: { telegramId: true },
+    });
+
+    for (const seller of sellers) {
+      await this.botService.notifyNewRequestMatch(seller.telegramId, request);
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    }
   }
 
   findFeed(options: FindRequestsDto) {
